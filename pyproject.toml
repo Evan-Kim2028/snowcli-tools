@@ -1,31 +1,27 @@
 [project]
-name = "snowflake-connector"
+name = "snowcli-tools"
 version = "0.1.0"
-description = "A Python CLI tool for efficient Snowflake database operations with parallel query execution and connection pooling"
+description = "Snowflake CLI Tools (Python): run Snowflake queries via the official CLI with parallel execution and rich outputs"
 readme = "README.md"
 authors = [
     { name = "Evan Kim", email = "ekcopersonal@gmail.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "snowflake-connector-python>=3.0.0",
-    "pandas>=2.0.0",
     "polars>=0.20.0",
-    "cryptography>=42.0.0",
     "click>=8.0.0",
     "rich>=13.0.0",
     "pyyaml>=6.0.0",
-    "python-dotenv>=1.0.0",
-    "asyncio-mqtt>=0.16.0",
+    "snowflake-cli>=2.0.0",
 ]
 
 [project.scripts]
-snowflake-cli = "snowflake_connector.cli:main"
+snowflake-cli = "snowcli_tools.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/Evan-Kim2028/snowflake-connector"
-Repository = "https://github.com/Evan-Kim2028/snowflake-connector"
-Documentation = "https://github.com/Evan-Kim2028/snowflake-connector#readme"
+Homepage = "https://github.com/Evan-Kim2028/snowflake-cli-tools-py"
+Repository = "https://github.com/Evan-Kim2028/snowflake-cli-tools-py"
+Documentation = "https://github.com/Evan-Kim2028/snowflake-cli-tools-py#readme"
 
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]
@@ -41,4 +37,5 @@ dev-dependencies = [
     "mypy>=1.0.0",
     "flake8>=6.0.0",
     "pre-commit>=3.0.0",
+    "types-pyyaml>=6.0.12.20250822",
 ]

@@ -145,3 +145,7 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+
+notes/*
+data_catalogue/

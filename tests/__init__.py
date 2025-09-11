@@ -1,1 +1,1 @@
-# Test package for Snowflake Connector
+# Test package for snowflake-cli-tools-py

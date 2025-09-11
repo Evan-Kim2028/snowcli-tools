@@ -1,370 +1,176 @@
-# Snowflake Connector
+# Snowflake CLI Tools
 
-[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://python.org)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+An ergonomic Python wrapper for the official Snowflake CLI (`snow`), providing parallel query execution, data cataloging, and an improved user experience.
 
-A high-performance Python CLI tool and library for Snowflake database operations with parallel query execution, connection pooling, and comprehensive error handling.
+## Core Concept
 
-## Features
+This tool is a wrapper around the official `snow` CLI. It leverages your existing `snow` connection profiles to execute commands, offering several key advantages over using the `snow` CLI directly:
 
-- 🚀 **Parallel Query Execution**: Execute multiple queries simultaneously with configurable concurrency
-- 🔗 **Connection Pooling**: Efficient connection management for high-throughput operations
-- 🛡️ **Robust Error Handling**: Automatic retry mechanisms and detailed error reporting
-- 📊 **Rich CLI Interface**: Beautiful command-line interface with progress tracking
-- 🔧 **Flexible Configuration**: Environment variables, YAML config files, or programmatic setup
-- 📈 **Performance Monitoring**: Detailed execution statistics and efficiency metrics
-- 🎯 **JSON Object Support**: Optimized for blockchain/SUI object data retrieval
+-   **Parallel Query Execution**: The `parallel` command uses a thread pool to run multiple `snow sql` processes concurrently. This significantly speeds up bulk data retrieval tasks that would otherwise run sequentially.
+-   **Automated Data Cataloging**: The `catalog` command introspects your database's `INFORMATION_SCHEMA` to generate a comprehensive metadata catalog in JSON format—a feature not available in the standard CLI.
+-   **Simplified User Experience**: Provides an improved interface for common operations, such as the `preview` command for quickly inspecting tables and the `setup-connection` helper for interactive configuration.
+-   **Standardized Output**: Ensures consistent and machine-readable output formats (JSON, CSV), simplifying integration with other scripts and tools.
+
+In short, this tool enhances the official Snowflake CLI with powerful features for automation, performance, and ease of use.
+
+## Prerequisites
+
+-   Python 3.12+
+-   UV (recommended): https://docs.astral.sh/uv/
+-   The official [Snowflake CLI (`snow`)](https://docs.snowflake.com/en/user-guide/snowcli) (installed via UV below)
 
 ## Installation
 
-### Using UV (Recommended)
-
 ```bash
-# Install UV if you haven't already
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Clone the repository
+git clone https://github.com/Evan-Kim2028/snowflake-cli-tools-py.git
+cd snowflake-cli-tools-py
 
-# Create a new project with the Snowflake Connector
-uv init my-snowflake-project
-cd my-snowflake-project
-
-# Add Snowflake Connector as a dependency
-uv add snowflake-connector
+# Install project deps and the Snowflake CLI via UV
+uv sync
+uv add snowflake-cli
 ```
 
-### Using pip
-
-```bash
-pip install snowflake-connector
-```
-
-### From Source
-
-```bash
-git clone https://github.com/Evan-Kim2028/snowflake-connector.git
-cd snowflake-connector
-uv install
-```
 
 ## Quick Start
 
-### 1. Set up Authentication
+```bash
+# 1) Install deps + Snowflake CLI
+uv sync
+uv add snowflake-cli
 
-The connector uses key-pair authentication with Snowflake. Set up your environment:
+# 2) Create or select a Snowflake CLI connection (one-time)
+uv run snowflake-cli setup-connection
+
+# 3) Smoke test
+uv run snowflake-cli query "SELECT CURRENT_VERSION()"
+
+# 4) Build a catalog (default output: ./data_catalogue)
+uv run snowflake-cli catalog
+```
+
+## Setup
+
+This tool uses the connection profiles from your `snow` CLI configuration.
+
+**1. Configure the Snowflake CLI**
+
+If you have not already configured the `snow` CLI, please follow the official Snowflake documentation to set up a connection.
+
+**2. Use the Setup Helper (Optional)**
+
+This tool includes a helper command to create or update a `snow` CLI connection profile, which is useful for key-pair authentication.
 
 ```bash
-# Option 1: Environment Variables (Recommended)
-export SNOWFLAKE_PRIVATE_KEY_PATH="/Users/youruser/Documents/snowflake_keys/rsa_key.p8"
-export SNOWFLAKE_ACCOUNT="your_account.us-west-2"
-export SNOWFLAKE_USER="your_user"
-export SNOWFLAKE_WAREHOUSE="your_warehouse"
-export SNOWFLAKE_DATABASE="your_database"
-export SNOWFLAKE_SCHEMA="your_schema"
-
-# Option 2: Configuration File
-snowflake-cli init-config config.yaml
-# Edit config.yaml with your settings
+# Run the interactive setup helper
+uv run snowflake-cli setup-connection
 ```
 
-### 2. Test Connection
+This will guide you through creating a named connection that this tool and the `snow` CLI can use.
+
+## Usage
+
+All commands are run through the `snowflake-cli` entry point.
+
+### Query Execution
+
+Execute single queries with flexible output formats.
 
 ```bash
-# Test your Snowflake connection
-snowflake-cli test
+# Simple query with table output
+uv run snowflake-cli query "SELECT * FROM my_table LIMIT 10"
+
+# Execute and get JSON output
+uv run snowflake-cli query "SELECT * FROM my_table LIMIT 10" --format json
+
+# Preview a table's structure and content
+uv run snowflake-cli preview my_table
 ```
 
-### 3. Execute Queries
+### Parallel Queries
+
+Execute multiple queries concurrently based on a template.
 
 ```bash
-# Simple query
-snowflake-cli query "SELECT COUNT(*) FROM your_table"
-
-# Query with custom output
-snowflake-cli query "SELECT * FROM your_table LIMIT 100" --output results.csv
-
-# Preview table
-snowflake-cli preview your_table --limit 50
+# Query multiple object types in parallel
+uv run snowflake-cli parallel "type_a" "type_b" \
+  --query-template "SELECT * FROM objects WHERE type = '{object}'" \
+  --output-dir ./results
 ```
 
-### 4. Parallel Queries
+### Data Cataloging
+
+Generate a data catalog by introspecting database metadata (works with any Snowflake account). Outputs JSON by default; JSONL is available for ingestion-friendly workflows. DDL is optional and fetched concurrently when enabled.
 
 ```bash
-# Query multiple objects in parallel
-snowflake-cli parallel "0x1::coin::CoinInfo" "0x1::account::Account" "0x2::sui::SUI"
+# Build a catalog for the current database (default output: ./data_catalogue)
+uv run snowflake-cli catalog
 
-# Custom query template
-snowflake-cli parallel "object1" "object2" \
-  --query-template "SELECT * FROM custom_table WHERE type = '{object}'"
+# Build for a specific database
+uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue_db
 
-# Save results to files
-snowflake-cli parallel "object1" "object2" --output-dir ./results --format parquet
+# Build for the entire account
+uv run snowflake-cli catalog --account --output-dir ./data_catalogue_all
+
+# Include DDL (concurrent by default; opt-in)
+uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue_ddled --include-ddl
+
+# JSONL output
+uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue_jsonl --format jsonl
 ```
 
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SNOWFLAKE_PRIVATE_KEY_PATH` | Path to RSA private key | `~/Documents/snowflake_keys/rsa_key.p8` |
-| `SNOWFLAKE_ACCOUNT` | Snowflake account identifier | `HKB47976.us-west-2` |
-| `SNOWFLAKE_USER` | Snowflake username | `readonly_ai_user` |
-| `SNOWFLAKE_WAREHOUSE` | Default warehouse | `EVANS_AI_WH` |
-| `SNOWFLAKE_DATABASE` | Default database | `PIPELINE_V2_GROOT_DB` |
-| `SNOWFLAKE_SCHEMA` | Default schema | `PIPELINE_V2_GROOT_SCHEMA` |
-| `SNOWFLAKE_ROLE` | Snowflake role (optional) | None |
-| `MAX_CONCURRENT_QUERIES` | Max parallel queries | `5` |
-| `CONNECTION_POOL_SIZE` | Connection pool size | `10` |
-| `RETRY_ATTEMPTS` | Query retry attempts | `3` |
-| `RETRY_DELAY` | Delay between retries (seconds) | `1.0` |
-| `TIMEOUT_SECONDS` | Query timeout | `300` |
-| `LOG_LEVEL` | Logging level | `INFO` |
-
-### YAML Configuration
-
-Create a `config.yaml` file:
-
-```yaml
-snowflake:
-  account: "your_account.us-west-2"
-  user: "your_user"
-  private_key_path: "/path/to/your/private/key.p8"
-  warehouse: "your_warehouse"
-  database: "your_database"
-  schema: "your_schema"
-  role: "your_role"  # optional
-
-max_concurrent_queries: 5
-connection_pool_size: 10
-retry_attempts: 3
-retry_delay: 1.0
-timeout_seconds: 300
-log_level: "INFO"
-```
-
-Use with: `snowflake-cli --config config.yaml <command>`
+Files created (per format):
+- schemata.(json|jsonl)
+- tables.(json|jsonl)
+- columns.(json|jsonl)
+- views.(json|jsonl)
+- materialized_views.(json|jsonl)
+- routines.(json|jsonl)
+- functions.(json|jsonl)
+- procedures.(json|jsonl)
+- tasks.(json|jsonl)
+- dynamic_tables.(json|jsonl)
+- catalog_summary.json (counts)
 
 ## CLI Commands
 
-### Core Commands
+| Command            | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `test`             | Test the current Snowflake CLI connection.               |
+| `query`            | Execute a single SQL query (table/JSON/CSV output).      |
+| `parallel`         | Execute multiple queries in parallel (spawns `snow`).    |
+| `preview`          | Preview table contents.                                  |
+| `catalog`          | Build a JSON/JSONL data catalog (use `--include-ddl` to add DDL). |
+| `config`           | Show the current tool configuration.                     |
+| `setup-connection` | Helper to create a persistent `snow` CLI connection.     |
+| `init-config`      | Create a local configuration file for this tool.         |
 
-| Command | Description |
-|---------|-------------|
-| `test` | Test Snowflake connection |
-| `query` | Execute a single SQL query |
-| `parallel` | Execute multiple queries in parallel |
-| `preview` | Preview table contents |
-| `config` | Show current configuration |
-| `init-config` | Create a new configuration file |
+### Catalog design notes (portable by default)
+- Uses SHOW commands where possible (schemas, materialized views, dynamic tables, tasks, functions, procedures) for broad visibility with minimal privileges.
+- Complements SHOW with INFORMATION_SCHEMA (tables, columns, views) for standardized column-level details.
+- Works with any Snowflake account because it only uses standard Snowflake metadata interfaces.
+- Optional DDL capture uses GET_DDL per object and fetches concurrently for performance.
 
-### Command Examples
-
-```bash
-# Test connection with custom parameters
-snowflake-cli test --account "custom.us-west-2" --user "custom_user"
-
-# Execute query with JSON output
-snowflake-cli query "SELECT * FROM users" --format json
-
-# Parallel execution with custom concurrency
-snowflake-cli parallel "obj1" "obj2" "obj3" --max-concurrent 3
-
-# Preview with output file
-snowflake-cli preview users --limit 100 --output users_sample.csv
-
-# Show configuration
-snowflake-cli config
-```
-
-## Python API
-
-### Basic Usage
-
-```python
-from snowflake_connector import get_snowflake_connection, execute_query_to_dataframe
-
-# Simple connection
-conn = get_snowflake_connection()
-cursor = conn.cursor()
-cursor.execute("SELECT * FROM your_table")
-results = cursor.fetchall()
-conn.close()
-
-# Query to DataFrame
-df = execute_query_to_dataframe("SELECT * FROM your_table LIMIT 100")
-print(df.head())
-```
-
-### Parallel Execution
-
-```python
-from snowflake_connector import ParallelQueryExecutor, query_multiple_objects
-
-# Using the executor class
-executor = ParallelQueryExecutor()
-queries = {
-    "coins": "SELECT * FROM coins WHERE type = '0x1::coin::CoinInfo'",
-    "accounts": "SELECT * FROM accounts WHERE type = '0x1::account::Account'",
-}
-results = executor.execute_queries(queries)
-
-# Using convenience function
-queries = {"obj1": "SELECT * FROM table WHERE type = 'obj1'"}
-results = query_multiple_objects(queries)
-```
-
-### Configuration
-
-```python
-from snowflake_connector import Config, set_config
-
-# Load from environment
-config = Config.from_env()
-
-# Load from YAML
-config = Config.from_yaml("config.yaml")
-
-# Set global config
-set_config(config)
-```
-
-## Advanced Features
-
-### Connection Pooling
-
-The connector automatically manages connection pools for optimal performance:
-
-```python
-from snowflake_connector import ParallelQueryExecutor
-
-# Configure pool size
-executor = ParallelQueryExecutor()
-# Pool size is automatically configured from settings
-```
-
-### Error Handling and Retries
-
-Built-in retry mechanisms with exponential backoff:
-
-```python
-from snowflake_connector import ParallelQueryConfig, ParallelQueryExecutor
-
-config = ParallelQueryConfig(
-    retry_attempts=5,
-    retry_delay=2.0,
-    timeout_seconds=600
-)
-executor = ParallelQueryExecutor(config)
-```
-
-### JSON Data Processing
-
-Optimized for blockchain data with automatic JSON parsing:
-
-```python
-# Queries with JSON columns are automatically parsed
-results = query_multiple_objects({
-    "objects": "SELECT object_json FROM object_parquet2 WHERE type = '0x1::coin::CoinInfo'"
-})
-
-for obj_name, result in results.items():
-    if result.success and result.json_data:
-        print(f"{obj_name}: {len(result.json_data)} JSON objects")
-```
+### Best practices
+- Configure and test your Snowflake CLI connection first (key‑pair, OAuth, Okta are all supported by `snow`).
+- Run with a role that has USAGE on the target databases/schemas to maximize visibility.
+- Prefer `--format jsonl` for ingestion and downstream processing; JSONL is line‑delimited and append‑friendly.
+- When enabling `--include-ddl`, increase concurrency with `--max-ddl-concurrency` for large estates.
+- Start with a database‑scoped run, then expand to `--account` if needed and permitted.
 
 ## Development
 
-### Setup Development Environment
-
 ```bash
-# Clone the repository
-git clone https://github.com/Evan-Kim2028/snowflake-connector.git
-cd snowflake-connector
-
 # Install with development dependencies
 uv sync --dev
 
 # Run tests
 uv run pytest
 
-# Run linter
-uv run flake8 src/
-
 # Format code
 uv run black src/
 ```
 
-### Project Structure
-
-```
-snowflake-connector/
-├── src/
-│   └── snowflake_connector/
-│       ├── __init__.py          # Package initialization
-│       ├── cli.py              # Command-line interface
-│       ├── config.py           # Configuration management
-│       ├── connection.py       # Basic connection utilities
-│       └── parallel.py         # Parallel execution engine
-├── tests/                      # Test suite
-├── docs/                       # Documentation
-├── pyproject.toml             # Project configuration
-└── README.md                  # This file
-```
-
-## Authentication Setup
-
-### Generating RSA Key Pair
-
-If you need to generate a new RSA key pair for Snowflake:
-
-```bash
-# Generate private key
-openssl genrsa 2048 | openssl pkcs8 -topk8 -v2 aes256 -out rsa_key.p8
-
-# Generate public key from private key
-openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub
-```
-
-### Snowflake User Setup
-
-1. Log into Snowflake web interface
-2. Navigate to Account → Users
-3. Select your user or create a new one
-4. In the "Security" section, paste your public key
-5. Save the user settings
-
-## Performance Tips
-
-1. **Connection Pooling**: Use connection pooling for multiple queries
-2. **Concurrency Limits**: Adjust `max_concurrent_queries` based on your warehouse size
-3. **Query Optimization**: Use appropriate LIMIT clauses for large datasets
-4. **Batch Processing**: Group similar queries together for better efficiency
-5. **Result Caching**: Cache frequently accessed data when possible
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
-
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-- 📧 **Email**: ekcopersonal@gmail.com
-- 🐛 **Issues**: [GitHub Issues](https://github.com/Evan-Kim2028/snowflake-connector/issues)
-- 📖 **Documentation**: [GitHub Wiki](https://github.com/Evan-Kim2028/snowflake-connector/wiki)
-
-## Changelog
-
-### v0.1.0 (Current)
-- Initial release with core functionality
-- Parallel query execution
-- CLI interface
-- Configuration management
-- Connection pooling
-- Error handling and retries
+This project is licensed under the MIT License.

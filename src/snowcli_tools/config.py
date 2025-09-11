@@ -1,8 +1,12 @@
-"""Configuration management for Snowflake Connector."""
+"""Configuration management for snowflake-cli-tools-py.
+
+Refactored to use Snowflake CLI profiles instead of direct connector
+credentials. Authentication and connection context should be managed via
+the official `snow` CLI (`snowflake-cli`).
+"""
 
 import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Optional
 
 import yaml
@@ -10,34 +14,24 @@ import yaml
 
 @dataclass
 class SnowflakeConfig:
-    """Configuration for Snowflake connection parameters."""
+    """Snowflake connection context driven by Snowflake CLI.
 
-    account: str
-    user: str
-    private_key_path: str
-    warehouse: str
-    database: str
-    schema: str
+    - `profile` should match a profile configured in
+      `~/.snowflake/snowflake_config.toml`
+    - Optional context overrides are passed to `snow sql` (warehouse, database,
+      schema, role).
+    """
+
+    profile: str = "default"
+    warehouse: Optional[str] = None
+    database: Optional[str] = None
+    schema: Optional[str] = None
     role: Optional[str] = None
-
-    def to_dict(self) -> dict:
-        """Convert config to dictionary for Snowflake connector."""
-        from .connection import load_private_key
-
-        return {
-            "account": self.account,
-            "user": self.user,
-            "private_key": load_private_key(self.private_key_path),
-            "warehouse": self.warehouse,
-            "database": self.database,
-            "schema": self.schema,
-            "role": self.role,
-        }
 
 
 @dataclass
 class Config:
-    """Main configuration class for Snowflake Connector."""
+    """Main configuration class for snowflake-cli-tools-py."""
 
     snowflake: SnowflakeConfig
     max_concurrent_queries: int = 5
@@ -50,24 +44,12 @@ class Config:
     @classmethod
     def from_env(cls) -> "Config":
         """Create configuration from environment variables."""
-        # Get private key path from env or use default
-        private_key_path = os.getenv(
-            "SNOWFLAKE_PRIVATE_KEY_PATH",
-            str(Path.home() / "Documents" / "snowflake_keys" / "rsa_key.p8"),
-        )
-
-        # Expand ~ and relative paths
-        private_key_path = os.path.expanduser(private_key_path)
-        private_key_path = os.path.abspath(private_key_path)
-
         snowflake_config = SnowflakeConfig(
-            account=os.getenv("SNOWFLAKE_ACCOUNT", "HKB47976.us-west-2"),
-            user=os.getenv("SNOWFLAKE_USER", "readonly_ai_user"),
-            private_key_path=private_key_path,
-            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "EVANS_AI_WH"),
-            database=os.getenv("SNOWFLAKE_DATABASE", "PIPELINE_V2_GROOT_DB"),
-            schema=os.getenv("SNOWFLAKE_SCHEMA", "PIPELINE_V2_GROOT_SCHEMA"),
-            role=os.getenv("SNOWFLAKE_ROLE"),
+            profile=os.getenv("SNOWFLAKE_PROFILE", "default"),
+            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE") or None,
+            database=os.getenv("SNOWFLAKE_DATABASE") or None,
+            schema=os.getenv("SNOWFLAKE_SCHEMA") or None,
+            role=os.getenv("SNOWFLAKE_ROLE") or None,
         )
 
         return cls(
@@ -88,15 +70,10 @@ class Config:
 
         snowflake_data = data.get("snowflake", {})
         snowflake_config = SnowflakeConfig(
-            account=snowflake_data.get("account", "HKB47976.us-west-2"),
-            user=snowflake_data.get("user", "readonly_ai_user"),
-            private_key_path=snowflake_data.get(
-                "private_key_path",
-                str(Path.home() / "Documents" / "snowflake_keys" / "rsa_key.p8"),
-            ),
-            warehouse=snowflake_data.get("warehouse", "EVANS_AI_WH"),
-            database=snowflake_data.get("database", "PIPELINE_V2_GROOT_DB"),
-            schema=snowflake_data.get("schema", "PIPELINE_V2_GROOT_SCHEMA"),
+            profile=snowflake_data.get("profile", "default"),
+            warehouse=snowflake_data.get("warehouse"),
+            database=snowflake_data.get("database"),
+            schema=snowflake_data.get("schema"),
             role=snowflake_data.get("role"),
         )
 
@@ -114,9 +91,7 @@ class Config:
         """Save configuration to YAML file."""
         config_dict = {
             "snowflake": {
-                "account": self.snowflake.account,
-                "user": self.snowflake.user,
-                "private_key_path": self.snowflake.private_key_path,
+                "profile": self.snowflake.profile,
                 "warehouse": self.snowflake.warehouse,
                 "database": self.snowflake.database,
                 "schema": self.snowflake.schema,

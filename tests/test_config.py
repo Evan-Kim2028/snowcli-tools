@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import yaml
 
-from snowflake_connector.config import Config, get_config, set_config
+from snowcli_tools.config import Config, SnowflakeConfig, get_config, set_config
 
 
 class TestConfig:
@@ -18,17 +18,17 @@ class TestConfig:
         with patch.dict(os.environ, {}, clear=True):
             config = Config.from_env()
 
-            assert config.snowflake.account == "HKB47976.us-west-2"
-            assert config.snowflake.user == "readonly_ai_user"
+            assert config.snowflake.profile == "default"
+            assert config.snowflake.warehouse is None
+            assert config.snowflake.database is None
+            assert config.snowflake.schema is None
             assert config.max_concurrent_queries == 5
             assert config.connection_pool_size == 10
 
     def test_config_from_env_custom_values(self):
         """Test loading config from environment with custom values."""
         env_vars = {
-            "SNOWFLAKE_ACCOUNT": "custom.us-west-2",
-            "SNOWFLAKE_USER": "custom_user",
-            "SNOWFLAKE_PRIVATE_KEY_PATH": "/custom/path/key.p8",
+            "SNOWFLAKE_PROFILE": "my-dev",
             "SNOWFLAKE_WAREHOUSE": "custom_wh",
             "SNOWFLAKE_DATABASE": "custom_db",
             "SNOWFLAKE_SCHEMA": "custom_schema",
@@ -44,9 +44,7 @@ class TestConfig:
         with patch.dict(os.environ, env_vars):
             config = Config.from_env()
 
-            assert config.snowflake.account == "custom.us-west-2"
-            assert config.snowflake.user == "custom_user"
-            assert config.snowflake.private_key_path == "/custom/path/key.p8"
+            assert config.snowflake.profile == "my-dev"
             assert config.snowflake.warehouse == "custom_wh"
             assert config.snowflake.database == "custom_db"
             assert config.snowflake.schema == "custom_schema"
@@ -62,9 +60,7 @@ class TestConfig:
         """Test loading config from YAML file."""
         config_data = {
             "snowflake": {
-                "account": "yaml_account.us-west-2",
-                "user": "yaml_user",
-                "private_key_path": "/yaml/path/key.p8",
+                "profile": "yaml_profile",
                 "warehouse": "yaml_wh",
                 "database": "yaml_db",
                 "schema": "yaml_schema",
@@ -85,9 +81,7 @@ class TestConfig:
         try:
             config = Config.from_yaml(config_path)
 
-            assert config.snowflake.account == "yaml_account.us-west-2"
-            assert config.snowflake.user == "yaml_user"
-            assert config.snowflake.private_key_path == "/yaml/path/key.p8"
+            assert config.snowflake.profile == "yaml_profile"
             assert config.snowflake.warehouse == "yaml_wh"
             assert config.snowflake.database == "yaml_db"
             assert config.snowflake.schema == "yaml_schema"
@@ -104,7 +98,7 @@ class TestConfig:
     def test_config_save_to_yaml(self):
         """Test saving config to YAML file."""
         config = Config.from_env()
-        config.snowflake.account = "test_account.us-west-2"
+        config.snowflake.profile = "test_profile"
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             config_path = f.name
@@ -116,7 +110,7 @@ class TestConfig:
             with open(config_path, "r") as f:
                 saved_data = yaml.safe_load(f)
 
-            assert saved_data["snowflake"]["account"] == "test_account.us-west-2"
+            assert saved_data["snowflake"]["profile"] == "test_profile"
             assert "max_concurrent_queries" in saved_data
             assert "connection_pool_size" in saved_data
         finally:
@@ -142,33 +136,17 @@ class TestConfig:
 class TestSnowflakeConfig:
     """Test SnowflakeConfig functionality."""
 
-    def test_to_dict(self):
-        """Test converting SnowflakeConfig to dictionary."""
-        config = Config.SnowflakeConfig(
-            account="test.us-west-2",
-            user="test_user",
-            private_key_path="/test/key.p8",
+    def test_fields(self):
+        cfg = SnowflakeConfig(
+            profile="test_profile",
             warehouse="test_wh",
             database="test_db",
             schema="test_schema",
             role="test_role",
         )
 
-        config_dict = config.to_dict()
-
-        expected_keys = {
-            "account",
-            "user",
-            "private_key",
-            "warehouse",
-            "database",
-            "schema",
-            "role",
-        }
-        assert set(config_dict.keys()) == expected_keys
-        assert config_dict["account"] == "test.us-west-2"
-        assert config_dict["user"] == "test_user"
-        assert config_dict["warehouse"] == "test_wh"
-        assert config_dict["database"] == "test_db"
-        assert config_dict["schema"] == "test_schema"
-        assert config_dict["role"] == "test_role"
+        assert cfg.profile == "test_profile"
+        assert cfg.warehouse == "test_wh"
+        assert cfg.database == "test_db"
+        assert cfg.schema == "test_schema"
+        assert cfg.role == "test_role"

@@ -1,25 +1,21 @@
-"""
-Parallel Query Executor for Snowflake
+"""Parallel Query Executor using Snowflake CLI.
 
-Efficiently execute multiple queries in parallel for JSON object retrieval.
-Supports connection pooling, progress tracking, error handling, and result aggregation.
+Executes multiple queries in parallel by invoking the `snow` CLI.
+Provides progress tracking, error handling, and result aggregation.
 """
 
 import asyncio
-import builtins
-import contextlib
 import json
 import logging
-import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 import polars as pl
-import snowflake.connector
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
+
+from .config import get_config
+from .snow_cli import SnowCLI
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,9 +33,9 @@ class QueryResult:
     object_name: str
     query: str
     success: bool
-    data: pl.DataFrame | None = None
-    json_data: list[dict[str, Any]] | None = None
-    error: str | None = None
+    data: Optional[pl.DataFrame] = None
+    json_data: Optional[List[Dict[str, Any]]] = None
+    error: Optional[str] = None
     execution_time: float = 0.0
     row_count: int = 0
 
@@ -54,65 +50,39 @@ class ParallelQueryConfig:
     retry_delay: float = 1.0
     timeout_seconds: int = 300
 
+    @classmethod
+    def from_global_config(cls) -> "ParallelQueryConfig":
+        """Create config from global configuration."""
+        config = get_config()
+        return cls(
+            max_concurrent_queries=config.max_concurrent_queries,
+            connection_pool_size=config.connection_pool_size,
+            retry_attempts=config.retry_attempts,
+            retry_delay=config.retry_delay,
+            timeout_seconds=config.timeout_seconds,
+        )
+
 
 class SnowflakeConnectionPool:
-    """Connection pool for managing Snowflake connections efficiently."""
+    """Deprecated placeholder left for compatibility (no-op).
 
-    def __init__(self, config: dict[str, Any], pool_size: int = 10):
+    With Snowflake CLI, we don't manage connections directly. This class is
+    retained to minimize diff in the executor internals.
+    """
+
+    def __init__(self, config: Dict[str, Any], pool_size: int = 10):
         self.config = config
         self.pool_size = pool_size
-        self.connections = []
-        self._initialize_pool()
+        logger.info("Using Snowflake CLI; connection pool is a no-op.")
 
-    def _initialize_pool(self):
-        """Initialize the connection pool."""
-        successful_connections = 0
-        for i in range(self.pool_size):
-            try:
-                conn = snowflake.connector.connect(**self.config)
-                self.connections.append(conn)
-                successful_connections += 1
-            except Exception as e:
-                logger.warning(
-                    f"Failed to create connection {i + 1}/{self.pool_size}: {e}",
-                )
+    def get_connection(self):  # pragma: no cover - compatibility shim
+        return None
 
-        if successful_connections > 0:
-            logger.info(
-                f"🔗 Initialized connection pool: {successful_connections}/{self.pool_size} connections",
-            )
-        else:
-            logger.error("❌ Failed to initialize any connections in pool")
+    def return_connection(self, conn):  # pragma: no cover - compatibility shim
+        return None
 
-    def get_connection(self):
-        """Get an available connection from the pool."""
-        if not self.connections:
-            # Create new connection if pool is empty
-            try:
-                conn = snowflake.connector.connect(**self.config)
-                logger.debug("Created new connection outside pool")
-                return conn
-            except Exception as e:
-                logger.exception(f"Failed to create new connection: {e}")
-                raise
-
-        return self.connections.pop()
-
-    def return_connection(self, conn):
-        """Return a connection to the pool."""
-        if len(self.connections) < self.pool_size:
-            self.connections.append(conn)
-        else:
-            conn.close()
-
-    def close_all(self):
-        """Close all connections in the pool."""
-        if self.connections:
-            logger.debug(f"Closing {len(self.connections)} connections")
-            for conn in self.connections:
-                with contextlib.suppress(builtins.BaseException):
-                    conn.close()
-            self.connections.clear()
+    def close_all(self):  # pragma: no cover - compatibility shim
+        return None
 
 
 class ParallelQueryExecutor:
@@ -126,95 +96,40 @@ class ParallelQueryExecutor:
     - Result aggregation and formatting
     """
 
-    def __init__(self, config: ParallelQueryConfig = None):
-        self.config = config or ParallelQueryConfig()
-        self.connection_pool = None
+    def __init__(self, config: Optional[ParallelQueryConfig] = None):
+        self.config = config or ParallelQueryConfig.from_global_config()
+        self.connection_pool: Optional[SnowflakeConnectionPool] = None
 
-    def _load_private_key(self, key_path: str) -> bytes:
-        """Load and prepare the private key for authentication."""
-        try:
-            # Expand ~ and relative paths to absolute paths
-            expanded_path = os.path.expanduser(key_path)
-            expanded_path = os.path.abspath(expanded_path)
-
-            with open(expanded_path, "rb") as key_file:
-                pkey = serialization.load_pem_private_key(
-                    key_file.read(),
-                    password=None,  # For unencrypted key
-                    backend=default_backend(),
-                )
-
-            return pkey.private_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
-        except Exception as e:
-            msg = f"Failed to load private key from {expanded_path} (original: {key_path}): {e}"
-            raise ValueError(
-                msg,
-            )
-
-    def _create_connection_config(self, private_key_path: str) -> dict[str, Any]:
-        """Create Snowflake connection configuration."""
-        private_key = self._load_private_key(private_key_path)
-
+    def _create_context_overrides(self) -> Dict[str, Any]:
+        cfg = get_config().snowflake
         return {
-            "account": "HKB47976.us-west-2",
-            "user": "readonly_ai_user",
-            "private_key": private_key,
-            "warehouse": "EVANS_AI_WH",
-            "database": "PIPELINE_V2_GROOT_DB",
-            "schema": "PIPELINE_V2_GROOT_SCHEMA",
+            "warehouse": cfg.warehouse,
+            "database": cfg.database,
+            "schema": cfg.schema,
+            "role": cfg.role,
         }
 
     def _execute_single_query(
         self,
         query: str,
         object_name: str,
-        connection_config: dict[str, Any],
+        cli: SnowCLI,
     ) -> QueryResult:
-        """Execute a single query and return results."""
+        """Execute a single query via Snowflake CLI and return results."""
         start_time = time.time()
 
         for attempt in range(self.config.retry_attempts):
-            conn = None
             try:
-                # Get connection from pool or create new one
-                if self.connection_pool:
-                    conn = self.connection_pool.get_connection()
-                else:
-                    conn = snowflake.connector.connect(**connection_config)
-
-                cur = conn.cursor()
-
-                # Set statement timeout if configured
-                if (
-                    hasattr(self.config, "timeout_seconds")
-                    and self.config.timeout_seconds > 0
-                ):
-                    cur.execute(
-                        f"SET STATEMENT_TIMEOUT_IN_SECONDS = {self.config.timeout_seconds}",
-                    )
-                    cur.execute("SET ABORT_DETACHED_QUERY = TRUE")
-
-                # Execute query
-                cur.execute(query)
-
-                # Fetch results
-                rows = cur.fetchall()
-                columns = (
-                    [desc[0] for desc in cur.description] if cur.description else []
+                # Execute via Snow CLI; default to CSV for easy parsing
+                out = cli.run_query(
+                    query,
+                    output_format="csv",
+                    timeout=self.config.timeout_seconds,
                 )
 
-                # Convert to DataFrame
-                df = (
-                    pl.DataFrame(rows, schema=columns, strict=False)
-                    if rows
-                    else pl.DataFrame()
-                )
+                df = pl.DataFrame(out.rows) if out.rows else pl.DataFrame()
 
-                # Extract JSON data if available
+                # Extract JSON data if available in a column called object_json
                 json_data = None
                 if "object_json" in df.columns:
                     json_data = []
@@ -249,12 +164,14 @@ class ParallelQueryExecutor:
 
                 if attempt < self.config.retry_attempts - 1:
                     logger.warning(
-                        f"⚠️  {object_name} failed ({error_msg}), retrying in {self.config.retry_delay}s...",
+                        f"⚠️  {object_name} failed ({error_msg}), "
+                        f"retrying in {self.config.retry_delay}s...",
                     )
                     time.sleep(self.config.retry_delay)
                 else:
                     logger.exception(
-                        f"❌ {object_name} failed after {self.config.retry_attempts} attempts: {error_msg}",
+                        f"❌ {object_name} failed after "
+                        f"{self.config.retry_attempts} attempts: {error_msg}",
                     )
                     return QueryResult(
                         object_name=object_name,
@@ -265,39 +182,30 @@ class ParallelQueryExecutor:
                     )
 
             finally:
-                if conn:
-                    if self.connection_pool:
-                        self.connection_pool.return_connection(conn)
-                    else:
-                        with contextlib.suppress(builtins.BaseException):
-                            conn.close()
-        return None
+                pass
+
+        # This should never be reached, but mypy requires it
+        raise RuntimeError(f"Query execution failed for {object_name} after all retries")
 
     async def execute_queries_async(
         self,
-        queries: dict[str, str],
-        private_key_path: str = "~/Documents/snowflake_keys/rsa_key.p8",
-    ) -> dict[str, QueryResult]:
+        queries: Dict[str, str],
+    ) -> Dict[str, QueryResult]:
         """
         Execute multiple queries in parallel using asyncio.
 
         Args:
             queries: Dict mapping object names to SQL queries
-            private_key_path: Path to private key file
 
         Returns:
             Dict mapping object names to QueryResult objects
         """
-        connection_config = self._create_connection_config(private_key_path)
-        logger.info("🔗 Establishing database connections...")
-        self.connection_pool = SnowflakeConnectionPool(
-            connection_config,
-            self.config.connection_pool_size,
-        )
+        cli = SnowCLI()
+        logger.info("🔗 Using Snowflake CLI for parallel execution...")
 
         try:
             # Execute queries in parallel using ThreadPoolExecutor
-            results = {}
+            results: Dict[str, QueryResult] = {}
             logger.info(f"⚡ Executing {len(queries)} queries in parallel...")
 
             with ThreadPoolExecutor(
@@ -309,7 +217,7 @@ class ParallelQueryExecutor:
                         self._execute_single_query,
                         query,
                         object_name,
-                        connection_config,
+                        cli,
                     ): object_name
                     for object_name, query in queries.items()
                 }
@@ -335,46 +243,41 @@ class ParallelQueryExecutor:
             return results
 
         finally:
-            if self.connection_pool:
-                self.connection_pool.close_all()
+            pass
 
     def execute_single_query(
         self,
         query: str,
         object_name: str = "query",
-        private_key_path: str = "~/Documents/snowflake_keys/rsa_key.p8",
     ) -> QueryResult:
         """Execute a single query.
 
         Args:
             query: SQL query string
             object_name: Name identifier for the query
-            private_key_path: Path to private key file
 
         Returns:
             QueryResult with execution details
         """
-        conn_config = self._create_connection_config(private_key_path)
-        return self._execute_single_query(query, object_name, conn_config)
+        cli = SnowCLI()
+        return self._execute_single_query(query, object_name, cli)
 
     def execute_queries(
         self,
-        queries: dict[str, str],
-        private_key_path: str = "~/Documents/snowflake_keys/rsa_key.p8",
-    ) -> dict[str, QueryResult]:
+        queries: Dict[str, str],
+    ) -> Dict[str, QueryResult]:
         """
         Synchronous wrapper for execute_queries_async.
 
         Args:
             queries: Dict mapping object names to SQL queries
-            private_key_path: Path to private key file
 
         Returns:
             Dict mapping object names to QueryResult objects
         """
-        return asyncio.run(self.execute_queries_async(queries, private_key_path))
+        return asyncio.run(self.execute_queries_async(queries))
 
-    def get_execution_summary(self, results: dict[str, QueryResult]) -> dict[str, Any]:
+    def get_execution_summary(self, results: Dict[str, QueryResult]) -> Dict[str, Any]:
         """Generate a summary of query execution results."""
         total_queries = len(results)
         successful_queries = sum(1 for r in results.values() if r.success)
@@ -413,30 +316,32 @@ class ParallelQueryExecutor:
 
 
 def query_multiple_objects(
-    object_queries: dict[str, str],
-    max_concurrent: int = 5,
-    private_key_path: str = "~/Documents/snowflake_keys/rsa_key.p8",
-    timeout_seconds: int = 300,
-) -> dict[str, QueryResult]:
+    object_queries: Dict[str, str],
+    max_concurrent: Optional[int] = None,
+    timeout_seconds: Optional[int] = None,
+) -> Dict[str, QueryResult]:
     """
     Convenience function to query multiple objects in parallel.
 
     Args:
         object_queries: Dict mapping object names to SQL queries
-        max_concurrent: Maximum number of concurrent queries
-        private_key_path: Path to private key file
-        timeout_seconds: Timeout in seconds for individual queries
+        max_concurrent: Maximum number of concurrent queries (optional)
+        timeout_seconds: Timeout in seconds for individual queries (optional)
 
     Returns:
         Dict mapping object names to QueryResult objects
     """
-    config = ParallelQueryConfig(
-        max_concurrent_queries=max_concurrent,
-        timeout_seconds=timeout_seconds,
-    )
+    config = ParallelQueryConfig.from_global_config()
+
+    # Override defaults if provided
+    if max_concurrent is not None:
+        config.max_concurrent_queries = max_concurrent
+    if timeout_seconds is not None:
+        config.timeout_seconds = timeout_seconds
+
     executor = ParallelQueryExecutor(config)
 
-    results = executor.execute_queries(object_queries, private_key_path)
+    results = executor.execute_queries(object_queries)
 
     # Print summary
     summary = executor.get_execution_summary(results)
@@ -456,9 +361,9 @@ def query_multiple_objects(
 
 
 def create_object_queries(
-    object_names: list[str],
+    object_names: List[str],
     base_query_template: str = "SELECT * FROM object_parquet2 WHERE type = '{object}' LIMIT 100",
-) -> dict[str, str]:
+) -> Dict[str, str]:
     """
     Create queries for multiple objects using a template.
 

@@ -1,18 +1,32 @@
-"""Snowflake Connector - Efficient database operations with parallel execution.
+"""Compatibility shim for the old package name `snowflake_connector`.
 
-A Python package providing CLI tools and APIs for Snowflake database operations,
-featuring connection pooling, parallel query execution, and comprehensive error handling.
+Please import from `snowcli_tools` going forward.
 """
 
-from .config import Config
-from .connection import execute_query_to_dataframe, get_snowflake_connection
-from .parallel import ParallelQueryExecutor, query_multiple_objects
+from warnings import warn
 
-__version__ = "0.1.0"
+from snowcli_tools import (
+    Config,
+    ParallelQueryConfig,
+    ParallelQueryExecutor,
+    SnowCLI,
+    get_config,
+    query_multiple_objects,
+    set_config,
+)
+
+warn(
+    "`snowflake_connector` is deprecated; use `snowcli_tools` instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 __all__ = [
-    "get_snowflake_connection",
-    "execute_query_to_dataframe",
+    "SnowCLI",
+    "ParallelQueryConfig",
     "ParallelQueryExecutor",
     "query_multiple_objects",
     "Config",
+    "get_config",
+    "set_config",
 ]
