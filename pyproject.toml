@@ -1,0 +1,44 @@
+[project]
+name = "snowflake-connector"
+version = "0.1.0"
+description = "A Python CLI tool for efficient Snowflake database operations with parallel query execution and connection pooling"
+readme = "README.md"
+authors = [
+    { name = "Evan Kim", email = "ekcopersonal@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "snowflake-connector-python>=3.0.0",
+    "pandas>=2.0.0",
+    "polars>=0.20.0",
+    "cryptography>=42.0.0",
+    "click>=8.0.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0.0",
+    "python-dotenv>=1.0.0",
+    "asyncio-mqtt>=0.16.0",
+]
+
+[project.scripts]
+snowflake-cli = "snowflake_connector.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Evan-Kim2028/snowflake-connector"
+Repository = "https://github.com/Evan-Kim2028/snowflake-connector"
+Documentation = "https://github.com/Evan-Kim2028/snowflake-connector#readme"
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-mock>=3.10.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+    "flake8>=6.0.0",
+    "pre-commit>=3.0.0",
+]
