@@ -224,3 +224,23 @@ uv run black src/
 ## License
 
 This project is licensed under the MIT License.
+## Dependency Graph
+
+Create a dependency graph of Snowflake objects using either
+`SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES` (preferred) or a fallback to
+`INFORMATION_SCHEMA.VIEW_TABLE_USAGE`.
+
+Examples:
+
+```bash
+# Account-wide (requires privileges), Graphviz DOT
+uv run snowflake-cli depgraph --account -f dot -o deps.dot
+
+# Restrict to a database, JSON output
+uv run snowflake-cli depgraph --database PIPELINE_V2_GROOT_DB -f json -o deps.json
+```
+
+Notes:
+- ACCOUNT_USAGE has latency and requires appropriate roles; if not accessible,
+  the CLI falls back to view→table dependencies from INFORMATION_SCHEMA.
+- Output formats: `json` (nodes/edges) and `dot` (render with Graphviz).

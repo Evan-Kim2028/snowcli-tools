@@ -63,12 +63,16 @@ def print_cli_examples():
     print("uv run snowflake-cli catalog -a -o ./data_catalogue_all")
 
     print("\n# Disable DDL (included by default)")
-    print("uv run snowflake-cli catalog -d YOUR_DATABASE "
-          "-o ./data_catalogue_no_ddl --no-include-ddl")
+    print(
+        "uv run snowflake-cli catalog -d YOUR_DATABASE "
+        "-o ./data_catalogue_no_ddl --no-include-ddl"
+    )
 
     print("\n# JSONL output for ingestion")
-    print("uv run snowflake-cli catalog -d YOUR_DATABASE "
-          "-o ./data_catalogue_jsonl --format jsonl")
+    print(
+        "uv run snowflake-cli catalog -d YOUR_DATABASE "
+        "-o ./data_catalogue_jsonl --format jsonl"
+    )
 
 
 if __name__ == "__main__":

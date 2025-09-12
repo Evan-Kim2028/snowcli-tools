@@ -12,6 +12,7 @@ from rich.table import Table
 
 from .catalog import build_catalog
 from .config import Config, get_config, set_config
+from .dependency import build_dependency_graph, to_dot
 from .parallel import create_object_queries, query_multiple_objects
 from .snow_cli import SnowCLI, SnowCLIError
 
@@ -333,6 +334,46 @@ def config():
 
     except Exception as e:
         console.print(f"[red]✗[/red] Failed to load configuration: {e}")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--output", "-o", type=click.Path(), help="Output file (json or dot)")
+@click.option("--format", "-f", type=click.Choice(["json", "dot"]), default="json")
+@click.option("--database", help="Restrict to a database (optional)")
+@click.option("--schema", help="Restrict to a schema (optional)")
+@click.option(
+    "--account", "-a", is_flag=True, help="Use ACCOUNT_USAGE scope (broader coverage)"
+)
+def depgraph(
+    output: Optional[str],
+    format: str,
+    database: Optional[str],
+    schema: Optional[str],
+    account: bool,
+):
+    """Create a dependency graph of Snowflake objects.
+
+    Uses ACCOUNT_USAGE.OBJECT_DEPENDENCIES when available, otherwise falls back
+    to INFORMATION_SCHEMA (view→table usage).
+    """
+    try:
+        graph = build_dependency_graph(
+            database=database, schema=schema, account_scope=account
+        )
+        if format == "json":
+            payload = json.dumps(graph, indent=2)
+        else:
+            payload = to_dot(graph)
+
+        if output:
+            with open(output, "w") as f:
+                f.write(payload)
+            console.print(f"[green]✓[/green] Dependency graph written to {output}")
+        else:
+            console.print(payload)
+    except SnowCLIError as e:
+        console.print(f"[red]✗[/red] Failed to build dependency graph: {e}")
         sys.exit(1)
 
 
