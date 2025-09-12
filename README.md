@@ -15,6 +15,21 @@ This project leverages your existing `snow` CLI profiles to add powerful, concur
 
 ## Installation
 
+Install from PyPI (recommended):
+
+```bash
+# Install the package
+uv pip install snowcli-tools
+
+# Check the CLI entry point
+snowflake-cli --help
+
+# Or run ad‑hoc without installing to your environment
+uvx --from snowcli-tools snowflake-cli --version
+```
+
+PyPI project page: https://pypi.org/project/snowcli-tools/
+
 ```bash
 # Clone the repository
 git clone https://github.com/Evan-Kim2028/snowflake-cli-tools-py.git
