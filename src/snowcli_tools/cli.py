@@ -34,6 +34,10 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
 
     A command-line tool for Snowflake database operations with parallel execution,
     connection pooling, and comprehensive error handling.
+
+    Authentication is provided entirely by the official `snow` CLI profiles
+    (bring-your-own profile). This tool never manages secrets or opens a browser;
+    it shells out to `snow sql` with your selected profile and optional context.
     """
     if config_path:
         try:
@@ -55,7 +59,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
             console.print(f"[green]✓[/green] Using profile: {profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using snowflake-cli-tools-py v0.1.0")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v0.1.0")
 
 
 @cli.command()
@@ -359,9 +363,12 @@ def setup_connection(
     schema: Optional[str],
     default: bool,
 ):
-    """Create a persistent Snowflake CLI connection using a key-pair.
+    """Convenience helper to create a key‑pair `snow` CLI connection.
 
-    If any required values are missing, you will be prompted.
+    Notes:
+    - Optional. You can always use `snow connection add` directly.
+    - Creates a profile that this tool (and `snow`) can use.
+    - Prompts for any missing values.
     """
     cli = SnowCLI()
 

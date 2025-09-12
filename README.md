@@ -1,17 +1,26 @@
-# Snowflake CLI Tools
+# SNOWCLI-TOOLS
 
-An ergonomic Python wrapper for the official Snowflake CLI (`snow`), providing parallel query execution, data cataloging, and an improved user experience.
+SNOWCLI-TOOLS is an ergonomic enhancement on top of the official Snowflake CLI (`snow`).
+This project does not replace or re‑implement authentication. Instead, it
+leverages your existing `snow` CLI profiles to add:
+
+- Parallel query execution
+- Automated data catalog generation
+- A small, friendly CLI with standardized output
 
 ## Core Concept
 
-This tool is a wrapper around the official `snow` CLI. It leverages your existing `snow` connection profiles to execute commands, offering several key advantages over using the `snow` CLI directly:
+Bring your own Snowflake profile (BYO auth). This tool shells out to the
+official `snow` CLI, using whatever authenticator your profile specifies
+— key‑pair (SNOWFLAKE_JWT), externalbrowser/Okta, OAuth, etc. No keys or
+secrets are handled by this repo; we simply pass context and format flags
+to `snow sql` and focus on parallelization and cataloging.
 
--   **Parallel Query Execution**: The `parallel` command uses a thread pool to run multiple `snow sql` processes concurrently. This significantly speeds up bulk data retrieval tasks that would otherwise run sequentially.
--   **Automated Data Cataloging**: The `catalog` command introspects your database's `INFORMATION_SCHEMA` to generate a comprehensive metadata catalog in JSON format—a feature not available in the standard CLI.
--   **Simplified User Experience**: Provides an improved interface for common operations, such as the `preview` command for quickly inspecting tables and the `setup-connection` helper for interactive configuration.
--   **Standardized Output**: Ensures consistent and machine-readable output formats (JSON, CSV), simplifying integration with other scripts and tools.
+Key advantages over using `snow` directly:
 
-In short, this tool enhances the official Snowflake CLI with powerful features for automation, performance, and ease of use.
+-   **Parallel Query Execution**: Run multiple `snow sql` commands concurrently for faster bulk workloads.
+-   **Automated Data Cataloging**: Scrape INFORMATION_SCHEMA/SHOW to produce a JSON (or JSONL) catalog of your databases.
+-   **Standardized Output**: Consistent CSV/JSON output for scripting and automation.
 
 ## Prerequisites
 
@@ -51,22 +60,59 @@ uv run snowflake-cli catalog
 
 ## Setup
 
-This tool uses the connection profiles from your `snow` CLI configuration.
+This tool uses your `snow` CLI connection profiles.
 
-**1. Configure the Snowflake CLI**
+### Bring Your Own Auth (BYO Snow Profile)
 
-If you have not already configured the `snow` CLI, please follow the official Snowflake documentation to set up a connection.
+Use the official `snow` CLI to create a profile with your preferred
+authentication method. Two common examples:
 
-**2. Use the Setup Helper (Optional)**
-
-This tool includes a helper command to create or update a `snow` CLI connection profile, which is useful for key-pair authentication.
+Key‑pair (recommended for headless/automation):
 
 ```bash
-# Run the interactive setup helper
+snow connection add \
+  --connection-name my-keypair \
+  --account <account> \
+  --user <user> \
+  --authenticator SNOWFLAKE_JWT \
+  --private-key /path/to/rsa_key.p8 \
+  --warehouse <warehouse> \
+  --database <database> \
+  --schema <schema> \
+  --role <role> \
+  --default \
+  --no-interactive
+```
+
+SSO via browser (Okta/External Browser):
+
+```bash
+snow connection add \
+  --connection-name my-sso \
+  --account <account> \
+  --user <user> \
+  --authenticator externalbrowser \
+  --warehouse <warehouse> \
+  --database <database> \
+  --schema <schema> \
+  --role <role> \
+  --default
+```
+
+Profile selection precedence:
+
+- CLI flag `--profile/-p`
+- `SNOWFLAKE_PROFILE` env var
+- Default connection in your `snow` config
+
+Optional helper in this repo:
+
+```bash
+# Convenience only: creates a key‑pair profile via `snow connection add`
 uv run snowflake-cli setup-connection
 ```
 
-This will guide you through creating a named connection that this tool and the `snow` CLI can use.
+This helper is optional; you can always manage profiles directly with `snow`.
 
 ## Usage
 
@@ -152,11 +198,15 @@ Files created (per format):
 - Optional DDL capture uses GET_DDL per object and fetches concurrently for performance.
 
 ### Best practices
-- Configure and test your Snowflake CLI connection first (key‑pair, OAuth, Okta are all supported by `snow`).
+- Configure and test your Snowflake CLI connection first (key‑pair, Okta, OAuth are supported by `snow`).
 - Run with a role that has USAGE on the target databases/schemas to maximize visibility.
 - Prefer `--format jsonl` for ingestion and downstream processing; JSONL is line‑delimited and append‑friendly.
 - When enabling `--include-ddl`, increase concurrency with `--max-ddl-concurrency` for large estates.
 - Start with a database‑scoped run, then expand to `--account` if needed and permitted.
+
+### Transparency and security
+- This project never handles your secrets or opens browsers; it delegates all auth to your `snow` CLI.
+- Use profiles appropriate for your environment (key‑pair for automation, SSO for interactive use).
 
 ## Development
 

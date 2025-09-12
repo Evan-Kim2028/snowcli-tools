@@ -121,7 +121,7 @@ class SnowCLI:
                 sio = StringIO(proc.stdout)
                 reader = csv.DictReader(sio)
                 out.rows = list(reader)  # type: ignore
-                out.columns = reader.fieldnames or []
+                out.columns = list(reader.fieldnames or [])
             except Exception:
                 pass
 

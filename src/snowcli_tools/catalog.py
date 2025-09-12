@@ -276,8 +276,10 @@ def build_catalog(
             name = rec.get(name_key) or rec.get(name_key.upper()) or rec.get("name")
             if db and sch and name:
                 if sig:
-                    fq = (f"{_quote_ident(db)}.{_quote_ident(sch)}."
-                          f"{_quote_ident(name)}({sig})")
+                    fq = (
+                        f"{_quote_ident(db)}.{_quote_ident(sch)}."
+                        f"{_quote_ident(name)}({sig})"
+                    )
                 else:
                     fq = f"{_quote_ident(db)}.{_quote_ident(sch)}.{_quote_ident(name)}"
                 ddl_jobs.append((obj_type, fq, rec))

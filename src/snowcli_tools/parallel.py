@@ -185,7 +185,9 @@ class ParallelQueryExecutor:
                 pass
 
         # This should never be reached, but mypy requires it
-        raise RuntimeError(f"Query execution failed for {object_name} after all retries")
+        raise RuntimeError(
+            f"Query execution failed for {object_name} after all retries"
+        )
 
     async def execute_queries_async(
         self,

@@ -1,23 +1,29 @@
-"""Configuration management for snowflake-cli-tools-py.
+"""Configuration management for SNOWCLI-TOOLS.
 
-Refactored to use Snowflake CLI profiles instead of direct connector
-credentials. Authentication and connection context should be managed via
-the official `snow` CLI (`snowflake-cli`).
+This module does not handle authentication or secrets. It simply tracks the
+profile name and optional context (warehouse, database, schema, role) used
+when shelling out to the official `snow` CLI (`snow`).
+
+Notes:
+- Profiles are created and managed by the `snow` CLI and stored in the
+  Snowflake CLI config (location varies by OS; e.g., on macOS:
+  `~/Library/Application Support/snowflake/config.toml`).
+- Profile selection follows typical precedence: explicit CLI flag, then
+  `SNOWFLAKE_PROFILE` env var, then the default profile in the `snow` config.
 """
 
 import os
 from dataclasses import dataclass
 from typing import Optional
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 
 @dataclass
 class SnowflakeConfig:
     """Snowflake connection context driven by Snowflake CLI.
 
-    - `profile` should match a profile configured in
-      `~/.snowflake/snowflake_config.toml`
+    - `profile` should match a profile configured in the Snowflake CLI config.
     - Optional context overrides are passed to `snow sql` (warehouse, database,
       schema, role).
     """
