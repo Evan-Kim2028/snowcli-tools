@@ -29,12 +29,15 @@ console = Console()
 )
 @click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option(version="0.1.0")
+@click.version_option(version="1.0.1")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     """Snowflake CLI Tools - Efficient database operations CLI.
 
-    A command-line tool for Snowflake database operations with parallel execution,
-    connection pooling, and comprehensive error handling.
+    Primary features:
+    - Data Catalog generation (JSON/JSONL)
+    - Dependency Graph generation (DOT/JSON)
+
+    Also includes a parallel query helper and convenience utilities.
 
     Authentication is provided entirely by the official `snow` CLI profiles
     (bring-your-own profile). This tool never manages secrets or opens a browser;
@@ -60,7 +63,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
             console.print(f"[green]✓[/green] Using profile: {profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v0.1.0")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.0.1")
 
 
 @cli.command()

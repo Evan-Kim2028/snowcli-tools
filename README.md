@@ -1,32 +1,17 @@
 # SNOWCLI-TOOLS
 
 SNOWCLI-TOOLS is an ergonomic enhancement on top of the official Snowflake CLI (`snow`).
-This project does not replace or re‑implement authentication. Instead, it
-leverages your existing `snow` CLI profiles to add:
+This project leverages your existing `snow` CLI profiles to add powerful, concurrent data tooling:
 
-- Parallel query execution
-- Automated data catalog generation
-- A small, friendly CLI with standardized output
-
-## Core Concept
-
-Bring your own Snowflake profile (BYO auth). This tool shells out to the
-official `snow` CLI, using whatever authenticator your profile specifies
-— key‑pair (SNOWFLAKE_JWT), externalbrowser/Okta, OAuth, etc. No keys or
-secrets are handled by this repo; we simply pass context and format flags
-to `snow sql` and focus on parallelization and cataloging.
-
-Key advantages over using `snow` directly:
-
--   **Parallel Query Execution**: Run multiple `snow sql` commands concurrently for faster bulk workloads.
--   **Automated Data Cataloging**: Scrape INFORMATION_SCHEMA/SHOW to produce a JSON (or JSONL) catalog of your databases.
--   **Standardized Output**: Consistent CSV/JSON output for scripting and automation.
+- **Automated Data Catalogue**: Generate a comprehensive JSON/JSONL catalogue of your Snowflake objects.
+- **Dependency Graph Generation**: Generate object dependencies to understand data lineage.
+- **Parallel Query Execution**: Run multiple queries concurrently for faster bulk workloads.
 
 ## Prerequisites
 
--   Python 3.12+
--   UV (recommended): https://docs.astral.sh/uv/
--   The official [Snowflake CLI (`snow`)](https://docs.snowflake.com/en/user-guide/snowcli) (installed via UV below)
+- Python 3.12+
+- UV (recommended): https://docs.astral.sh/uv/
+- The official [Snowflake CLI (`snow`)](https://docs.snowflake.com/en/user-guide/snowcli) (installed via UV below)
 
 ## Installation
 
@@ -56,13 +41,17 @@ uv run snowflake-cli query "SELECT CURRENT_VERSION()"
 
 # 4) Build a catalog (default output: ./data_catalogue)
 uv run snowflake-cli catalog
+
+# 5) Generate a dependency graph (account-wide, DOT)
+uv run snowflake-cli depgraph --account -f dot -o deps.dot
+
+# Or restrict to a database and emit JSON
+uv run snowflake-cli depgraph --database MY_DB -f json -o deps.json
 ```
 
 ## Setup
 
 This tool uses your `snow` CLI connection profiles.
-
-### Bring Your Own Auth (BYO Snow Profile)
 
 Use the official `snow` CLI to create a profile with your preferred
 authentication method. Two common examples:
@@ -131,22 +120,14 @@ uv run snowflake-cli query "SELECT * FROM my_table LIMIT 10" --format json
 
 # Preview a table's structure and content
 uv run snowflake-cli preview my_table
+
+# Execute a query from a .sql file
+uv run snowflake-cli query "$(cat my_query.sql)"
 ```
 
-### Parallel Queries
+### Data Cataloguing
 
-Execute multiple queries concurrently based on a template.
-
-```bash
-# Query multiple object types in parallel
-uv run snowflake-cli parallel "type_a" "type_b" \
-  --query-template "SELECT * FROM objects WHERE type = '{object}'" \
-  --output-dir ./results
-```
-
-### Data Cataloging
-
-Generate a data catalog by introspecting database metadata (works with any Snowflake account). Outputs JSON by default; JSONL is available for ingestion-friendly workflows. DDL is optional and fetched concurrently when enabled.
+Generate a data catalogue by introspecting database metadata (works with any Snowflake account). Outputs JSON by default; JSONL is available for ingestion-friendly workflows. DDL is optional and fetched concurrently when enabled.
 
 ```bash
 # Build a catalog for the current database (default output: ./data_catalogue)
@@ -178,6 +159,50 @@ Files created (per format):
 - dynamic_tables.(json|jsonl)
 - catalog_summary.json (counts)
 
+### Dependency Graph
+
+Create a dependency graph of Snowflake objects using either
+`SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES` (preferred) or a fallback to
+`INFORMATION_SCHEMA.VIEW_TABLE_USAGE`.
+
+Examples:
+
+```bash
+# Account-wide (requires privileges), Graphviz DOT
+uv run snowflake-cli depgraph --account -f dot -o deps.dot
+
+# Restrict to a database, JSON output
+uv run snowflake-cli depgraph --database PIPELINE_V2_GROOT_DB -f json -o deps.json
+```
+
+Notes:
+- ACCOUNT_USAGE has latency and requires appropriate roles; if not accessible,
+  the CLI falls back to view→table dependencies from INFORMATION_SCHEMA.
+- Output formats: `json` (nodes/edges) and `dot` (render with Graphviz).
+
+### Parallel Queries
+
+Execute multiple queries concurrently based on a template.
+
+**Example 1: Templated Queries**
+```bash
+# Query multiple object types in parallel
+uv run snowflake-cli parallel "type_a" "type_b" \
+  --query-template "SELECT * FROM objects WHERE type = '{object}'" \
+  --output-dir ./results
+```
+
+**Example 2: Executing from a File**
+
+You can also execute a list of queries from a file using shell commands:
+```bash
+# queries.txt contains one query per line
+# SELECT * FROM my_table;
+# SELECT COUNT(*) FROM another_table;
+
+cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
+```
+
 ## CLI Commands
 
 | Command            | Description                                              |
@@ -187,6 +212,7 @@ Files created (per format):
 | `parallel`         | Execute multiple queries in parallel (spawns `snow`).    |
 | `preview`          | Preview table contents.                                  |
 | `catalog`          | Build a JSON/JSONL data catalog (use `--include-ddl` to add DDL). |
+| `depgraph`         | Generate a dependency graph (DOT/JSON output).           |
 | `config`           | Show the current tool configuration.                     |
 | `setup-connection` | Helper to create a persistent `snow` CLI connection.     |
 | `init-config`      | Create a local configuration file for this tool.         |
@@ -224,23 +250,3 @@ uv run black src/
 ## License
 
 This project is licensed under the MIT License.
-## Dependency Graph
-
-Create a dependency graph of Snowflake objects using either
-`SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES` (preferred) or a fallback to
-`INFORMATION_SCHEMA.VIEW_TABLE_USAGE`.
-
-Examples:
-
-```bash
-# Account-wide (requires privileges), Graphviz DOT
-uv run snowflake-cli depgraph --account -f dot -o deps.dot
-
-# Restrict to a database, JSON output
-uv run snowflake-cli depgraph --database PIPELINE_V2_GROOT_DB -f json -o deps.json
-```
-
-Notes:
-- ACCOUNT_USAGE has latency and requires appropriate roles; if not accessible,
-  the CLI falls back to view→table dependencies from INFORMATION_SCHEMA.
-- Output formats: `json` (nodes/edges) and `dot` (render with Graphviz).

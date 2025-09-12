@@ -47,3 +47,10 @@ Notes
 - ACCOUNT_USAGE has ingestion latency and privilege requirements; when not accessible,
   the tool falls back to view→table dependencies from INFORMATION_SCHEMA.
 - This release maintains the BYO-auth model (profiles via `snow`).
+-
+# SNOWCLI-TOOLS v1.0.1 (Docs emphasis on Catalog + DepGraph)
+
+Changes
+- README: stronger emphasis on Data Catalog and Dependency Graph as primary features.
+- Quick Start: added dependency graph commands (DOT/JSON examples).
+- CLI: updated version banner to 1.0.1 and clarified primary features in help text.
