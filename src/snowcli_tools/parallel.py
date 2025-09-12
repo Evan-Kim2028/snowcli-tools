@@ -12,8 +12,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-import polars as pl
-
 from .config import get_config
 from .snow_cli import SnowCLI
 
@@ -33,7 +31,8 @@ class QueryResult:
     object_name: str
     query: str
     success: bool
-    data: Optional[pl.DataFrame] = None
+    # Raw row dicts parsed from Snow CLI output (CSV/JSON)
+    rows: Optional[List[Dict[str, Any]]] = None
     json_data: Optional[List[Dict[str, Any]]] = None
     error: Optional[str] = None
     execution_time: float = 0.0
@@ -127,17 +126,17 @@ class ParallelQueryExecutor:
                     timeout=self.config.timeout_seconds,
                 )
 
-                df = pl.DataFrame(out.rows) if out.rows else pl.DataFrame()
+                rows = out.rows or []
 
                 # Extract JSON data if available in a column called object_json
                 json_data = None
-                if "object_json" in df.columns:
+                if rows and any("object_json" in r for r in rows):
                     json_data = []
-                    object_json_values = df.select("object_json").to_series().to_list()
-                    for json_str in object_json_values:
+                    for r in rows:
                         try:
-                            if json_str:
-                                json_data.append(json.loads(json_str))
+                            js = r.get("object_json")
+                            if js:
+                                json_data.append(json.loads(js))
                         except (json.JSONDecodeError, TypeError):
                             continue
 
@@ -147,14 +146,14 @@ class ParallelQueryExecutor:
                     object_name=object_name,
                     query=query,
                     success=True,
-                    data=df,
+                    rows=rows,
                     json_data=json_data,
                     execution_time=execution_time,
-                    row_count=len(df),
+                    row_count=len(rows),
                 )
 
                 logger.info(
-                    f"✅ {object_name}: {len(df)} rows in {execution_time:.2f}s",
+                    f"✅ {object_name}: {len(rows)} rows in {execution_time:.2f}s",
                 )
                 return result
 

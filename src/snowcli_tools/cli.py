@@ -29,7 +29,7 @@ console = Console()
 )
 @click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option(version="1.0.1")
+@click.version_option(version="1.0.2")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     """Snowflake CLI Tools - Efficient database operations CLI.
 
@@ -63,7 +63,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
             console.print(f"[green]✓[/green] Using profile: {profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.0.1")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.0.2")
 
 
 @cli.command()
@@ -175,8 +175,8 @@ def query(
 @click.option(
     "--format",
     "-f",
-    type=click.Choice(["parquet", "csv", "json"]),
-    default="parquet",
+    type=click.Choice(["csv", "json", "parquet"]),
+    default="csv",
     help="Output format for individual results",
 )
 def parallel(
@@ -211,19 +211,27 @@ def parallel(
             saved_count = 0
 
             for obj_name, result in results.items():
-                if result.success and result.data is not None:
+                if result.success and result.rows is not None:
                     safe_name = obj_name.replace("::", "_").replace("0x", "")
                     if format == "parquet":
-                        output_path = Path(output_dir) / f"{safe_name}.parquet"
-                        result.data.write_parquet(output_path)
+                        console.print(
+                            "[yellow]⚠[/yellow] Parquet export requires 'polars'. "
+                            "Install polars or use --format csv/json. Skipping.",
+                        )
+                        continue
                     elif format == "csv":
                         output_path = Path(output_dir) / f"{safe_name}.csv"
-                        result.data.write_csv(output_path)
+                        import csv as _csv
+
+                        fieldnames = list(result.rows[0].keys()) if result.rows else []
+                        with open(output_path, "w", newline="") as f:
+                            writer = _csv.DictWriter(f, fieldnames=fieldnames)
+                            writer.writeheader()
+                            writer.writerows(result.rows)
                     elif format == "json":
                         output_path = Path(output_dir) / f"{safe_name}.json"
-                        json_data = result.data.to_dicts()
                         with open(output_path, "w") as f:
-                            json.dump(json_data, f, indent=2, default=str)
+                            json.dump(result.rows, f, indent=2, default=str)
                     saved_count += 1
 
             console.print(

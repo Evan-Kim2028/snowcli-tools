@@ -48,6 +48,13 @@ Notes
   the tool falls back to view→table dependencies from INFORMATION_SCHEMA.
 - This release maintains the BYO-auth model (profiles via `snow`).
 -
+# SNOWCLI-TOOLS v1.0.2 (Remove polars to avoid native builds)
+
+- Removed `polars` from base dependencies to avoid native builds on PyPy/macOS.
+- Refactored parallel query path to operate on CSV/JSON rows from Snowflake CLI.
+- Default `parallel` output switched to CSV; Parquet export now optional (warns if `polars` missing).
+- Keeps `snowflake-cli` as a core dependency, no CPython requirement.
+
 # SNOWCLI-TOOLS v1.0.1 (Docs emphasis on Catalog + DepGraph)
 
 Changes
