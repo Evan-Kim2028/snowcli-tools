@@ -148,7 +148,7 @@ Thumbs.db
 
 
 notes/*
-data_catalogue/
-
+data_catalogue/*
+dependencies/*
 # Local test consumer
 tmp_consumer_rye/

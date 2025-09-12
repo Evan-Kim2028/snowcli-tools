@@ -29,7 +29,7 @@ console = Console()
 )
 @click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option(version="1.0.2")
+@click.version_option(version="1.1.0")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     """Snowflake CLI Tools - Efficient database operations CLI.
 
@@ -63,7 +63,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
             console.print(f"[green]✓[/green] Using profile: {profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.0.2")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.1.0")
 
 
 @cli.command()
@@ -349,7 +349,15 @@ def config():
 
 
 @cli.command()
-@click.option("--output", "-o", type=click.Path(), help="Output file (json or dot)")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help=(
+        "Output path. Defaults to './dependencies' directory. "
+        "If a directory is provided, a default filename is used."
+    ),
+)
 @click.option("--format", "-f", type=click.Choice(["json", "dot"]), default="json")
 @click.option("--database", help="Restrict to a database (optional)")
 @click.option("--schema", help="Restrict to a schema (optional)")
@@ -377,12 +385,36 @@ def depgraph(
         else:
             payload = to_dot(graph)
 
-        if output:
-            with open(output, "w") as f:
-                f.write(payload)
-            console.print(f"[green]✓[/green] Dependency graph written to {output}")
+        # Determine output target
+        default_dir = Path("./dependencies")
+        out_target = output
+        if not out_target:
+            # No output provided: default to directory
+            out_dir = default_dir
+            out_dir.mkdir(parents=True, exist_ok=True)
+            out_path = out_dir / (
+                "dependencies.json" if format == "json" else "dependencies.dot"
+            )
         else:
-            console.print(payload)
+            p = Path(out_target)
+            # If it's an existing directory or endswith path separator, treat as dir
+            if p.exists() and p.is_dir():
+                out_path = p / (
+                    "dependencies.json" if format == "json" else "dependencies.dot"
+                )
+            else:
+                # If user provided a path without a suffix, treat like a directory
+                if p.suffix.lower() in (".json", ".dot"):
+                    out_path = p
+                else:
+                    p.mkdir(parents=True, exist_ok=True)
+                    out_path = p / (
+                        "dependencies.json" if format == "json" else "dependencies.dot"
+                    )
+
+        with open(out_path, "w") as f:
+            f.write(payload)
+        console.print(f"[green]✓[/green] Dependency graph written to {out_path}")
     except SnowCLIError as e:
         console.print(f"[red]✗[/red] Failed to build dependency graph: {e}")
         sys.exit(1)
