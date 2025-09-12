@@ -22,3 +22,28 @@ Usage
 Notes
 - Tests: `pytest` passes locally.
 - Security: all authentication handled by `snow`; this repo does not handle keys.
+
+---
+
+# SNOWCLI-TOOLS v1.0.0 (Dependency Graph feature)
+
+Highlights
+- New CLI command: `depgraph` to generate a Snowflake object dependency graph.
+- Preferred source: `SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES` for broad coverage.
+- Fallback: `INFORMATION_SCHEMA.VIEW_TABLE_USAGE` when ACCOUNT_USAGE is not available.
+- Output formats: `json` (nodes/edges) and `dot` (Graphviz DOT).
+- Example script added: `examples/run_depgraph.py`.
+
+Usage
+```bash
+# Account-wide (requires appropriate role), DOT output
+uv run snowflake-cli depgraph --account -f dot -o deps.dot
+
+# Restrict to a database, JSON output
+uv run snowflake-cli depgraph --database PIPELINE_V2_GROOT_DB -f json -o deps.json
+```
+
+Notes
+- ACCOUNT_USAGE has ingestion latency and privilege requirements; when not accessible,
+  the tool falls back to view→table dependencies from INFORMATION_SCHEMA.
+- This release maintains the BYO-auth model (profiles via `snow`).
