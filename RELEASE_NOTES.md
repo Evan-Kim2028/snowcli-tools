@@ -61,3 +61,14 @@ Changes
 - README: stronger emphasis on Data Catalog and Dependency Graph as primary features.
 - Quick Start: added dependency graph commands (DOT/JSON examples).
 - CLI: updated version banner to 1.0.1 and clarified primary features in help text.
+# SNOWCLI-TOOLS v0.1.0 (Initial public positioning)
+
+# SNOWCLI-TOOLS v1.1.0 (Default deps dir + query fix)
+
+- Default output directory for `depgraph` is now `./dependencies` when `-o/--output` is omitted. A default filename is chosen based on format.
+- Fix ACCOUNT_USAGE query to use correct column names:
+  - Use REFERENCING_DATABASE/REFERENCING_SCHEMA (not REFERENCING_OBJECT_*)
+  - Use REFERENCED_DATABASE/REFERENCED_SCHEMA
+- Map relationship using RELATIONSHIP with fallback to DEPENDENCY_TYPE.
+- depgraph: accept a directory for -o/--output and write default filename
+  (dependencies.json or dependencies.dot) into the directory.

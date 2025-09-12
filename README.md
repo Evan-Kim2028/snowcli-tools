@@ -57,11 +57,16 @@ uv run snowflake-cli query "SELECT CURRENT_VERSION()"
 # 4) Build a catalog (default output: ./data_catalogue)
 uv run snowflake-cli catalog
 
-# 5) Generate a dependency graph (account-wide, DOT)
-uv run snowflake-cli depgraph --account -f dot -o deps.dot
+# 5) Generate a dependency graph
+# By default, outputs to ./dependencies (dependencies.json / dependencies.dot)
+uv run snowflake-cli depgraph --account -f dot
 
-# Or restrict to a database and emit JSON
-uv run snowflake-cli depgraph --database MY_DB -f json -o deps.json
+# Or restrict to a database and emit JSON to the default directory
+uv run snowflake-cli depgraph --database MY_DB -f json
+
+# To choose a different directory or filename
+uv run snowflake-cli depgraph --account -f json -o ./my_deps
+uv run snowflake-cli depgraph --account -f json -o ./my_deps/graph.json
 ```
 
 ## Setup
@@ -184,16 +189,21 @@ Examples:
 
 ```bash
 # Account-wide (requires privileges), Graphviz DOT
-uv run snowflake-cli depgraph --account -f dot -o deps.dot
+uv run snowflake-cli depgraph --account -f dot
 
 # Restrict to a database, JSON output
-uv run snowflake-cli depgraph --database PIPELINE_V2_GROOT_DB -f json -o deps.json
+uv run snowflake-cli depgraph --database PIPELINE_V2_GROOT_DB -f json
+
+# Save to a custom directory or file
+uv run snowflake-cli depgraph --account -f json -o ./my_deps
+uv run snowflake-cli depgraph --account -f dot -o ./my_deps/graph.dot
 ```
 
 Notes:
 - ACCOUNT_USAGE has latency and requires appropriate roles; if not accessible,
   the CLI falls back to view→table dependencies from INFORMATION_SCHEMA.
 - Output formats: `json` (nodes/edges) and `dot` (render with Graphviz).
+ - Default output directory is `./dependencies` when `-o/--output` is not provided.
 
 ### Parallel Queries
 

@@ -35,23 +35,27 @@ def _query_account_usage(
 ) -> List[DependencyEdge]:
     filters: List[str] = []
     if database:
-        filters.append("lower(referencing_object_database) = lower($db)")
+        # ACCOUNT_USAGE uses REFERENCING_DATABASE (not REFERENCING_OBJECT_DATABASE)
+        filters.append("lower(REFERENCING_DATABASE) = lower($db)")
     if schema:
-        filters.append("lower(referencing_object_schema) = lower($schema)")
+        # ACCOUNT_USAGE uses REFERENCING_SCHEMA (not REFERENCING_OBJECT_SCHEMA)
+        filters.append("lower(REFERENCING_SCHEMA) = lower($schema)")
     where = ("WHERE " + " AND ".join(filters)) if filters else ""
 
     sql = f"""
     SELECT
-      referencing_object_database,
-      referencing_object_schema,
-      referencing_object_name,
-      referencing_object_domain,
-      referenced_object_database,
-      referenced_object_schema,
-      referenced_object_name,
-      referenced_object_domain,
-      relationship
-    FROM snowflake.account_usage.object_dependencies
+      REFERENCING_DATABASE,
+      REFERENCING_SCHEMA,
+      REFERENCING_OBJECT_NAME,
+      REFERENCING_OBJECT_DOMAIN,
+      REFERENCED_DATABASE,
+      REFERENCED_SCHEMA,
+      REFERENCED_OBJECT_NAME,
+      REFERENCED_OBJECT_DOMAIN,
+      -- Both columns exist; prefer RELATIONSHIP but fall back to DEPENDENCY_TYPE
+      RELATIONSHIP,
+      DEPENDENCY_TYPE
+    FROM SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES
     {where}
     """
 
@@ -72,22 +76,23 @@ def _query_account_usage(
         return edges
     for row in out.rows:
         src = _fq(
-            row.get("REFERENCING_OBJECT_DATABASE"),
-            row.get("REFERENCING_OBJECT_SCHEMA"),
+            row.get("REFERENCING_DATABASE"),
+            row.get("REFERENCING_SCHEMA"),
             row.get("REFERENCING_OBJECT_NAME") or "",
         )
         tgt = _fq(
-            row.get("REFERENCED_OBJECT_DATABASE"),
-            row.get("REFERENCED_OBJECT_SCHEMA"),
+            row.get("REFERENCED_DATABASE"),
+            row.get("REFERENCED_SCHEMA"),
             row.get("REFERENCED_OBJECT_NAME") or "",
         )
+        rel = row.get("RELATIONSHIP") or row.get("DEPENDENCY_TYPE")
         edges.append(
             DependencyEdge(
                 source=src,
                 target=tgt,
                 source_type=row.get("REFERENCING_OBJECT_DOMAIN"),
                 target_type=row.get("REFERENCED_OBJECT_DOMAIN"),
-                relationship=row.get("RELATIONSHIP"),
+                relationship=rel,
             )
         )
     return edges
