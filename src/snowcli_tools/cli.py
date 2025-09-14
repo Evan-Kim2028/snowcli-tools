@@ -539,6 +539,27 @@ def setup_connection(
 @click.option(
     "--max-ddl-concurrency", type=int, default=8, help="Max concurrent DDL fetches"
 )
+@click.option(
+    "--catalog-concurrency",
+    type=int,
+    default=None,
+    help="Parallel workers for schema scanning (default 16)",
+)
+@click.option(
+    "--samples",
+    type=str,
+    default=None,
+    help=(
+        "Sampling spec to include data samples. Examples: 'off', '0', '10', '10,csv', '5,jsonl'. "
+        "Default when omitted: 10 rows, JSON."
+    ),
+)
+@click.option(
+    "--export-sql",
+    is_flag=True,
+    default=False,
+    help="Export a human-readable SQL repo from captured DDL",
+)
 def catalog(
     output_dir: str,
     database: Optional[str],
@@ -546,6 +567,9 @@ def catalog(
     format: str,
     include_ddl: bool,
     max_ddl_concurrency: int,
+    catalog_concurrency: Optional[int],
+    samples: Optional[str],
+    export_sql: bool,
 ):
     """Build a Snowflake data catalog (JSON files) from INFORMATION_SCHEMA/SHOW.
 
@@ -564,6 +588,9 @@ def catalog(
             output_format=format,
             include_ddl=include_ddl,
             max_ddl_concurrency=max_ddl_concurrency,
+            catalog_concurrency=catalog_concurrency or 16,
+            samples_spec=samples,  # None -> default enable 10 rows JSON inside builder
+            export_sql=export_sql,
         )
         console.print("[green]✓[/green] Catalog build complete")
         console.print(

@@ -6,10 +6,11 @@ portable data catalog for any Snowflake account or database.
 
 from __future__ import annotations
 
+import csv
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .snow_cli import SnowCLI, SnowCLIError
 
@@ -40,6 +41,35 @@ def _run_json_safe(cli: SnowCLI, query: str) -> List[Dict]:
         return _run_json(cli, query)
     except SnowCLIError:
         return []
+
+
+def _safe_filename(name: str) -> str:
+    # Basic sanitization for filesystem safety
+    return name.replace("/", "_").replace("\\", "_").replace(":", "_").replace(" ", "_")
+
+
+def _parse_samples_spec(spec: Optional[str]) -> Tuple[bool, int, str]:
+    """Parse samples spec string.
+    Returns: (enabled, rows, fmt) where fmt in {json, jsonl, csv}
+    Defaults: enabled, 10, json
+    """
+    if spec is None or spec.strip() == "":
+        return True, 10, "json"
+    s = spec.strip().lower()
+    if s in {"off", "0", "false", "no"}:
+        return False, 0, "json"
+    parts = [p.strip() for p in s.split(",") if p.strip()]
+    try:
+        rows = int(parts[0])
+    except ValueError:
+        # If not numeric and not off, default rows 10
+        rows = 10
+    fmt = parts[1] if len(parts) > 1 else "json"
+    if fmt not in {"json", "jsonl", "csv"}:
+        fmt = "json"
+    if rows <= 0:
+        return False, 0, fmt
+    return True, rows, fmt
 
 
 def _list_databases(
@@ -76,6 +106,25 @@ def _quote_ident(ident: str) -> str:
     return '"' + ident.replace('"', '""') + '"'
 
 
+def _write_sample_file(path: Path, rows: List[Dict[str, Any]], fmt: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if fmt == "csv":
+        fieldnames = list(rows[0].keys()) if rows else []
+        with path.open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            if fieldnames:
+                writer.writeheader()
+            writer.writerows(rows)
+    elif fmt == "jsonl":
+        with path.open("w") as f:
+            for r in rows:
+                f.write(json.dumps(r, default=str))
+                f.write("\n")
+    else:  # json
+        with path.open("w") as f:
+            json.dump(rows, f, indent=2, default=str)
+
+
 def _get_ddl(
     cli: SnowCLI, object_type: str, fq_name: str, timeout: int = 60
 ) -> Optional[str]:
@@ -102,6 +151,9 @@ def build_catalog(
     output_format: str = "json",
     include_ddl: bool = True,
     max_ddl_concurrency: int = 8,
+    catalog_concurrency: int = 16,
+    samples_spec: Optional[str] = None,
+    export_sql: bool = False,
 ) -> Dict[str, int]:
     """Build a JSON data catalog under `output_dir`.
 
@@ -138,108 +190,209 @@ def build_catalog(
     all_functions: List[Dict] = []
     all_procedures: List[Dict] = []
 
+    enabled_samples, sample_rows, sample_fmt = _parse_samples_spec(samples_spec)
+    samples_index: Dict[str, Dict[str, Any]] = {}
+
+    # Build schema worklist
+    schema_pairs: List[Tuple[str, str]] = []
     for db in databases:
-        schemas = _list_schemas(cli, db)
-        for sch in schemas:
-            # Schemas
-            rows = _run_json_safe(
-                cli,
-                f"SELECT * FROM {db}.INFORMATION_SCHEMA.SCHEMATA "
-                f"WHERE SCHEMA_NAME = '{sch}'",
-            )
-            for r in rows:
-                r.setdefault("DATABASE_NAME", db)
-            all_schemata.extend(rows)
+        for sch in _list_schemas(cli, db):
+            schema_pairs.append((db, sch))
 
-            # Tables and Columns
-            tables = _run_json_safe(
-                cli,
-                f"SELECT * FROM {db}.INFORMATION_SCHEMA.TABLES "
-                f"WHERE TABLE_SCHEMA = '{sch}'",
-            )
-            for r in tables:
-                r.setdefault("DATABASE_NAME", db)
-            all_tables.extend(tables)
+    def process_schema(db: str, sch: str) -> Dict[str, List[Dict]]:
+        local: Dict[str, List[Dict]] = {
+            "schemata": [],
+            "tables": [],
+            "columns": [],
+            "views": [],
+            "mviews": [],
+            "routines": [],
+            "tasks": [],
+            "dynamic": [],
+            "functions": [],
+            "procedures": [],
+        }
+        # Schemas
+        rows = _run_json_safe(
+            cli,
+            f"SELECT * FROM {db}.INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{sch}'",
+        )
+        for r in rows:
+            r.setdefault("DATABASE_NAME", db)
+        local["schemata"].extend(rows)
 
-            cols = _run_json_safe(
-                cli,
-                f"SELECT * FROM {db}.INFORMATION_SCHEMA.COLUMNS "
-                f"WHERE TABLE_SCHEMA = '{sch}'",
-            )
-            for r in cols:
-                r.setdefault("DATABASE_NAME", db)
-            all_columns.extend(cols)
+        # Tables and Columns
+        tables = _run_json_safe(
+            cli,
+            f"SELECT * FROM {db}.INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{sch}'",
+        )
+        for r in tables:
+            r.setdefault("DATABASE_NAME", db)
+        local["tables"].extend(tables)
 
-            # Views
-            views = _run_json_safe(
-                cli,
-                f"SELECT * FROM {db}.INFORMATION_SCHEMA.VIEWS "
-                f"WHERE TABLE_SCHEMA = '{sch}'",
-            )
-            for r in views:
-                r.setdefault("DATABASE_NAME", db)
-            all_views.extend(views)
+        cols = _run_json_safe(
+            cli,
+            f"SELECT * FROM {db}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{sch}'",
+        )
+        for r in cols:
+            r.setdefault("DATABASE_NAME", db)
+        local["columns"].extend(cols)
 
-            # Materialized Views (if privileges)
-            # MATERIALIZED VIEWS (SHOW is more permissive than INFORMATION_SCHEMA)
-            mviews = _run_json_safe(
-                cli,
-                f"SHOW MATERIALIZED VIEWS IN SCHEMA {db}.{sch}",
-            )
-            for r in mviews:
+        # Views
+        views = _run_json_safe(
+            cli,
+            f"SELECT * FROM {db}.INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = '{sch}'",
+        )
+        for r in views:
+            r.setdefault("DATABASE_NAME", db)
+        local["views"].extend(views)
+
+        # Materialized Views
+        mviews = _run_json_safe(cli, f"SHOW MATERIALIZED VIEWS IN SCHEMA {db}.{sch}")
+        for r in mviews:
+            r.setdefault("DATABASE_NAME", db)
+            r.setdefault("SCHEMA_NAME", sch)
+        local["mviews"].extend(mviews)
+
+        # Routines
+        routines = _run_json_safe(
+            cli,
+            f"SELECT * FROM {db}.INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA = '{sch}'",
+        )
+        for r in routines:
+            r.setdefault("DATABASE_NAME", db)
+        local["routines"].extend(routines)
+
+        # Tasks
+        try:
+            tasks = _run_json(cli, f"SHOW TASKS IN SCHEMA {db}.{sch}")
+            for r in tasks:
                 r.setdefault("DATABASE_NAME", db)
                 r.setdefault("SCHEMA_NAME", sch)
-            all_mviews.extend(mviews)
+            local["tasks"].extend(tasks)
+        except SnowCLIError:
+            pass
 
-            # Routines (Procedures/Functions)
-            routines = _run_json_safe(
-                cli,
-                f"SELECT * FROM {db}.INFORMATION_SCHEMA.ROUTINES "
-                f"WHERE ROUTINE_SCHEMA = '{sch}'",
-            )
-            for r in routines:
+        # Dynamic tables
+        try:
+            dyn = _run_json(cli, f"SHOW DYNAMIC TABLES IN SCHEMA {db}.{sch}")
+            for r in dyn:
                 r.setdefault("DATABASE_NAME", db)
-            all_routines.extend(routines)
+                r.setdefault("SCHEMA_NAME", sch)
+            local["dynamic"].extend(dyn)
+        except SnowCLIError:
+            pass
 
-            # Tasks (SHOW is widely permitted; ACCOUNT_USAGE requires privileges)
-            try:
-                tasks = _run_json(cli, f"SHOW TASKS IN SCHEMA {db}.{sch}")
-                for r in tasks:
-                    r.setdefault("DATABASE_NAME", db)
-                    r.setdefault("SCHEMA_NAME", sch)
-                all_tasks.extend(tasks)
-            except SnowCLIError:
-                pass
+        # Functions
+        try:
+            funcs = _run_json(cli, f"SHOW USER FUNCTIONS IN SCHEMA {db}.{sch}")
+            for r in funcs:
+                r.setdefault("DATABASE_NAME", db)
+                r.setdefault("SCHEMA_NAME", sch)
+            local["functions"].extend(funcs)
+        except SnowCLIError:
+            pass
 
-            # Dynamic tables (SHOW is widely permitted)
-            try:
-                dyn = _run_json(cli, f"SHOW DYNAMIC TABLES IN SCHEMA {db}.{sch}")
-                for r in dyn:
-                    r.setdefault("DATABASE_NAME", db)
-                    r.setdefault("SCHEMA_NAME", sch)
-                all_dynamic.extend(dyn)
-            except SnowCLIError:
-                pass
+        # Procedures
+        try:
+            procs = _run_json(cli, f"SHOW PROCEDURES IN SCHEMA {db}.{sch}")
+            for r in procs:
+                r.setdefault("DATABASE_NAME", db)
+                r.setdefault("SCHEMA_NAME", sch)
+            local["procedures"].extend(procs)
+        except SnowCLIError:
+            pass
 
-            # User-defined functions (UDFs)
-            try:
-                funcs = _run_json(cli, f"SHOW USER FUNCTIONS IN SCHEMA {db}.{sch}")
-                for r in funcs:
-                    r.setdefault("DATABASE_NAME", db)
-                    r.setdefault("SCHEMA_NAME", sch)
-                all_functions.extend(funcs)
-            except SnowCLIError:
-                pass
+        # Samples for table-like objects
+        if enabled_samples and sample_rows > 0:
 
-            # Stored procedures
-            try:
-                procs = _run_json(cli, f"SHOW PROCEDURES IN SCHEMA {db}.{sch}")
-                for r in procs:
-                    r.setdefault("DATABASE_NAME", db)
-                    r.setdefault("SCHEMA_NAME", sch)
-                all_procedures.extend(procs)
-            except SnowCLIError:
-                pass
+            def sample_object(dbn: str, schn: str, obj_name: str, rel_subdir: str):
+                fq = (
+                    f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(obj_name)}"
+                )
+                try:
+                    out = cli.run_query(
+                        f"SELECT * FROM {fq} LIMIT {sample_rows}",
+                        output_format="json",
+                    )
+                    rows = out.rows or []
+                except SnowCLIError:
+                    rows = []
+                # Write file
+                safe = _safe_filename(obj_name)
+                out_dir = Path(output_dir) / "samples" / dbn / schn
+                ext = (
+                    "csv"
+                    if sample_fmt == "csv"
+                    else ("jsonl" if sample_fmt == "jsonl" else "json")
+                )
+                out_path = out_dir / f"{safe}.{ext}"
+                _write_sample_file(out_path, rows, sample_fmt)
+                rel_path = str(out_path.relative_to(output_dir))
+                key = f"{dbn}.{schn}.{obj_name}"
+                samples_index[key] = {
+                    "path": rel_path,
+                    "rows": len(rows),
+                    "format": sample_fmt,
+                }
+                return rel_path, len(rows)
+
+            # For tables
+            for r in local["tables"]:
+                name = (
+                    r.get("TABLE_NAME")
+                    or r.get("table_name")
+                    or r.get("NAME")
+                    or r.get("name")
+                )
+                dbn = r.get("DATABASE_NAME") or r.get("database_name") or db
+                schn = (
+                    r.get("TABLE_SCHEMA")
+                    or r.get("table_schema")
+                    or r.get("SCHEMA_NAME")
+                    or sch
+                )
+                if name and dbn and schn:
+                    rel, count = sample_object(dbn, schn, str(name), "tables")
+                    r["sample"] = {"path": rel, "rows": count, "format": sample_fmt}
+
+            # For materialized views
+            for r in local["mviews"]:
+                name = r.get("MATERIALIZED_VIEW_NAME") or r.get("name")
+                dbn = r.get("DATABASE_NAME") or db
+                schn = r.get("SCHEMA_NAME") or sch
+                if name and dbn and schn:
+                    rel, count = sample_object(
+                        dbn, schn, str(name), "materialized_views"
+                    )
+                    r["sample"] = {"path": rel, "rows": count, "format": sample_fmt}
+
+            # For dynamic tables
+            for r in local["dynamic"]:
+                name = r.get("DYNAMIC_TABLE_NAME") or r.get("name")
+                dbn = r.get("DATABASE_NAME") or db
+                schn = r.get("SCHEMA_NAME") or sch
+                if name and dbn and schn:
+                    rel, count = sample_object(dbn, schn, str(name), "dynamic_tables")
+                    r["sample"] = {"path": rel, "rows": count, "format": sample_fmt}
+
+        return local
+
+    # Run schema processing in parallel
+    with ThreadPoolExecutor(max_workers=max(1, int(catalog_concurrency))) as ex:
+        futures = [ex.submit(process_schema, db, sch) for db, sch in schema_pairs]
+        for fut in as_completed(futures):
+            res = fut.result()
+            all_schemata.extend(res["schemata"])
+            all_tables.extend(res["tables"])
+            all_columns.extend(res["columns"])
+            all_views.extend(res["views"])
+            all_mviews.extend(res["mviews"])
+            all_routines.extend(res["routines"])
+            all_tasks.extend(res["tasks"])
+            all_dynamic.extend(res["dynamic"])
+            all_functions.extend(res["functions"])
+            all_procedures.extend(res["procedures"])
 
     totals["schemas"] = len(all_schemata)
     totals["tables"] = len(all_tables)
@@ -263,6 +416,10 @@ def build_catalog(
     writer(out_path / f"dynamic_tables.{output_format}", all_dynamic)
     writer(out_path / f"functions.{output_format}", all_functions)
     writer(out_path / f"procedures.{output_format}", all_procedures)
+
+    # samples index
+    if samples_index:
+        _write_json(out_path / "samples_index.json", [samples_index])
 
     # index file
     # Optionally include DDLs
@@ -305,12 +462,69 @@ def build_catalog(
             ddl = _get_ddl(cli, obj_type, fq)
             return rec, ddl
 
-        with ThreadPoolExecutor(max_workers=max_ddl_concurrency) as ex:
-            futures = [ex.submit(fetch, j) for j in ddl_jobs]
-            for fut in as_completed(futures):
-                rec, ddl = fut.result()
+        with ThreadPoolExecutor(max_workers=max_ddl_concurrency) as ddl_ex:
+            ddl_futures = [ddl_ex.submit(fetch, j) for j in ddl_jobs]
+            for ddl_future in as_completed(ddl_futures):
+                rec, ddl = ddl_future.result()
                 if ddl:
+                    # Ensure correct type for mypy
+                    rec = dict(rec)  # type: ignore[assignment]
                     rec["ddl"] = ddl
+
+    # Export SQL files if requested
+    if export_sql:
+        sql_root = out_path / "sql"
+        sql_root.mkdir(parents=True, exist_ok=True)
+
+        def write_sql(dbn: str, schn: str, name: str, ddl: Optional[str]) -> None:
+            if not ddl:
+                return
+            safe = _safe_filename(name)
+            p = sql_root / dbn / schn
+            p.mkdir(parents=True, exist_ok=True)
+            with (p / f"{safe}.sql").open("w") as f:
+                f.write(ddl)
+
+        # Views and mviews, tasks, dynamic tables
+        for r in all_views:
+            name = r.get("VIEW_NAME") or r.get("name")
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("TABLE_SCHEMA") or r.get("SCHEMA_NAME")
+            if name and dbn and schn:
+                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
+        for r in all_mviews:
+            name = r.get("MATERIALIZED_VIEW_NAME") or r.get("name")
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            if name and dbn and schn:
+                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
+        for r in all_tasks:
+            name = r.get("TASK_NAME") or r.get("name")
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            if name and dbn and schn:
+                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
+        for r in all_dynamic:
+            name = r.get("DYNAMIC_TABLE_NAME") or r.get("name")
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            if name and dbn and schn:
+                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
+
+        # Functions and procedures: include signature if present in ddl;
+        # here we use the name only for filename normalization.
+        for r in all_functions:
+            name = r.get("FUNCTION_NAME") or r.get("name")
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            if name and dbn and schn:
+                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
+        for r in all_procedures:
+            name = r.get("PROCEDURE_NAME") or r.get("name")
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            if name and dbn and schn:
+                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
 
     _write_json(
         out_path / "catalog_summary.json", [{"totals": totals, "databases": databases}]
