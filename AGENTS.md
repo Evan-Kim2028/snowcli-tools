@@ -16,9 +16,10 @@
 
 ## Build, Test, Run
 - Setup: `uv sync` (creates `.venv` and installs deps).
-- Run CLI: `uv run snowflake-cli --help`.
-- Dependency graph: `uv run snowflake-cli dependency --format dot -o ./dependencies`.
-- Catalog: `uv run snowflake-cli catalog -o ./data_catalogue -a --format jsonl`.
+- Profile: default `readonly-keypair` for local testing (set via `SNOWFLAKE_PROFILE=readonly-keypair` or `--profile readonly-keypair`).
+- Run CLI: `uv run snowflake-cli --help` (use `--profile readonly-keypair` if not set via env).
+- Dependency graph: `uv run snowflake-cli --profile readonly-keypair dependency --format dot -o ./dependencies`.
+- Catalog: `uv run snowflake-cli --profile readonly-keypair catalog -o ./data_catalogue -a --format jsonl`.
 - Tests: `uv run pytest -q`.
 - Build dist: `uv build`.
 
@@ -43,3 +44,4 @@
 - Auth/config comes from `snow` profiles; never commit credentials.
 - Respect env overrides: `SNOWFLAKE_PROFILE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE`.
 - Quick start: `uv run snowflake-cli init_config ./examples/config.yaml` then run with `--config` or `--profile`.
+- Default Snowflake CLI profile for this repo: `readonly-keypair`. Use this for all local Snowflake testing unless a different profile is explicitly provided. Equivalent env: `export SNOWFLAKE_PROFILE=readonly-keypair`.

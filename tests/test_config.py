@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from snowcli_tools.config import Config, SnowflakeConfig, get_config, set_config
 

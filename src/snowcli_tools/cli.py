@@ -10,7 +10,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .catalog import build_catalog
+from .catalog import build_catalog, export_sql_from_catalog
 from .config import Config, get_config, set_config
 from .dependency import build_dependency_graph, to_dot
 from .parallel import create_object_queries, query_multiple_objects
@@ -29,7 +29,7 @@ console = Console()
 )
 @click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option(version="1.1.0")
+@click.version_option(version="1.2.0")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     """Snowflake CLI Tools - Efficient database operations CLI.
 
@@ -63,7 +63,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
             console.print(f"[green]✓[/green] Using profile: {profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.1.0")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.2.0")
 
 
 @cli.command()
@@ -526,6 +526,12 @@ def setup_connection(
     "--account", "-a", is_flag=True, help="Introspect all databases in the account"
 )
 @click.option(
+    "--incremental",
+    is_flag=True,
+    default=False,
+    help="Update catalog incrementally based on LAST_ALTERED timestamps.",
+)
+@click.option(
     "--format",
     type=click.Choice(["json", "jsonl"]),
     default="json",
@@ -546,15 +552,6 @@ def setup_connection(
     help="Parallel workers for schema scanning (default 16)",
 )
 @click.option(
-    "--samples",
-    type=str,
-    default=None,
-    help=(
-        "Sampling spec to include data samples. Examples: 'off', '0', '10', '10,csv', '5,jsonl'. "
-        "Default when omitted: 10 rows, JSON."
-    ),
-)
-@click.option(
     "--export-sql",
     is_flag=True,
     default=False,
@@ -564,11 +561,11 @@ def catalog(
     output_dir: str,
     database: Optional[str],
     account: bool,
+    incremental: bool,
     format: str,
     include_ddl: bool,
     max_ddl_concurrency: int,
     catalog_concurrency: Optional[int],
-    samples: Optional[str],
     export_sql: bool,
 ):
     """Build a Snowflake data catalog (JSON files) from INFORMATION_SCHEMA/SHOW.
@@ -585,11 +582,11 @@ def catalog(
             output_dir,
             database=database,
             account_scope=account,
+            incremental=incremental,
             output_format=format,
             include_ddl=include_ddl,
             max_ddl_concurrency=max_ddl_concurrency,
             catalog_concurrency=catalog_concurrency or 16,
-            samples_spec=samples,  # None -> default enable 10 rows JSON inside builder
             export_sql=export_sql,
         )
         console.print("[green]✓[/green] Catalog build complete")
@@ -609,8 +606,69 @@ def catalog(
                 ]
             )
         )
+
+        # If SQL export requested but no files were written, surface a hint
+        if export_sql:
+            from pathlib import Path as _P
+
+            sql_dir = _P(output_dir) / "sql"
+            has_sql = sql_dir.exists() and any(sql_dir.rglob("*.sql"))
+            if not has_sql:
+                console.print(
+                    "[yellow]⚠[/yellow] No SQL files were exported. "
+                    "This usually means DDL could not be captured for the scanned objects. "
+                    "Ensure the selected profile has sufficient privileges (e.g., USAGE/OWNERSHIP) "
+                    "or run `snowflake-cli export-sql -i <catalog_dir>` to fetch DDL from JSON."
+                )
     except SnowCLIError as e:
         console.print(f"[red]✗[/red] Catalog build failed: {e}")
+        sys.exit(1)
+
+
+@cli.command("export-sql")
+@click.option(
+    "--input-dir",
+    "-i",
+    type=click.Path(exists=True),
+    default="./data_catalogue",
+    help="Catalog directory containing JSON/JSONL files",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(),
+    default=None,
+    help="Output directory for SQL tree (default: <input-dir>/sql)",
+)
+@click.option(
+    "--workers",
+    "-w",
+    type=int,
+    default=16,
+    help="Max concurrent DDL fetch/write workers",
+)
+def export_sql_cmd(input_dir: str, output_dir: Optional[str], workers: int):
+    """Export categorized SQL files from an existing JSON catalog.
+
+    Layout: sql/<asset_type>/<DB>/<SCHEMA>/<OBJECT>.sql. If JSON rows are
+    missing a `ddl` field, DDL is fetched on-demand.
+    """
+    try:
+        console.print(
+            f"[blue]🛠️[/blue] Exporting SQL from catalog: [cyan]{input_dir}[/cyan]"
+        )
+        counts = export_sql_from_catalog(input_dir, output_dir, max_workers=workers)
+        out_dir = output_dir or (Path(input_dir) / "sql")
+        console.print(
+            f"[green]✓[/green] Exported {counts.get('written', 0)} SQL files to {out_dir}"
+        )
+        missing = counts.get("missing", 0)
+        if missing:
+            console.print(
+                f"[yellow]ℹ[/yellow] {missing} objects lacked DDL or were inaccessible"
+            )
+    except SnowCLIError as e:
+        console.print(f"[red]✗[/red] SQL export failed: {e}")
         sys.exit(1)
 
 

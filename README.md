@@ -6,6 +6,7 @@ This project leverages your existing `snow` CLI profiles to add powerful, concur
 - **Automated Data Catalogue**: Generate a comprehensive JSON/JSONL catalogue of your Snowflake objects.
 - **Dependency Graph Generation**: Generate object dependencies to understand data lineage.
 - **Parallel Query Execution**: Run multiple queries concurrently for faster bulk workloads.
+ - **SQL Export from Catalog**: Generate a categorized SQL repo from your catalog JSON.
 
 ## Prerequisites
 
@@ -147,7 +148,7 @@ uv run snowflake-cli query "$(cat my_query.sql)"
 
 ### Data Cataloguing
 
-Generate a data catalogue by introspecting database metadata (works with any Snowflake account). Outputs JSON by default; JSONL is available for ingestion-friendly workflows. DDL is optional and fetched concurrently when enabled.
+Generate a data catalogue by introspecting database metadata (works with any Snowflake account). Outputs JSON by default; JSONL is available for ingestion-friendly workflows. DDL is optional and fetched concurrently when enabled. An incremental mode skips DDL re-fetch for unchanged objects between runs.
 
 ```bash
 # Build a catalog for the current database (default output: ./data_catalogue)
@@ -159,11 +160,14 @@ uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue_db
 # Build for the entire account
 uv run snowflake-cli catalog --account --output-dir ./data_catalogue_all
 
-# Include DDL (concurrent by default; opt-in)
+# Include DDL (concurrent fetches; opt-in)
 uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue_ddled --include-ddl
 
 # JSONL output
 uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue_jsonl --format jsonl
+
+# Incremental: skip DDL re-fetch for unchanged objects (writes catalog_state.json)
+uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue_inc --include-ddl --incremental
 ```
 
 Files created (per format):
@@ -178,6 +182,41 @@ Files created (per format):
 - tasks.(json|jsonl)
 - dynamic_tables.(json|jsonl)
 - catalog_summary.json (counts)
+
+### SQL Export (from existing catalog)
+
+Generate a human‑readable SQL repository based on your catalog JSON/JSONL. Missing DDL will be fetched via GET_DDL in parallel.
+
+```bash
+# Two‑step workflow (recommended):
+# 1) Build JSON catalog (fast, no DDL)
+uv run snowflake-cli catalog -o ./data_catalogue_test_json --format json --no-include-ddl
+
+# 2) Export SQL to a separate folder with 24 workers
+uv run snowflake-cli export-sql -i ./data_catalogue_test_json -o ./data_catalogue_test_sql -w 24
+
+# If your JSON already includes embedded DDL (--include-ddl), export runs mostly as file writes
+uv run snowflake-cli export-sql -i ./data_catalogue_test_json -o ./data_catalogue_test_sql
+
+Idempotence and state
+- Re-running `catalog --incremental --include-ddl` reuses DDL for unchanged objects via `catalog_state.json` and prior JSON, minimizing GET_DDL calls.
+- Re-running `export-sql` skips existing files by default; only new/missing objects are written.
+```
+
+Output layout (under the chosen output directory):
+- tables/<DB>/<SCHEMA>/<OBJECT>.sql
+- views/<DB>/<SCHEMA>/<OBJECT>.sql
+- materialized_views/<DB>/<SCHEMA>/<OBJECT>.sql
+- dynamic_tables/<DB>/<SCHEMA>/<OBJECT>.sql
+- tasks/<DB>/<SCHEMA>/<OBJECT>.sql
+- functions/<DB>/<SCHEMA>/<OBJECT>.sql
+- procedures/<DB>/<SCHEMA>/<OBJECT>.sql
+
+Notes and privileges:
+- For best coverage of DDL, run with a role that has USAGE on the database/schema and sufficient object privileges.
+- Materialized views and dynamic tables: GET_DDL expects types VIEW and TABLE respectively; MONITOR or OWNERSHIP may be required for DDL visibility.
+- Functions/procedures: USAGE is required; OWNERSHIP may be needed for some definitions.
+- Tune concurrency with `-w/--workers` to balance speed and Snowflake limits.
 
 ### Dependency Graph
 
@@ -237,6 +276,7 @@ cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
 | `parallel`         | Execute multiple queries in parallel (spawns `snow`).    |
 | `preview`          | Preview table contents.                                  |
 | `catalog`          | Build a JSON/JSONL data catalog (use `--include-ddl` to add DDL). |
+| `export-sql`       | Generate a categorized SQL repo from catalog JSON/JSONL. |
 | `depgraph`         | Generate a dependency graph (DOT/JSON output).           |
 | `config`           | Show the current tool configuration.                     |
 | `setup-connection` | Helper to create a persistent `snow` CLI connection.     |

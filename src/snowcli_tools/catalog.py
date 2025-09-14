@@ -1,14 +1,36 @@
-"""Snowflake catalog builder using Snowflake CLI connections.
+"""Snowflake catalog + SQL exporter (backed by the official `snow` CLI).
 
-Collects metadata from INFORMATION_SCHEMA and SHOW commands to assemble a
-portable data catalog for any Snowflake account or database.
+Features
+- Parallel catalog builder: collects metadata via INFORMATION_SCHEMA and SHOW
+  to assemble a portable JSON/JSONL catalog for any Snowflake account.
+- Optional DDL capture: concurrently fetches object DDL via GET_DDL and
+  embeds it in the JSON (when enabled).
+- SQL export from JSON: generates a categorized SQL tree from existing
+  catalog files, fetching missing DDL on demand.
+
+SQL export layout
+- <output_dir>/tables/<DB>/<SCHEMA>/<OBJECT>.sql
+- <output_dir>/views/<DB>/<SCHEMA>/<OBJECT>.sql
+- <output_dir>/materialized_views/<DB>/<SCHEMA>/<OBJECT>.sql
+- <output_dir>/dynamic_tables/<DB>/<SCHEMA>/<OBJECT>.sql
+- <output_dir>/tasks/<DB>/<SCHEMA>/<OBJECT>.sql
+- <output_dir>/functions/<DB>/<SCHEMA>/<OBJECT>.sql
+- <output_dir>/procedures/<DB>/<SCHEMA>/<OBJECT>.sql
+
+Notes
+- GET_DDL object type mapping differences:
+  - Materialized views require GET_DDL('VIEW', ...)
+  - Dynamic tables require GET_DDL('TABLE', ...)
+- Function/procedure signatures are normalized from SHOW outputs when
+  constructing fully-qualified names for GET_DDL.
 """
 
 from __future__ import annotations
 
-import csv
+import hashlib
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -48,30 +70,6 @@ def _safe_filename(name: str) -> str:
     return name.replace("/", "_").replace("\\", "_").replace(":", "_").replace(" ", "_")
 
 
-def _parse_samples_spec(spec: Optional[str]) -> Tuple[bool, int, str]:
-    """Parse samples spec string.
-    Returns: (enabled, rows, fmt) where fmt in {json, jsonl, csv}
-    Defaults: enabled, 10, json
-    """
-    if spec is None or spec.strip() == "":
-        return True, 10, "json"
-    s = spec.strip().lower()
-    if s in {"off", "0", "false", "no"}:
-        return False, 0, "json"
-    parts = [p.strip() for p in s.split(",") if p.strip()]
-    try:
-        rows = int(parts[0])
-    except ValueError:
-        # If not numeric and not off, default rows 10
-        rows = 10
-    fmt = parts[1] if len(parts) > 1 else "json"
-    if fmt not in {"json", "jsonl", "csv"}:
-        fmt = "json"
-    if rows <= 0:
-        return False, 0, fmt
-    return True, rows, fmt
-
-
 def _list_databases(
     cli: SnowCLI, include_account: bool, only_database: Optional[str]
 ) -> List[str]:
@@ -106,23 +104,7 @@ def _quote_ident(ident: str) -> str:
     return '"' + ident.replace('"', '""') + '"'
 
 
-def _write_sample_file(path: Path, rows: List[Dict[str, Any]], fmt: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if fmt == "csv":
-        fieldnames = list(rows[0].keys()) if rows else []
-        with path.open("w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            if fieldnames:
-                writer.writeheader()
-            writer.writerows(rows)
-    elif fmt == "jsonl":
-        with path.open("w") as f:
-            for r in rows:
-                f.write(json.dumps(r, default=str))
-                f.write("\n")
-    else:  # json
-        with path.open("w") as f:
-            json.dump(rows, f, indent=2, default=str)
+# Sampling helpers removed in this refactor
 
 
 def _get_ddl(
@@ -143,16 +125,67 @@ def _get_ddl(
     return None
 
 
+def _extract_args_from_arguments_field(
+    name: str, arguments: Optional[str], signature: Optional[str]
+) -> Optional[str]:
+    """Extract the parenthesized argument list for functions/procedures.
+
+    Inputs observed from SHOW outputs often look like:
+      - "FUNCNAME(TYPE, TYPE) RETURN VARCHAR"
+      - "PROCEDURE_NAME(TYPE, TYPE) RETURN TABLE (...)"
+      - Or sometimes a dedicated `signature` like "(TYPE, TYPE)"
+
+    We return a string that includes the surrounding parentheses, e.g., "(TYPE, TYPE)".
+    Returns None if no argument list can be determined (e.g., UDFs with no args -> "()").
+    """
+    if signature:
+        sig = signature.strip()
+        # Ensure it is parenthesized already
+        if sig.startswith("(") and sig.endswith(")"):
+            return sig
+        # If not, try to wrap
+        if sig:
+            return f"({sig})"
+        return "()"
+
+    if not arguments:
+        return None
+    s = arguments.strip()
+    # Find the first '(' after the name occurrence (case-insensitive match of name prefix)
+    # But simpler/safer: find first '(' at all and match until the balancing ')'
+    i = s.find("(")
+    if i == -1:
+        return None
+    # Extract until the matching ')'
+    depth = 0
+    end = None
+    for idx in range(i, len(s)):
+        ch = s[idx]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                end = idx
+                break
+    if end is None:
+        return None
+    arg_part = s[i : end + 1]
+    if not arg_part:
+        return None
+    return arg_part
+
+
 def build_catalog(
     output_dir: str,
     *,
     database: Optional[str] = None,
     account_scope: bool = False,
+    incremental: bool = False,
     output_format: str = "json",
     include_ddl: bool = True,
     max_ddl_concurrency: int = 8,
     catalog_concurrency: int = 16,
-    samples_spec: Optional[str] = None,
     export_sql: bool = False,
 ) -> Dict[str, int]:
     """Build a JSON data catalog under `output_dir`.
@@ -190,8 +223,7 @@ def build_catalog(
     all_functions: List[Dict] = []
     all_procedures: List[Dict] = []
 
-    enabled_samples, sample_rows, sample_fmt = _parse_samples_spec(samples_spec)
-    samples_index: Dict[str, Dict[str, Any]] = {}
+    # Sampling disabled: no sample queries or indices
 
     # Build schema worklist
     schema_pairs: List[Tuple[str, str]] = []
@@ -303,78 +335,7 @@ def build_catalog(
         except SnowCLIError:
             pass
 
-        # Samples for table-like objects
-        if enabled_samples and sample_rows > 0:
-
-            def sample_object(dbn: str, schn: str, obj_name: str, rel_subdir: str):
-                fq = (
-                    f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(obj_name)}"
-                )
-                try:
-                    out = cli.run_query(
-                        f"SELECT * FROM {fq} LIMIT {sample_rows}",
-                        output_format="json",
-                    )
-                    rows = out.rows or []
-                except SnowCLIError:
-                    rows = []
-                # Write file
-                safe = _safe_filename(obj_name)
-                out_dir = Path(output_dir) / "samples" / dbn / schn
-                ext = (
-                    "csv"
-                    if sample_fmt == "csv"
-                    else ("jsonl" if sample_fmt == "jsonl" else "json")
-                )
-                out_path = out_dir / f"{safe}.{ext}"
-                _write_sample_file(out_path, rows, sample_fmt)
-                rel_path = str(out_path.relative_to(output_dir))
-                key = f"{dbn}.{schn}.{obj_name}"
-                samples_index[key] = {
-                    "path": rel_path,
-                    "rows": len(rows),
-                    "format": sample_fmt,
-                }
-                return rel_path, len(rows)
-
-            # For tables
-            for r in local["tables"]:
-                name = (
-                    r.get("TABLE_NAME")
-                    or r.get("table_name")
-                    or r.get("NAME")
-                    or r.get("name")
-                )
-                dbn = r.get("DATABASE_NAME") or r.get("database_name") or db
-                schn = (
-                    r.get("TABLE_SCHEMA")
-                    or r.get("table_schema")
-                    or r.get("SCHEMA_NAME")
-                    or sch
-                )
-                if name and dbn and schn:
-                    rel, count = sample_object(dbn, schn, str(name), "tables")
-                    r["sample"] = {"path": rel, "rows": count, "format": sample_fmt}
-
-            # For materialized views
-            for r in local["mviews"]:
-                name = r.get("MATERIALIZED_VIEW_NAME") or r.get("name")
-                dbn = r.get("DATABASE_NAME") or db
-                schn = r.get("SCHEMA_NAME") or sch
-                if name and dbn and schn:
-                    rel, count = sample_object(
-                        dbn, schn, str(name), "materialized_views"
-                    )
-                    r["sample"] = {"path": rel, "rows": count, "format": sample_fmt}
-
-            # For dynamic tables
-            for r in local["dynamic"]:
-                name = r.get("DYNAMIC_TABLE_NAME") or r.get("name")
-                dbn = r.get("DATABASE_NAME") or db
-                schn = r.get("SCHEMA_NAME") or sch
-                if name and dbn and schn:
-                    rel, count = sample_object(dbn, schn, str(name), "dynamic_tables")
-                    r["sample"] = {"path": rel, "rows": count, "format": sample_fmt}
+        # Sampling removed
 
         return local
 
@@ -405,7 +366,219 @@ def build_catalog(
     totals["functions"] = len(all_functions)
     totals["procedures"] = len(all_procedures)
 
+    # Incremental state support
+    state_path = out_path / "catalog_state.json"
+    prev_state: Dict[str, Any] = {}
+    if incremental and state_path.exists():
+        try:
+            prev_state = json.loads(state_path.read_text())
+        except Exception:
+            prev_state = {}
+
+    def _now_iso() -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    def _kv(rec: Dict, *keys: str) -> Optional[str]:
+        for k in keys:
+            if k in rec and rec.get(k) is not None:
+                return str(rec.get(k))
+        lower = {str(k).lower(): v for k, v in rec.items()}
+        for k in keys:
+            v = lower.get(k.lower())
+            if v is not None:
+                return str(v)
+        return None
+
+    def _change_token(rec: Dict) -> Optional[str]:
+        return _kv(
+            rec,
+            "LAST_ALTERED",
+            "LAST_MODIFIED",
+            "LAST_DDL",
+            "MODIFIED",
+            "UPDATED_ON",
+            "CREATED",
+            "CREATED_ON",
+        )
+
+    def _sig_for(rec: Dict, name: Optional[str]) -> Optional[str]:
+        return _extract_args_from_arguments_field(
+            str(name) if name else "", rec.get("arguments"), rec.get("signature")
+        )
+
+    def _identity(
+        category: str, rec: Dict, name_key: str, sig: Optional[str]
+    ) -> Optional[str]:
+        db = (
+            rec.get("DATABASE_NAME")
+            or rec.get("TABLE_CATALOG")
+            or rec.get("CATALOG_NAME")
+            or rec.get("database_name")
+        )
+        sch = (
+            rec.get("SCHEMA_NAME") or rec.get("TABLE_SCHEMA") or rec.get("schema_name")
+        )
+        name = rec.get(name_key) or rec.get(name_key.upper()) or rec.get("name")
+        if not (db and sch and name):
+            return None
+        cat = category.upper()
+        ident = f"{cat}|{str(db).upper()}|{str(sch).upper()}|{str(name).upper()}"
+        if category in ("FUNCTION", "PROCEDURE"):
+            sig_norm = sig or "()"
+            ident += sig_norm
+        return ident
+
+    # Build map of previous DDLs when incremental and include_ddl
+    prev_ddl_map: Dict[str, str] = {}
+    if incremental and include_ddl:
+
+        def load_prev(base: str, category: str, name_key: str) -> None:
+            p = _find_catalog_file(out_path, base)
+            if not p:
+                return
+            for r in _load_rows(p):
+                name = r.get(name_key) or r.get(name_key.upper()) or r.get("name")
+                sig = (
+                    _sig_for(r, name) if category in ("FUNCTION", "PROCEDURE") else None
+                )
+                ident = _identity(category, r, name_key, sig)
+                ddl = r.get("ddl")
+                if ident and ddl:
+                    prev_ddl_map[ident] = str(ddl)
+
+        load_prev("tables", "TABLE", "TABLE_NAME")
+        load_prev("views", "VIEW", "TABLE_NAME")
+        load_prev("materialized_views", "MVIEW", "MATERIALIZED_VIEW_NAME")
+        load_prev("tasks", "TASK", "TASK_NAME")
+        load_prev("dynamic_tables", "DTABLE", "DYNAMIC_TABLE_NAME")
+        load_prev("functions", "FUNCTION", "FUNCTION_NAME")
+        load_prev("procedures", "PROCEDURE", "PROCEDURE_NAME")
+
+    # Optionally include DDLs
+    if include_ddl:
+        # Prepare DDL fetch tasks (object_type, fq_name, record)
+        ddl_jobs: List[Tuple[str, str, Dict, str, Optional[str]]] = []
+
+        def add_job(
+            obj_type: str,
+            name_key: str,
+            rec: Dict,
+            sig: Optional[str] = None,
+            id_category: Optional[str] = None,
+        ) -> None:
+            # Be permissive about key casing and field naming across SHOW/INFORMATION_SCHEMA outputs
+            db = (
+                rec.get("database_name")
+                or rec.get("DATABASE_NAME")
+                or rec.get("catalog_name")
+                or rec.get("CATALOG_NAME")
+            )
+            sch = (
+                rec.get("schema_name")
+                or rec.get("SCHEMA_NAME")
+                or rec.get("TABLE_SCHEMA")
+                or rec.get("table_schema")
+            )
+            name = rec.get(name_key) or rec.get(name_key.upper()) or rec.get("name")
+            if db and sch and name:
+                if sig:
+                    # `sig` may already include parentheses; normalize
+                    sig_norm = sig if sig.startswith("(") else f"({sig})"
+                    fq = (
+                        f"{_quote_ident(db)}.{_quote_ident(sch)}."
+                        f"{_quote_ident(name)}{sig_norm}"
+                    )
+                else:
+                    fq = f"{_quote_ident(db)}.{_quote_ident(sch)}.{_quote_ident(name)}"
+                category = (id_category or obj_type).upper()
+                ident = _identity(category, rec, name_key, sig)
+                token = _change_token(rec)
+                if incremental and ident and token:
+                    prev_obj = (prev_state.get("objects", {}) or {}).get(ident)
+                    if prev_obj and str(prev_obj.get("last_altered")) == str(token):
+                        # unchanged: skip fetching; will backfill from prev map if available
+                        return
+                if incremental and ident and prev_ddl_map.get(ident):
+                    # have previous DDL we can backfill
+                    return
+                ddl_jobs.append((obj_type, fq, rec, category, ident))
+
+        # Tables
+        for r in all_tables:
+            # INFORMATION_SCHEMA.TABLES uses TABLE_NAME for the table name
+            add_job("TABLE", "TABLE_NAME", r, None, "TABLE")
+
+        for r in all_views:
+            # INFORMATION_SCHEMA.VIEWS uses TABLE_NAME for the view name
+            add_job("VIEW", "TABLE_NAME", r, None, "VIEW")
+        for r in all_mviews:
+            # SHOW MATERIALIZED VIEWS uses `name`; GET_DDL expects VIEW for mviews
+            add_job("VIEW", "name", r, None, "MVIEW")
+        for r in all_tasks:
+            # SHOW TASKS uses `name`
+            add_job("TASK", "name", r, None, "TASK")
+        for r in all_dynamic:
+            # SHOW DYNAMIC TABLES uses `name`; GET_DDL expects TABLE for dynamic tables
+            add_job("TABLE", "name", r, None, "DTABLE")
+        for r in all_functions:
+            # SHOW USER FUNCTIONS uses `name` + `arguments`
+            name = r.get("name")
+            sig = _extract_args_from_arguments_field(
+                str(name) if name else "", r.get("arguments"), r.get("signature")
+            )
+            add_job("FUNCTION", "name", r, sig, "FUNCTION")
+        for r in all_procedures:
+            # SHOW PROCEDURES uses `name` + `arguments`
+            name = r.get("name")
+            sig = _extract_args_from_arguments_field(
+                str(name) if name else "", r.get("arguments"), r.get("signature")
+            )
+            add_job("PROCEDURE", "name", r, sig, "PROCEDURE")
+
+        # Fetch in parallel
+        def fetch(
+            job: Tuple[str, str, Dict, str, Optional[str]],
+        ) -> Tuple[Dict, Optional[str], str, Optional[str]]:
+            obj_type, fq, rec, category, ident = job
+            ddl = _get_ddl(cli, obj_type, fq)
+            return rec, ddl, category, ident
+
+        with ThreadPoolExecutor(max_workers=max_ddl_concurrency) as ddl_ex:
+            ddl_futures = [ddl_ex.submit(fetch, j) for j in ddl_jobs]
+            for ddl_future in as_completed(ddl_futures):
+                rec, ddl, category, ident = ddl_future.result()
+                if ddl:
+                    # Ensure correct type for mypy
+                    rec = dict(rec)  # type: ignore[assignment]
+                    rec["ddl"] = ddl
+                    if incremental and ident:
+                        prev_ddl_map[ident] = ddl
+
+    # After possible DDL enrichment, write JSON files to disk
     writer = _write_jsonl if output_format.lower() == "jsonl" else _write_json
+    # If incremental with include_ddl, backfill unchanged objects' DDL from previous JSON/state
+    if incremental and include_ddl and prev_ddl_map:
+
+        def backfill(lst: List[Dict], category: str, name_key: str) -> None:
+            for r in lst:
+                if r.get("ddl"):
+                    continue
+                name = r.get(name_key) or r.get(name_key.upper()) or r.get("name")
+                sig = (
+                    _sig_for(r, name) if category in ("FUNCTION", "PROCEDURE") else None
+                )
+                ident = _identity(category, r, name_key, sig)
+                ddl = prev_ddl_map.get(ident or "")
+                if ddl:
+                    r["ddl"] = ddl
+
+        backfill(all_tables, "TABLE", "TABLE_NAME")
+        backfill(all_views, "VIEW", "TABLE_NAME")
+        backfill(all_mviews, "MVIEW", "MATERIALIZED_VIEW_NAME")
+        backfill(all_tasks, "TASK", "TASK_NAME")
+        backfill(all_dynamic, "DTABLE", "DYNAMIC_TABLE_NAME")
+        backfill(all_functions, "FUNCTION", "FUNCTION_NAME")
+        backfill(all_procedures, "PROCEDURE", "PROCEDURE_NAME")
     writer(out_path / f"schemata.{output_format}", all_schemata)
     writer(out_path / f"tables.{output_format}", all_tables)
     writer(out_path / f"columns.{output_format}", all_columns)
@@ -417,116 +590,325 @@ def build_catalog(
     writer(out_path / f"functions.{output_format}", all_functions)
     writer(out_path / f"procedures.{output_format}", all_procedures)
 
-    # samples index
-    if samples_index:
-        _write_json(out_path / "samples_index.json", [samples_index])
-
-    # index file
-    # Optionally include DDLs
-    if include_ddl:
-        # Prepare DDL fetch tasks (object_type, fq_name, record)
-        ddl_jobs: List[Tuple[str, str, Dict]] = []
-
-        def add_job(obj_type: str, name_key: str, rec: Dict, sig: Optional[str] = None):
-            db = rec.get("database_name") or rec.get("DATABASE_NAME")
-            sch = rec.get("schema_name") or rec.get("SCHEMA_NAME")
-            name = rec.get(name_key) or rec.get(name_key.upper()) or rec.get("name")
-            if db and sch and name:
-                if sig:
-                    fq = (
-                        f"{_quote_ident(db)}.{_quote_ident(sch)}."
-                        f"{_quote_ident(name)}({sig})"
-                    )
-                else:
-                    fq = f"{_quote_ident(db)}.{_quote_ident(sch)}.{_quote_ident(name)}"
-                ddl_jobs.append((obj_type, fq, rec))
-
-        for r in all_views:
-            add_job("VIEW", "VIEW_NAME", r)
-        for r in all_mviews:
-            add_job("MATERIALIZED VIEW", "MATERIALIZED_VIEW_NAME", r)
-        for r in all_tasks:
-            add_job("TASK", "TASK_NAME", r)
-        for r in all_dynamic:
-            add_job("DYNAMIC TABLE", "DYNAMIC_TABLE_NAME", r)
-        for r in all_functions:
-            sig = r.get("arguments") or r.get("signature")
-            add_job("FUNCTION", "FUNCTION_NAME", r, sig)
-        for r in all_procedures:
-            sig = r.get("arguments") or r.get("signature")
-            add_job("PROCEDURE", "PROCEDURE_NAME", r, sig)
-
-        # Fetch in parallel
-        def fetch(job: Tuple[str, str, Dict]) -> Tuple[Dict, Optional[str]]:
-            obj_type, fq, rec = job
-            ddl = _get_ddl(cli, obj_type, fq)
-            return rec, ddl
-
-        with ThreadPoolExecutor(max_workers=max_ddl_concurrency) as ddl_ex:
-            ddl_futures = [ddl_ex.submit(fetch, j) for j in ddl_jobs]
-            for ddl_future in as_completed(ddl_futures):
-                rec, ddl = ddl_future.result()
-                if ddl:
-                    # Ensure correct type for mypy
-                    rec = dict(rec)  # type: ignore[assignment]
-                    rec["ddl"] = ddl
-
-    # Export SQL files if requested
+    # Export SQL files if requested (delegates to function that reads JSON back)
     if export_sql:
-        sql_root = out_path / "sql"
-        sql_root.mkdir(parents=True, exist_ok=True)
-
-        def write_sql(dbn: str, schn: str, name: str, ddl: Optional[str]) -> None:
-            if not ddl:
-                return
-            safe = _safe_filename(name)
-            p = sql_root / dbn / schn
-            p.mkdir(parents=True, exist_ok=True)
-            with (p / f"{safe}.sql").open("w") as f:
-                f.write(ddl)
-
-        # Views and mviews, tasks, dynamic tables
-        for r in all_views:
-            name = r.get("VIEW_NAME") or r.get("name")
-            dbn = r.get("DATABASE_NAME")
-            schn = r.get("TABLE_SCHEMA") or r.get("SCHEMA_NAME")
-            if name and dbn and schn:
-                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
-        for r in all_mviews:
-            name = r.get("MATERIALIZED_VIEW_NAME") or r.get("name")
-            dbn = r.get("DATABASE_NAME")
-            schn = r.get("SCHEMA_NAME")
-            if name and dbn and schn:
-                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
-        for r in all_tasks:
-            name = r.get("TASK_NAME") or r.get("name")
-            dbn = r.get("DATABASE_NAME")
-            schn = r.get("SCHEMA_NAME")
-            if name and dbn and schn:
-                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
-        for r in all_dynamic:
-            name = r.get("DYNAMIC_TABLE_NAME") or r.get("name")
-            dbn = r.get("DATABASE_NAME")
-            schn = r.get("SCHEMA_NAME")
-            if name and dbn and schn:
-                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
-
-        # Functions and procedures: include signature if present in ddl;
-        # here we use the name only for filename normalization.
-        for r in all_functions:
-            name = r.get("FUNCTION_NAME") or r.get("name")
-            dbn = r.get("DATABASE_NAME")
-            schn = r.get("SCHEMA_NAME")
-            if name and dbn and schn:
-                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
-        for r in all_procedures:
-            name = r.get("PROCEDURE_NAME") or r.get("name")
-            dbn = r.get("DATABASE_NAME")
-            schn = r.get("SCHEMA_NAME")
-            if name and dbn and schn:
-                write_sql(str(dbn), str(schn), str(name), r.get("ddl"))
+        export_sql_from_catalog(output_dir, max_workers=catalog_concurrency)
 
     _write_json(
         out_path / "catalog_summary.json", [{"totals": totals, "databases": databases}]
     )
+
+    # Save incremental state
+    if incremental:
+        objects_state: Dict[str, Any] = {}
+
+        def upd(lst: List[Dict], category: str, name_key: str) -> None:
+            for r in lst:
+                name = r.get(name_key) or r.get(name_key.upper()) or r.get("name")
+                sig = (
+                    _sig_for(r, name) if category in ("FUNCTION", "PROCEDURE") else None
+                )
+                ident = _identity(category, r, name_key, sig)
+                if not ident:
+                    continue
+                token = _change_token(r) or ""
+                entry: Dict[str, Any] = {"last_altered": token}
+                ddl_text = r.get("ddl")
+                if ddl_text:
+                    h = hashlib.sha256(str(ddl_text).encode("utf-8")).hexdigest()
+                    entry["ddl_hash"] = f"sha256:{h}"
+                objects_state[ident] = entry
+
+        upd(all_tables, "TABLE", "TABLE_NAME")
+        upd(all_views, "VIEW", "TABLE_NAME")
+        upd(all_mviews, "MVIEW", "MATERIALIZED_VIEW_NAME")
+        upd(all_tasks, "TASK", "TASK_NAME")
+        upd(all_dynamic, "DTABLE", "DYNAMIC_TABLE_NAME")
+        upd(all_functions, "FUNCTION", "FUNCTION_NAME")
+        upd(all_procedures, "PROCEDURE", "PROCEDURE_NAME")
+
+        new_state = {
+            "version": 1,
+            "generated_at": _now_iso(),
+            "objects": objects_state,
+        }
+        state_path.write_text(json.dumps(new_state, indent=2))
+
     return totals
+
+
+def _load_rows(path: Path) -> List[Dict]:
+    if not path.exists():
+        return []
+    # Detect JSON vs JSONL by extension/name
+    if path.suffix.lower() == ".jsonl":
+        rows: List[Dict] = []
+        with path.open("r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+        return rows
+    else:
+        try:
+            data = json.loads(path.read_text())
+            return data if isinstance(data, list) else []
+        except json.JSONDecodeError:
+            return []
+
+
+def _find_catalog_file(root: Path, base: str) -> Optional[Path]:
+    # Prefer .json, then .jsonl
+    for ext in (".json", ".jsonl"):
+        p = root / f"{base}{ext}"
+        if p.exists():
+            return p
+    return None
+
+
+def export_sql_from_catalog(
+    input_dir: str, output_dir: Optional[str] = None, *, max_workers: int = 16
+) -> Dict[str, int]:
+    """Generate a categorized SQL tree from existing catalog JSON files.
+
+    Layout: <output_dir>/sql/<asset_type>/<DB>/<SCHEMA>/<OBJECT>.sql
+    Asset types: tables, views, materialized_views, tasks, dynamic_tables,
+    functions, procedures.
+    If a record lacks a `ddl` field, attempts to fetch via GET_DDL.
+    """
+    cli = SnowCLI()
+    in_root = Path(input_dir)
+    sql_root = Path(output_dir) if output_dir else in_root / "sql"
+    sql_root.mkdir(parents=True, exist_ok=True)
+
+    summary_path = in_root / "catalog_summary.json"
+    if summary_path.exists():
+        try:
+            summary = json.loads(summary_path.read_text())
+            totals = (summary[0] if isinstance(summary, list) and summary else {}).get(
+                "totals", {}
+            )
+            if all(int(totals.get(k, 0)) == 0 for k in ["schemas", "tables", "views"]):
+                # Nothing to do
+                return {"written": 0, "missing": 0}
+        except Exception:
+            pass
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    counts = {"written": 0, "missing": 0}
+
+    def write(cat: str, dbn: str, schn: str, name: str, ddl: Optional[str]) -> int:
+        if not ddl:
+            return 0
+        p = sql_root / cat / _safe_filename(dbn) / _safe_filename(schn)
+        p.mkdir(parents=True, exist_ok=True)
+        with (p / f"{_safe_filename(name)}.sql").open("w") as f:
+            f.write(ddl)
+        return 1
+
+    # Helper to fetch DDL if missing
+    def fetch_or_none(obj_type: str, fq: str, existing: Optional[str]) -> Optional[str]:
+        if existing:
+            return existing
+        try:
+            return _get_ddl(cli, obj_type, fq)
+        except SnowCLIError:
+            return None
+
+    # Accumulate jobs: (category, obj_type, db, schema, name, fq, existing_ddl)
+    jobs: List[Tuple[str, str, str, str, str, str, Optional[str]]] = []
+
+    # Tables
+    path = _find_catalog_file(in_root, "tables")
+    if path:
+        for r in _load_rows(path):
+            dbn = r.get("DATABASE_NAME") or r.get("TABLE_CATALOG")
+            schn = r.get("TABLE_SCHEMA")
+            name = r.get("TABLE_NAME")
+            if not (dbn and schn and name):
+                continue
+            fq = f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(name)}"
+            jobs.append(
+                (
+                    "tables",
+                    "TABLE",
+                    str(dbn),
+                    str(schn),
+                    str(name),
+                    fq,
+                    r.get("ddl"),
+                )
+            )
+
+    # Views
+    path = _find_catalog_file(in_root, "views")
+    if path:
+        for r in _load_rows(path):
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("TABLE_SCHEMA") or r.get("SCHEMA_NAME")
+            name = r.get("TABLE_NAME") or r.get("name")
+            if not (dbn and schn and name):
+                continue
+            fq = f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(name)}"
+            jobs.append(
+                (
+                    "views",
+                    "VIEW",
+                    str(dbn),
+                    str(schn),
+                    str(name),
+                    fq,
+                    r.get("ddl"),
+                )
+            )
+
+    # Materialized views
+    path = _find_catalog_file(in_root, "materialized_views")
+    if path:
+        for r in _load_rows(path):
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            name = r.get("MATERIALIZED_VIEW_NAME") or r.get("name")
+            if not (dbn and schn and name):
+                continue
+            fq = f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(name)}"
+            jobs.append(
+                (
+                    "materialized_views",
+                    "VIEW",  # GET_DDL expects VIEW for mviews
+                    str(dbn),
+                    str(schn),
+                    str(name),
+                    fq,
+                    r.get("ddl"),
+                )
+            )
+
+    # Tasks
+    path = _find_catalog_file(in_root, "tasks")
+    if path:
+        for r in _load_rows(path):
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            name = r.get("TASK_NAME") or r.get("name")
+            if not (dbn and schn and name):
+                continue
+            fq = f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(name)}"
+            jobs.append(
+                (
+                    "tasks",
+                    "TASK",
+                    str(dbn),
+                    str(schn),
+                    str(name),
+                    fq,
+                    r.get("ddl"),
+                )
+            )
+
+    # Dynamic tables
+    path = _find_catalog_file(in_root, "dynamic_tables")
+    if path:
+        for r in _load_rows(path):
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            name = r.get("DYNAMIC_TABLE_NAME") or r.get("name")
+            if not (dbn and schn and name):
+                continue
+            fq = f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(name)}"
+            jobs.append(
+                (
+                    "dynamic_tables",
+                    "TABLE",  # GET_DDL expects TABLE for dynamic tables
+                    str(dbn),
+                    str(schn),
+                    str(name),
+                    fq,
+                    r.get("ddl"),
+                )
+            )
+
+    # Functions
+    path = _find_catalog_file(in_root, "functions")
+    if path:
+        for r in _load_rows(path):
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            name = r.get("FUNCTION_NAME") or r.get("name")
+            sig = _extract_args_from_arguments_field(
+                str(name) if name else "", r.get("arguments"), r.get("signature")
+            )
+            if not (dbn and schn and name):
+                continue
+            fq = f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(name)}" + (
+                sig or ""
+            )
+            jobs.append(
+                (
+                    "functions",
+                    "FUNCTION",
+                    str(dbn),
+                    str(schn),
+                    str(name),
+                    fq,
+                    r.get("ddl"),
+                )
+            )
+
+    # Procedures
+    path = _find_catalog_file(in_root, "procedures")
+    if path:
+        for r in _load_rows(path):
+            dbn = r.get("DATABASE_NAME")
+            schn = r.get("SCHEMA_NAME")
+            name = r.get("PROCEDURE_NAME") or r.get("name")
+            sig = _extract_args_from_arguments_field(
+                str(name) if name else "", r.get("arguments"), r.get("signature")
+            )
+            if not (dbn and schn and name):
+                continue
+            fq = f"{_quote_ident(dbn)}.{_quote_ident(schn)}.{_quote_ident(name)}" + (
+                sig or ""
+            )
+            jobs.append(
+                (
+                    "procedures",
+                    "PROCEDURE",
+                    str(dbn),
+                    str(schn),
+                    str(name),
+                    fq,
+                    r.get("ddl"),
+                )
+            )
+
+    # Process jobs in parallel
+    def worker(
+        job: Tuple[str, str, str, str, str, str, Optional[str]],
+    ) -> Tuple[int, int]:
+        cat, obj_type, dbn, schn, name, fq, existing = job
+        # Skip work if file already exists; idempotent export
+        target_dir = sql_root / cat / _safe_filename(dbn) / _safe_filename(schn)
+        target_file = target_dir / f"{_safe_filename(name)}.sql"
+        if target_file.exists():
+            return (0, 0)
+        ddl = fetch_or_none(obj_type, fq, existing)
+        if not ddl:
+            return (0, 1)
+        wrote = write(cat, dbn, schn, name, ddl)
+        return (wrote, 0)
+
+    if jobs:
+        with ThreadPoolExecutor(max_workers=max(1, int(max_workers))) as ex:
+            futures = [ex.submit(worker, j) for j in jobs]
+            for fut in as_completed(futures):
+                w, m = fut.result()
+                counts["written"] += w
+                counts["missing"] += m
+
+    return counts
