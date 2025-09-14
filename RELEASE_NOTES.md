@@ -72,3 +72,33 @@ Changes
 - Map relationship using RELATIONSHIP with fallback to DEPENDENCY_TYPE.
 - depgraph: accept a directory for -o/--output and write default filename
   (dependencies.json or dependencies.dot) into the directory.
+
+# SNOWCLI-TOOLS v1.2.0 (Incremental catalog + SQL export)
+
+Highlights
+- New standalone command: `export-sql` generates a categorized SQL repository from an existing catalog (JSON/JSONL).
+- Parallel SQL export with `-w/--workers` and idempotent writes (skips existing files).
+- Incremental catalog mode (`--incremental`):
+  - Writes `catalog_state.json` and reuses embedded DDL for unchanged objects.
+  - Skips GET_DDL fetch for unchanged objects; still writes full JSON outputs each run.
+- DDL mapping improvements:
+  - Materialized views: GET_DDL('VIEW', ...)
+  - Dynamic tables: GET_DDL('TABLE', ...)
+- Docs refreshed: README and PRD updated with incremental mode and SQL export usage; removed sampling from spec.
+
+Usage
+```bash
+# Build catalog with embedded DDL and incremental state
+uv run snowflake-cli catalog -o ./data_catalogue_inc --include-ddl --incremental
+
+# Export SQL from catalog JSON (24 workers)
+uv run snowflake-cli export-sql -i ./data_catalogue_inc -w 24
+
+# JSON-only then export
+uv run snowflake-cli catalog -o ./data_catalogue_json --no-include-ddl
+uv run snowflake-cli export-sql -i ./data_catalogue_json -o ./data_catalogue_sql -w 24
+```
+
+Notes
+- Some object DDL (e.g., tasks, procedures, secure objects) may require elevated privileges (MONITOR/OWNERSHIP) to retrieve.
+- Re-running `export-sql` will skip existing files by default.

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -90,6 +91,17 @@ class SnowCLI:
         if output_format in {"csv", "json"}:
             args.extend(["--format", output_format])
 
+        if os.getenv("SNOWCLI_TOOLS_DEBUG") == "1":
+            try:
+                # Log the command about to run (without printing sensitive env)
+                debug_cmd = " ".join(args)
+                print(f"[SNOWCLI-TOOLS DEBUG] Executing: {debug_cmd}")
+                # Also echo the SQL in a trimmed form for readability
+                trimmed = " ".join(query.split())
+                print(f"[SNOWCLI-TOOLS DEBUG] SQL: {trimmed}")
+            except Exception:
+                pass
+
         proc = subprocess.run(
             args,
             capture_output=True,
@@ -140,6 +152,14 @@ class SnowCLI:
         args.extend(["-f", file_path])
         if output_format in {"csv", "json"}:
             args.extend(["--format", output_format])
+
+        if os.getenv("SNOWCLI_TOOLS_DEBUG") == "1":
+            try:
+                debug_cmd = " ".join(args)
+                print(f"[SNOWCLI-TOOLS DEBUG] Executing file: {debug_cmd}")
+                print(f"[SNOWCLI-TOOLS DEBUG] File: {file_path}")
+            except Exception:
+                pass
 
         proc = subprocess.run(
             args,
