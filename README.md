@@ -244,6 +244,44 @@ Notes:
 - Output formats: `json` (nodes/edges) and `dot` (render with Graphviz).
  - Default output directory is `./dependencies` when `-o/--output` is not provided.
 
+### Lineage Analysis
+
+Build and explore a cached lineage graph sourced from your catalog JSON/JSONL.
+
+```bash
+# 1) Ensure a fresh catalog exists (see catalog section for options)
+uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue
+
+# 2) Build the lineage cache (writes to ./lineage/<catalog-name>)
+uv run snowflake-cli lineage rebuild --catalog-dir ./data_catalogue
+
+# 3a) Inspect both upstream + downstream nodes around an object
+uv run snowflake-cli lineage neighbors PIPELINE.RAW.VW_SAMPLE -d 3
+
+# 3b) Export HTML (Pyvis) to a custom location
+uv run snowflake-cli lineage upstream PIPELINE.RAW.VW_SAMPLE \
+  --format html --output ./lineage/html/vw_sample_upstream.html
+
+# 3c) Emit JSON for automation/diffing
+uv run snowflake-cli lineage downstream PIPELINE.RAW.LOAD_TASK \
+  --format json --output ./lineage/json/load_task_downstream.json
+
+# 4) Review parsing coverage and unresolved references
+uv run snowflake-cli lineage audit --format json
+```
+
+Key behaviors:
+- `lineage rebuild` parses the catalog once and caches both the graph and audit metadata. Re-run with updated catalog content to refresh the cache.
+- Query commands (`neighbors`, `upstream`, `downstream`) default to limited depth (3 or 5 levels) so the output stays focused on the most relevant upstream/downstream hops; use `-d/--depth` to widen or contract the traversal.
+- Task nodes rely on catalog entries ending with `::task`; the CLI automatically normalizes keys so you can search with the base object name.
+- JSON output mirrors the cached graph (nodes, edges, attributes) for tooling and regression checks; HTML produces an interactive visualization powered by Pyvis.
+- `lineage audit` summarizes parse status, unresolved references, and coverage so you know when missing SQL or privileges limit the analysis.
+
+Scope and expectations:
+- The lineage graph reflects the SQL currently captured in your catalog. Update the catalog (and rebuild lineage) after schema or task changes to keep results accurate.
+- Only objects present in the catalog and supported by the builder (tables, views, materialized views, dynamic tables, tasks, procedures/functions with SQL) appear in traversal results.
+- The tool surfaces observed dependencies; it does not simulate hypothetical future changes beyond what exists in the catalog snapshot.
+
 ### Parallel Queries
 
 Execute multiple queries concurrently based on a template.
@@ -278,6 +316,7 @@ cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
 | `catalog`          | Build a JSON/JSONL data catalog (use `--include-ddl` to add DDL). |
 | `export-sql`       | Generate a categorized SQL repo from catalog JSON/JSONL. |
 | `depgraph`         | Generate a dependency graph (DOT/JSON output).           |
+| `lineage`          | Build and query the cached lineage graph (rebuild/query/audit). |
 | `config`           | Show the current tool configuration.                     |
 | `setup-connection` | Helper to create a persistent `snow` CLI connection.     |
 | `init-config`      | Create a local configuration file for this tool.         |
