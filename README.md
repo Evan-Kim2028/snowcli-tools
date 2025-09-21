@@ -308,6 +308,9 @@ uv sync --dev
 # Run tests
 uv run pytest
 
+# Lint code
+uv run ruff check src/
+
 # Format code
 uv run black src/
 ```
