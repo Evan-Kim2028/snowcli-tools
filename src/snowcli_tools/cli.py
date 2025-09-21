@@ -4,7 +4,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import click
 from rich.console import Console
@@ -13,6 +13,9 @@ from rich.table import Table
 from .catalog import build_catalog, export_sql_from_catalog
 from .config import Config, get_config, set_config
 from .dependency import build_dependency_graph, to_dot
+from .lineage import LineageQueryService
+from .lineage.graph import LineageNode
+from .lineage.identifiers import parse_table_name
 from .parallel import create_object_queries, query_multiple_objects
 from .snow_cli import SnowCLI, SnowCLIError
 
@@ -36,6 +39,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     Primary features:
     - Data Catalog generation (JSON/JSONL)
     - Dependency Graph generation (DOT/JSON)
+    - Lineage Graph analysis (upstream/downstream traversal)
 
     Also includes a parallel query helper and convenience utilities.
 
@@ -354,8 +358,7 @@ def config():
     "-o",
     type=click.Path(),
     help=(
-        "Output path. Defaults to './dependencies' directory. "
-        "If a directory is provided, a default filename is used."
+        "Output path. Defaults to './dependencies' directory. If a directory is provided, a default filename is used."
     ),
 )
 @click.option("--format", "-f", type=click.Choice(["json", "dot"]), default="json")
@@ -670,6 +673,444 @@ def export_sql_cmd(input_dir: str, output_dir: Optional[str], workers: int):
     except SnowCLIError as e:
         console.print(f"[red]✗[/red] SQL export failed: {e}")
         sys.exit(1)
+
+
+@cli.group()
+def lineage() -> None:
+    """Lineage graph utilities backed by the local catalog."""
+
+
+@lineage.command()
+@click.option(
+    "--catalog-dir",
+    "-c",
+    type=click.Path(exists=True),
+    default="./data_catalogue",
+    show_default=True,
+    help="Catalog directory containing JSON/JSONL exports",
+)
+@click.option(
+    "--cache-dir",
+    type=click.Path(),
+    default="./lineage",
+    show_default=True,
+    help="Directory to store lineage cache artifacts",
+)
+def rebuild(catalog_dir: str, cache_dir: str) -> None:
+    """Parse catalog JSON and rebuild the cached lineage graph."""
+    service = LineageQueryService(catalog_dir, cache_dir)
+    console.print(
+        f"[blue]🧭[/blue] Rebuilding lineage graph from [cyan]{catalog_dir}[/cyan]"
+    )
+    console.print(f"[blue]ℹ[/blue] Cache directory: [cyan]{service.cache_dir}[/cyan]")
+    result = service.build(force=True)
+    totals = result.audit.totals()
+    console.print(
+        " | ".join(
+            [
+                f"Objects: {totals.get('objects', 0)}",
+                f"Parsed: {totals.get('parsed', 0)}",
+                f"Missing SQL: {totals.get('missing_sql', 0)}",
+                f"Parse errors: {totals.get('parse_error', 0)}",
+                f"Unknown refs: {len(result.audit.unknown_references)}",
+            ]
+        )
+    )
+
+
+@lineage.command()
+@click.argument("object_name")
+@click.option(
+    "--catalog-dir",
+    "-c",
+    type=click.Path(exists=True),
+    default="./data_catalogue",
+    show_default=True,
+    help="Catalog directory containing lineage graph artifacts",
+)
+@click.option(
+    "--cache-dir",
+    type=click.Path(),
+    default="./lineage",
+    show_default=True,
+    help="Directory to store lineage cache artifacts",
+)
+@click.option(
+    "--depth",
+    "-d",
+    type=int,
+    default=3,
+    show_default=True,
+    help="Maximum traversal depth (0 = only the object itself)",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json", "html"]),
+    default="text",
+    show_default=True,
+    help="Output format",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Output file (for JSON/HTML formats)",
+)
+def neighbors(
+    object_name: str,
+    catalog_dir: str,
+    cache_dir: str,
+    depth: int,
+    format: str,
+    output: Optional[str],
+) -> None:
+    """Show upstream AND downstream lineage for a Snowflake object.
+
+    This is the most common lineage query - see what depends on your object
+    AND what your object depends on, within a limited depth.
+
+    Examples:
+        snowflake-cli lineage neighbors MY_TABLE
+        snowflake-cli lineage neighbors MY_DB.MY_SCHEMA.MY_VIEW -d 5
+        snowflake-cli lineage neighbors MY_VIEW --format dot -o my_view.dot
+    """
+    _traverse_lineage(
+        object_name, catalog_dir, cache_dir, "both", depth, format, output
+    )
+
+
+@lineage.command()
+@click.argument("object_name")
+@click.option(
+    "--catalog-dir",
+    "-c",
+    type=click.Path(exists=True),
+    default="./data_catalogue",
+    show_default=True,
+    help="Catalog directory containing lineage graph artifacts",
+)
+@click.option(
+    "--cache-dir",
+    type=click.Path(),
+    default="./lineage",
+    show_default=True,
+    help="Directory to store lineage cache artifacts",
+)
+@click.option(
+    "--depth",
+    "-d",
+    type=int,
+    default=5,
+    show_default=True,
+    help="Maximum traversal depth (0 = only the object itself)",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json", "html"]),
+    default="text",
+    show_default=True,
+    help="Output format",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Output file (for JSON/HTML formats)",
+)
+def upstream(
+    object_name: str,
+    catalog_dir: str,
+    cache_dir: str,
+    depth: int,
+    format: str,
+    output: Optional[str],
+) -> None:
+    """Show what a Snowflake object DEPENDS ON (upstream lineage).
+
+    Follow the chain backwards to see source tables, views, and data sources
+    that this object relies on.
+
+    Examples:
+        snowflake-cli lineage upstream MY_TABLE
+        snowflake-cli lineage upstream MY_VIEW -d 10
+        snowflake-cli lineage upstream MY_VIEW --format json -o sources.json
+    """
+    _traverse_lineage(
+        object_name, catalog_dir, cache_dir, "upstream", depth, format, output
+    )
+
+
+@lineage.command()
+@click.argument("object_name")
+@click.option(
+    "--catalog-dir",
+    "-c",
+    type=click.Path(exists=True),
+    default="./data_catalogue",
+    show_default=True,
+    help="Catalog directory containing lineage graph artifacts",
+)
+@click.option(
+    "--cache-dir",
+    type=click.Path(),
+    default="./lineage",
+    show_default=True,
+    help="Directory to store lineage cache artifacts",
+)
+@click.option(
+    "--depth",
+    "-d",
+    type=int,
+    default=5,
+    show_default=True,
+    help="Maximum traversal depth (0 = only the object itself)",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json", "html"]),
+    default="text",
+    show_default=True,
+    help="Output format",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Output file (for JSON/HTML formats)",
+)
+def downstream(
+    object_name: str,
+    catalog_dir: str,
+    cache_dir: str,
+    depth: int,
+    format: str,
+    output: Optional[str],
+) -> None:
+    """Show what DEPENDS ON a Snowflake object (downstream lineage).
+
+    Follow the chain forward to see views, materialized views, and tasks
+    that depend on this object.
+
+    Examples:
+        snowflake-cli lineage downstream MY_TABLE
+        snowflake-cli lineage downstream MY_TABLE -d 3
+        snowflake-cli lineage downstream MY_TABLE --format dot -o dependents.dot
+    """
+    _traverse_lineage(
+        object_name, catalog_dir, cache_dir, "downstream", depth, format, output
+    )
+
+
+def _traverse_lineage(
+    object_name: str,
+    catalog_dir: str,
+    cache_dir: str,
+    direction: str,
+    depth: int,
+    format: str,
+    output: Optional[str],
+) -> None:
+    """Shared implementation for lineage traversal commands."""
+    service = LineageQueryService(catalog_dir, cache_dir)
+    cfg = get_config()
+    default_db = cfg.snowflake.database
+    default_schema = cfg.snowflake.schema
+    qn = parse_table_name(object_name).with_defaults(default_db, default_schema)
+    base_object_key = qn.key()
+    candidate_keys = [base_object_key]
+    if not base_object_key.endswith("::task"):
+        candidate_keys.append(f"{base_object_key}::task")
+
+    result = None
+    resolved_key: Optional[str] = None
+    for candidate in candidate_keys:
+        try:
+            result = service.object_subgraph(
+                candidate, direction=direction, depth=depth
+            )
+            resolved_key = candidate
+            break
+        except KeyError:
+            continue
+
+    if result is None or resolved_key is None:
+        console.print(
+            f"[red]✗[/red] Object not found in lineage graph: {base_object_key}"
+        )
+        sys.exit(1)
+
+    object_key = resolved_key
+
+    graph = result.graph
+    direction_desc = {
+        "upstream": "depends on",
+        "downstream": "is used by",
+        "both": "is connected to",
+    }[direction]
+
+    # Handle file output
+    if output and format in ["json", "html"]:
+        if format == "json":
+            output_path = Path(output)
+            output_path.write_text(
+                json.dumps(LineageQueryService.to_json(graph), indent=2)
+            )
+            console.print(f"[green]✓[/green] Lineage JSON written to {output_path}")
+        else:  # html
+            html_path = Path(output)
+            full_html_path = LineageQueryService.to_html(
+                graph,
+                html_path,
+                title=f"{direction.title()} Lineage: {object_key}",
+                root_key=object_key,
+            )
+            console.print(
+                f"[green]✓[/green] Interactive HTML lineage written to {full_html_path}"
+            )
+        return
+
+    # Auto-save JSON files to lineage/json/ directory (unless explicitly saved elsewhere)
+    if format == "json" and not output:
+        json_dir = Path("lineage/json")
+        json_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create filename based on object and direction
+        safe_name = object_key.replace(".", "_").replace("::", "_")
+        json_filename = f"{direction}_{safe_name}.json"
+        json_path = json_dir / json_filename
+
+        json_path.write_text(json.dumps(LineageQueryService.to_json(graph), indent=2))
+        console.print(f"[blue]💾[/blue] Lineage JSON auto-saved to {json_path}")
+
+    # Console output
+    if format == "json":
+        console.print_json(data=LineageQueryService.to_json(graph))
+        return
+
+    # Text output
+    console.print(
+        f"[blue]🔗[/blue] {direction.title()} lineage for [cyan]{object_key}[/cyan]"
+    )
+    console.print(
+        f"[blue]📏[/blue] Depth: {depth} | Nodes: {len(graph.nodes)} | Edges: {len(graph.edge_metadata)}"
+    )
+
+    if not graph.nodes:
+        console.print(f"[yellow]⚠[/yellow] No {direction} lineage found")
+        return
+
+    # Group nodes by type for better readability
+    by_type: Dict[str, List[LineageNode]] = {}
+    for node in graph.nodes.values():
+        node_type = node.node_type.value
+        if node_type not in by_type:
+            by_type[node_type] = []
+        by_type[node_type].append(node)
+
+    # Show summary by type
+    for node_type, nodes in sorted(by_type.items()):
+        plural = "s" if len(nodes) != 1 else ""
+        in_catalog = sum(1 for n in nodes if n.attributes.get("in_catalog") == "true")
+        console.print(
+            f"[blue]📊[/blue] {len(nodes)} {node_type}{plural} ({in_catalog} in catalog)"
+        )
+
+    # Show detailed edges
+    if graph.edge_metadata:
+        console.print(f"\n[blue]🔗[/blue] Connections ({direction_desc}):")
+        for (src, dst, edge_type), evidence in sorted(graph.edge_metadata.items()):
+            src_name = graph.nodes[src].attributes.get("name", src.split(".")[-1])
+            dst_name = graph.nodes[dst].attributes.get("name", dst.split(".")[-1])
+            console.print(f"  - {src_name} → {dst_name} [{edge_type.value}]")
+
+
+@lineage.command()
+@click.option(
+    "--catalog-dir",
+    "-c",
+    type=click.Path(exists=True),
+    default="./data_catalogue",
+    show_default=True,
+    help="Catalog directory containing lineage graph artifacts",
+)
+@click.option(
+    "--cache-dir",
+    type=click.Path(),
+    default="./lineage",
+    show_default=True,
+    help="Directory to store lineage cache artifacts",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+    help="Output format",
+)
+def audit(catalog_dir: str, cache_dir: str, format: str) -> None:
+    """Display lineage parsing coverage and unknown references."""
+    service = LineageQueryService(catalog_dir, cache_dir)
+    try:
+        lineage = service.load_cached()
+    except FileNotFoundError:
+        console.print(
+            "[red]✗[/red] Lineage graph not found. Run `snowflake-cli lineage rebuild` first."
+        )
+        sys.exit(1)
+
+    console.print(f"[blue]ℹ[/blue] Cache directory: [cyan]{service.cache_dir}[/cyan]")
+    audit_report = lineage.audit
+    if format == "json":
+        console.print_json(data=audit_report.to_dict())
+        return
+
+    totals = audit_report.totals()
+    console.print(
+        " | ".join(
+            [
+                f"Objects: {totals.get('objects', 0)}",
+                f"Parsed: {totals.get('parsed', 0)}",
+                f"Missing SQL: {totals.get('missing_sql', 0)}",
+                f"Parse errors: {totals.get('parse_error', 0)}",
+                f"Unknown refs: {len(audit_report.unknown_references)}",
+            ]
+        )
+    )
+    if audit_report.unknown_references:
+        console.print("\n[blue]Unresolved references:[/blue]")
+        for ref, count in audit_report.unknown_references.items():
+            console.print(f"  - {ref}: {count}")
+
+
+@lineage.command()
+def help() -> None:
+    """Show lineage command help and examples."""
+    console.print("\n[bold blue]🔗 Snowflake Lineage Commands[/bold blue]")
+    console.print("\n[bold]Workflow:[/bold]")
+    console.print("1. snowflake-cli lineage rebuild    # Build full lineage graph")
+    console.print("2. snowflake-cli lineage neighbors  # Query specific objects")
+    console.print("3. snowflake-cli lineage upstream   # What does this depend on?")
+    console.print("4. snowflake-cli lineage downstream # What depends on this?")
+    console.print("5. snowflake-cli lineage audit      # Check parsing coverage")
+
+    console.print("\n[bold]Quick Examples:[/bold]")
+    console.print("  snowflake-cli lineage neighbors MY_TABLE")
+    console.print("  snowflake-cli lineage upstream MY_VIEW -d 3")
+    console.print(
+        "  snowflake-cli lineage downstream MY_TABLE --format html -o my_table_downstream.html"
+    )
+    console.print("  snowflake-cli lineage audit --format json")
+
+    console.print("\n[bold]Tips:[/bold]")
+    console.print("  • Use -d to limit depth (default: 3-5 levels)")
+    console.print("  • Use --format html for interactive visualization")
+    console.print("  • HTML files are saved to lineage/html/ directory")
+    console.print("  • Use --output to specify custom filename")
+    console.print("  • Start with 'neighbors' to see both directions")
 
 
 @cli.command()
