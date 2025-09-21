@@ -6,7 +6,7 @@ from typing import Optional
 
 import pytest
 
-from snowcli_tools.cli import _traverse_lineage
+from snowcli_tools.cli import _traverse_lineage, find_matches_by_partial_name
 from snowcli_tools.lineage.audit import LineageAudit
 from snowcli_tools.lineage.builder import LineageBuilder
 from snowcli_tools.lineage.graph import EdgeType, LineageGraph, LineageNode, NodeType
@@ -167,6 +167,9 @@ def test_traverse_lineage_appends_task_suffix(
             self.catalog_dir = catalog_dir
             self.cache_dir = cache_dir
 
+        def load_cached(self) -> LineageQueryResult:
+            return result
+
         def object_subgraph(
             self,
             object_key: str,
@@ -226,6 +229,9 @@ def test_traverse_lineage_respects_html_output(
             self.catalog_dir = catalog_dir
             self.cache_dir = cache_dir
 
+        def load_cached(self) -> LineageQueryResult:
+            return result
+
         def object_subgraph(
             self,
             object_key: str,
@@ -252,3 +258,148 @@ def test_traverse_lineage_respects_html_output(
     )
 
     assert captured["path"] == output_path
+
+
+def test_find_matches_by_partial_name_includes_schema_tokens() -> None:
+    graph = LineageGraph()
+    graph.add_node(
+        LineageNode(
+            key="PIPELINE.RAW.VW_SAMPLE",
+            node_type=NodeType.DATASET,
+            attributes={
+                "database": "PIPELINE",
+                "schema": "RAW",
+                "name": "VW_SAMPLE",
+            },
+        )
+    )
+    graph.add_node(
+        LineageNode(
+            key="PIPELINE.ANALYTICS.VW_OTHER",
+            node_type=NodeType.DATASET,
+            attributes={
+                "database": "PIPELINE",
+                "schema": "ANALYTICS",
+                "name": "VW_OTHER",
+            },
+        )
+    )
+
+    matches = find_matches_by_partial_name("RAW.VW", graph)
+    assert matches == ["PIPELINE.RAW.VW_SAMPLE"]
+
+
+def test_traverse_lineage_partial_match_unique(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[str] = []
+
+    cached_graph = LineageGraph()
+    cached_graph.add_node(
+        LineageNode(
+            key="PIPELINE.RAW.VW_SAMPLE",
+            node_type=NodeType.DATASET,
+            attributes={
+                "database": "PIPELINE",
+                "schema": "RAW",
+                "name": "VW_SAMPLE",
+            },
+        )
+    )
+
+    query_graph = LineageGraph()
+    query_graph.add_node(
+        LineageNode(
+            key="PIPELINE.RAW.VW_SAMPLE",
+            node_type=NodeType.DATASET,
+        )
+    )
+
+    cached_result = LineageQueryResult(graph=cached_graph, audit=LineageAudit())
+    query_result = LineageQueryResult(graph=query_graph, audit=LineageAudit())
+
+    class DummyService:
+        def __init__(self, catalog_dir: str | Path, cache_dir: str | Path) -> None:
+            self.catalog_dir = catalog_dir
+            self.cache_dir = cache_dir
+
+        def load_cached(self) -> LineageQueryResult:
+            return cached_result
+
+        def object_subgraph(
+            self,
+            object_key: str,
+            *,
+            direction: str,
+            depth: Optional[int],
+        ) -> LineageQueryResult:
+            calls.append(object_key)
+            if object_key == "PIPELINE.RAW.VW_SAMPLE":
+                return query_result
+            raise KeyError(object_key)
+
+    monkeypatch.setattr("snowcli_tools.cli.LineageQueryService", DummyService)
+
+    _traverse_lineage(
+        "VW_SAMPLE",
+        str(tmp_path / "catalog"),
+        str(tmp_path / "cache"),
+        "upstream",
+        2,
+        "text",
+        None,
+    )
+
+    assert calls[0:2] == ["VW_SAMPLE", "VW_SAMPLE::task"]
+    assert calls[-1] == "PIPELINE.RAW.VW_SAMPLE"
+
+
+def test_traverse_lineage_partial_match_multiple_requires_disambiguation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    cached_graph = LineageGraph()
+    for schema in ("RAW", "ANALYTICS"):
+        cached_graph.add_node(
+            LineageNode(
+                key=f"PIPELINE.{schema}.VW_SAMPLE",
+                node_type=NodeType.DATASET,
+                attributes={
+                    "database": "PIPELINE",
+                    "schema": schema,
+                    "name": "VW_SAMPLE",
+                },
+            )
+        )
+
+    cached_result = LineageQueryResult(graph=cached_graph, audit=LineageAudit())
+
+    class DummyService:
+        def __init__(self, catalog_dir: str | Path, cache_dir: str | Path) -> None:
+            self.catalog_dir = catalog_dir
+            self.cache_dir = cache_dir
+
+        def load_cached(self) -> LineageQueryResult:
+            return cached_result
+
+        def object_subgraph(
+            self,
+            object_key: str,
+            *,
+            direction: str,
+            depth: Optional[int],
+        ) -> LineageQueryResult:
+            raise KeyError(object_key)
+
+    monkeypatch.setattr("snowcli_tools.cli.LineageQueryService", DummyService)
+    monkeypatch.setattr("snowcli_tools.cli.sys.stdin.isatty", lambda: False)
+
+    with pytest.raises(SystemExit):
+        _traverse_lineage(
+            "VW_SAMPLE",
+            str(tmp_path / "catalog"),
+            str(tmp_path / "cache"),
+            "upstream",
+            1,
+            "text",
+            None,
+        )

@@ -73,6 +73,17 @@ Changes
 - depgraph: accept a directory for -o/--output and write default filename
   (dependencies.json or dependencies.dot) into the directory.
 
+# SNOWCLI-TOOLS v1.3.0 (Lineage search refinements)
+
+Highlights
+- Lineage CLI now supports partial name lookup with interactive disambiguation.
+- HTML/JSON exports honor custom output paths and task keys resolve automatically.
+- Documentation + examples cover the lineage workflow end-to-end.
+
+Notes
+- Run `snowflake-cli lineage rebuild` after refreshing your catalog to update the cache.
+- Use partial names for quick lookups; the CLI will prompt when multiple candidates exist.
+
 # SNOWCLI-TOOLS v1.2.0 (Incremental catalog + SQL export)
 
 Highlights

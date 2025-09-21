@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -14,8 +15,9 @@ from .catalog import build_catalog, export_sql_from_catalog
 from .config import Config, get_config, set_config
 from .dependency import build_dependency_graph, to_dot
 from .lineage import LineageQueryService
-from .lineage.graph import LineageNode
-from .lineage.identifiers import parse_table_name
+from .lineage.graph import LineageGraph, LineageNode
+from .lineage.identifiers import QualifiedName, parse_table_name
+from .lineage.queries import LineageQueryResult
 from .parallel import create_object_queries, query_multiple_objects
 from .snow_cli import SnowCLI, SnowCLIError
 
@@ -32,7 +34,7 @@ console = Console()
 )
 @click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option(version="1.2.0")
+@click.version_option(version="1.3.0")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     """Snowflake CLI Tools - Efficient database operations CLI.
 
@@ -67,7 +69,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
             console.print(f"[green]✓[/green] Using profile: {profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.2.0")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.3.0")
 
 
 @cli.command()
@@ -924,8 +926,9 @@ def _traverse_lineage(
     if not base_object_key.endswith("::task"):
         candidate_keys.append(f"{base_object_key}::task")
 
-    result = None
+    result: Optional[LineageQueryResult] = None
     resolved_key: Optional[str] = None
+
     for candidate in candidate_keys:
         try:
             result = service.object_subgraph(
@@ -935,6 +938,40 @@ def _traverse_lineage(
             break
         except KeyError:
             continue
+
+    if result is None or resolved_key is None:
+        try:
+            cached = service.load_cached()
+        except FileNotFoundError:
+            console.print(
+                "[red]✗[/red] Lineage graph not available. Run `snowflake-cli lineage rebuild` first."
+            )
+            sys.exit(1)
+
+        matches = find_matches_by_partial_name(object_name, cached.graph)
+
+        if not matches:
+            console.print(
+                f"[red]✗[/red] No matches found for '{object_name}' in lineage graph"
+            )
+            console.print(
+                "[dim]💡[/dim] Try using the fully qualified name (database.schema.object)."
+            )
+            sys.exit(1)
+
+        resolved_key, result = resolve_partial_match(
+            matches,
+            object_name,
+            base_object_key,
+            qn,
+            cached.graph,
+            service,
+            direction,
+            depth,
+        )
+
+        if result is None or resolved_key is None:
+            sys.exit(1)
 
     if result is None or resolved_key is None:
         console.print(
@@ -1130,6 +1167,112 @@ def init_config(config_path: str):
     except Exception as e:
         console.print(f"[red]✗[/red] Failed to create configuration: {e}")
         sys.exit(1)
+
+
+def resolve_partial_match(
+    matches: List[str],
+    raw_input: str,
+    base_object_key: str,
+    parsed_input: QualifiedName,
+    graph: LineageGraph,
+    service: LineageQueryService,
+    direction: str,
+    depth: int,
+) -> tuple[Optional[str], Optional[LineageQueryResult]]:
+    """Select the best match and execute the lineage query."""
+
+    def _try(lineage_key: str) -> tuple[Optional[str], Optional[LineageQueryResult]]:
+        try:
+            result = service.object_subgraph(
+                lineage_key, direction=direction, depth=depth
+            )
+            console.print(f"[green]✓[/green] Using lineage node: {lineage_key}")
+            return lineage_key, result
+        except KeyError:
+            return None, None
+
+    normalized_target = base_object_key.lower()
+    exact_key_matches = [key for key in matches if key.lower() == normalized_target]
+    if exact_key_matches:
+        return _try(exact_key_matches[0])
+
+    target_name = parsed_input.name.lower()
+
+    def _object_name(lineage_key: str) -> str:
+        return lineage_key.replace("::task", "").split(".")[-1].lower()
+
+    name_matches = [key for key in matches if _object_name(key) == target_name]
+    if len(name_matches) == 1:
+        return _try(name_matches[0])
+
+    if len(matches) == 1:
+        return _try(matches[0])
+
+    chosen = disambiguate_matches(matches, raw_input, graph)
+    if chosen is None:
+        return None, None
+    return _try(chosen)
+
+
+def find_matches_by_partial_name(partial_name: str, graph: LineageGraph) -> List[str]:
+    """Find objects in the lineage graph that contain all tokens of the partial name."""
+    tokens = [token for token in re.split(r"[\s.]+", partial_name.lower()) if token]
+    if not tokens:
+        return []
+
+    matches: List[str] = []
+    seen: set[str] = set()
+
+    for node_key, node in graph.nodes.items():
+        key_lower = node_key.lower()
+        haystacks = {key_lower}
+
+        attrs = node.attributes
+        db = attrs.get("database", "").lower()
+        schema = attrs.get("schema", "").lower()
+        name = attrs.get("name", "").lower()
+
+        if name:
+            haystacks.add(name)
+        if schema and name:
+            haystacks.add(f"{schema}.{name}")
+        if db and schema and name:
+            haystacks.add(f"{db}.{schema}.{name}")
+
+        for haystack in haystacks:
+            if haystack and all(token in haystack for token in tokens):
+                if node_key not in seen:
+                    matches.append(node_key)
+                    seen.add(node_key)
+                break
+
+    return matches
+
+
+def disambiguate_matches(
+    matches: List[str], raw_input: str, graph: LineageGraph
+) -> Optional[str]:
+    """Prompt the user to select a match when multiple options exist."""
+    if not sys.stdin.isatty():
+        console.print(
+            f"[red]✗[/red] Ambiguous lineage lookup for '{raw_input}'. "
+            "Provide a more specific name (e.g. database.schema.object)."
+        )
+        return None
+
+    console.print(f"[yellow]⚠[/yellow] Found {len(matches)} matches for '{raw_input}':")
+    for index, key in enumerate(matches, start=1):
+        node = graph.nodes.get(key)
+        obj_type = node.attributes.get("object_type") if node else None
+        type_label = f" [{obj_type}]" if obj_type else ""
+        console.print(f"  {index}. {key}{type_label}")
+
+    choice = click.prompt(
+        "Select the desired object",
+        type=click.IntRange(1, len(matches)),
+        default=1,
+    )
+    return matches[choice - 1]
 
 
 def main():
