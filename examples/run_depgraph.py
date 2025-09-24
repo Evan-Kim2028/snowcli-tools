@@ -1,15 +1,23 @@
-"""Example: Build a lineage cache and export focused lineage views.
+"""Example: Build a lineage cache and export focused lineage views for the sample dataset.
 
 Usage:
-  # 1) Build a catalog first (see README for catalog options)
-  uv run snowflake-cli catalog --database MY_DB --output-dir ./data_catalogue
+  # 1) Set up the sample dataset first
+  uv run python examples/sample_data/setup_sample_data.py
 
-  # 2) Run this example to rebuild the lineage cache and emit JSON/HTML outputs
+  # 2) Build a catalog for the sample data
+  uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o ./sample_data_catalog
+
+  # 3) Run this example to rebuild the lineage cache and emit JSON/HTML outputs
   uv run python examples/run_depgraph.py \
-    --catalog-dir ./data_catalogue \
-    --object PIPELINE.RAW.VW_SAMPLE \
+    --catalog-dir ./sample_data_catalog \
+    --object DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE \
     --direction both \
-    --depth 3
+    --depth 2
+
+  # Try other sample objects:
+  # --object DEFI_SAMPLE_DB.ANALYTICS.FILTERED_DEX_TRADES_VIEW
+  # --object DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT
+  # --object DEFI_SAMPLE_DB.PROCESSED.COIN_INFO
 """
 
 from __future__ import annotations
@@ -60,19 +68,19 @@ def main() -> None:
     parser.add_argument(
         "--catalog-dir",
         type=Path,
-        default=Path("./data_catalogue"),
-        help="Path to a catalog directory containing JSON/JSONL exports",
+        default=Path("./sample_data_catalog"),
+        help="Path to a catalog directory containing JSON/JSONL exports (default: sample data catalog)",
     )
     parser.add_argument(
         "--cache-dir",
         type=Path,
-        default=Path("./lineage"),
+        default=Path("./sample_lineage"),
         help="Directory to store lineage cache artifacts",
     )
     parser.add_argument(
         "--object",
-        required=True,
-        help="Fully qualified object name to inspect (e.g. DB.SCHEMA.OBJECT)",
+        default="DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+        help="Fully qualified object name (default: main fact table from sample data)",
     )
     parser.add_argument(
         "--direction",
@@ -83,13 +91,13 @@ def main() -> None:
     parser.add_argument(
         "--depth",
         type=int,
-        default=3,
-        help="Traversal depth (0 = only the object itself)",
+        default=2,
+        help="Traversal depth (0 = only the object itself, default: 2 for sample data)",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("./lineage/example_outputs"),
+        default=Path("./sample_lineage_outputs"),
         help="Directory to place JSON/HTML lineage artifacts",
     )
     args = parser.parse_args()
@@ -97,8 +105,10 @@ def main() -> None:
     if not args.catalog_dir.exists():
         print(
             f"[lineage-example] Catalog directory {args.catalog_dir} not found. "
-            "Run `snowflake-cli catalog` first.",
+            "Run the following commands first:",
         )
+        print("  uv run python examples/sample_data/setup_sample_data.py")
+        print(f"  uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o {args.catalog_dir}")
         sys.exit(1)
 
     service = LineageQueryService(args.catalog_dir, args.cache_dir)

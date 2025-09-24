@@ -1,0 +1,3680 @@
+{
+  "nodes": [
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DEX_TRADES_STABLE",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_DEX_TRADES_USD_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "CURRENT_BALANCES",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_POOLS_DAILY_METRICS_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_POOL_ACTIVITY_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "POTENTIAL_WASH_TRADER_POOL_ACTIVITY_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_POOL_ACTIVITY_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADERS_BY_VARIANT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_TRADERS_BY_VARIANT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADERS_BY_VARIANT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FIRST_PARTY_APP_SWAPS_DAILY_PERCENT_COUNT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "FIRST_PARTY_APP_SWAPS_DAILY_PERCENT_COUNT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FIRST_PARTY_APP_SWAPS_DAILY_PERCENT_COUNT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_RELATED_TOP_TOKENS_DAILY",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FILTERED_DEX_TRADES_VIEW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "FILTERED_DEX_TRADES_VIEW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FILTERED_DEX_TRADES_VIEW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_TOKEN_SENDER_OVERLAP_DAILY",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES_BTC_POOLS_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DAILY_TRADES_BTC_POOLS_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES_BTC_POOLS_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.WAL_TRADES",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "WAL_TRADES",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.WAL_TRADES",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_NAMES_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "POOL_NAMES_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_NAMES_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DEX_TRADES_STABLE",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DEX_PRICES_STABLE",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "COIN_INFO_BTC",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_CETUS_RAW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AVG_PRICES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_NAMES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_BLUEFIN_RAW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DEX_PRICES_STABLE",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_USD_DAILY_AGG",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_DEX_USER_ACTIVITY_DAILY_UPDATE",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.MAIN",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.PRICES_AVERAGED",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_DECIMALS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "OBJECT_LATEST",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "OBJECT_PARQUET2",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_PRICES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_NON_SUI",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_PRICES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AVG_PRICES_NON_SUI",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_DAILY_METRICS",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DEEPBOOK_POOLS_DAILY_METRICS",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_DAILY_METRICS",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COMBINED_COIN_INFO",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "COIN_INFO",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_BTC_PRICES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_BTC_POOLS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKENS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AMM_METRICS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_METRICS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_DAILY_AGG",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING_VOLUME_VIEW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_TRADING_VOLUME_VIEW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING_VOLUME_VIEW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_CATEGORIZED_VOLUME_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_POOLS_CATEGORIZED_VOLUME_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_CATEGORIZED_VOLUME_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SENDEROVERALLMETRICS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SENDERPOOLACTIVITY",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_SUMMARY_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "POTENTIAL_WASH_TRADER_SUMMARY_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_SUMMARY_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DIRECT_BTC_MODIFICATIONS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_BTC_CANDIDATE_TRADES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_WAL_DIGESTS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_DEEP_DIGESTS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TOTAL_DIGESTS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DIGESTS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_SWAPS_IN_BTC_DIGESTS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TOKEN_FREQUENCY",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_COIN_TYPES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TRANSACTIONUSERCOINS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TRADES_WITH_TOKEN",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_DATES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_SENDERS_PER_TOKEN",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TARGET_BTC_SYMBOLS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_PER_TOKEN_OVERLAPS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.PIVOTED_DATA",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "ALL_DAILY_TOKEN_PRICES_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LATEST_BTC_POOLS_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_BASE_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_POOLS_DAILY_METRICS_BASE_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_BASE_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_WAL_CANDIDATE_TRADES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DIRECT_WAL_MODIFICATIONS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLPAIRCOUNTS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CANONICALPOOLPAIRS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_METASTABLE_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_METASTABLE_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_METASTABLE_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_KRIYA_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_KRIYA_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_KRIYA_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_MOMENTUM_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_MOMENTUM_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_MOMENTUM_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_CETUS_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_CETUS_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_CETUS_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEFIN_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_BLUEFIN_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEFIN_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_MOMENTUM_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "POOLS_MOMENTUM_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_MOMENTUM_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_KRIYA_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "POOLS_KRIYA_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_KRIYA_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COININFOCTE",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEMOVE_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_BLUEMOVE_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEMOVE_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_OBRIC_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_OBRIC_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_OBRIC_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_BLUEFIN_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "POOLS_BLUEFIN_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_BLUEFIN_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_CETUS_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "POOLS_CETUS_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_CETUS_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPEVENTCTE",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_AFTERMATH_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_AFTERMATH_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_AFTERMATH_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_FLOWX_MV",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SWAPS_FLOWX_MV",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_FLOWX_MV",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLCTE",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_POOL_AGG",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_USDC_PRICES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TOKEN_AGG",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FILTERED_TRADES",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.GLOBAL_SUI_PRICE",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_LATEST_BALANCES_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_LATEST_BALANCES_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_LATEST_BALANCES_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_AGGREGATED_SUPPLIES",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_METRICS_DAILY_V_AGGREGATED_SUPPLIES",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_AGGREGATED_SUPPLIES",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOTAL_SUPPLY_CHANGES_DAILY",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_TOTAL_SUPPLY_CHANGES_DAILY",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOTAL_SUPPLY_CHANGES_DAILY",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.STG_BTC_SUPPLY_SILVER",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "STG_BTC_SUPPLY_SILVER",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.STG_BTC_SUPPLY_SILVER",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_SUPPLY_UPDATES",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_METRICS_DAILY_V_SUPPLY_UPDATES",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_SUPPLY_UPDATES",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_LEGACY_PERPS_DAILY_MARKET_METRICS_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BLUEFIN_LEGACY_PERPS_DAILY_MARKET_METRICS_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_LEGACY_PERPS_DAILY_MARKET_METRICS_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_VARIANT_DAILY_SUPPLY_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_VARIANT_DAILY_SUPPLY_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_VARIANT_DAILY_SUPPLY_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_USERS_DAILY_VIEW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_USERS_DAILY_VIEW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_USERS_DAILY_VIEW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_CETUS_RAW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_BLUEFIN_RAW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_PRICE_FEED",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_METRICS_DAILY_V_PRICE_FEED",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_PRICE_FEED",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEPOSITOR_BORROW_LIQUIDATION_MTM_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_DEPOSITOR_BORROW_LIQUIDATION_MTM_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEPOSITOR_BORROW_LIQUIDATION_MTM_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_USD_DAILY_AGG",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LENDING_RESERVES_MARKET_PREPROCESSED_TASK::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LENDING_RESERVES_MARKET_PREPROCESSED_TASK",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LENDING_RESERVES_MARKET_PREPROCESSED_TASK",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDATION_LENDING_EVENTS_HOURLY::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDATION_LENDING_EVENTS_HOURLY",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDATION_LENDING_EVENTS_HOURLY",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_POOL_CATEGORIES_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DEX_POOL_CATEGORIES_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_POOL_CATEGORIES_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.RECENT_BTC_TRANSACTIONS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LABELED_TRANSACTIONS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_OBJECT_INTERACTION",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_COIN_INFO",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_USER_ACTIVITY",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BTC_DEX_TRADES_USD_USER_ACTIVITY",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_USER_ACTIVITY",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_GENERALIZED_LP_LIVE_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BLUEFIN_GENERALIZED_LP_LIVE_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_GENERALIZED_LP_LIVE_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CETUS_GENERALIZED_LP_LIVE_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "CETUS_GENERALIZED_LP_LIVE_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CETUS_GENERALIZED_LP_LIVE_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_ACCOUNT_BALANCES_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LATEST_ACCOUNT_BALANCES_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_ACCOUNT_BALANCES_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.GET_WAL_AIRDROPPERS_STAKERS::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "GET_WAL_AIRDROPPERS_STAKERS",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.GET_WAL_AIRDROPPERS_STAKERS",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.UPDATE_LATEST_ACCOUNT_BALANCES::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "UPDATE_LATEST_ACCOUNT_BALANCES",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.UPDATE_LATEST_ACCOUNT_BALANCES",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_UPDATE::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "OBJECT_LATEST_UPDATE",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_UPDATE",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "OBJECT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TREASURY_CAP_HOURLY_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "TREASURY_CAP_HOURLY_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TREASURY_CAP_HOURLY_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LENDING_RESERVES_MARKET_RAW_VIEW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LENDING_RESERVES_MARKET_RAW_VIEW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LENDING_RESERVES_MARKET_RAW_VIEW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_OLD",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "OBJECT_LATEST_OLD",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_OLD",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.STG_BTC_SUPPLY_BRONZE",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "STG_BTC_SUPPLY_BRONZE",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.STG_BTC_SUPPLY_BRONZE",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_TREASURY_CAP_RAW_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "COIN_TREASURY_CAP_RAW_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_TREASURY_CAP_RAW_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUILEND_OBLIGATIONS_RAW_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SUILEND_OBLIGATIONS_RAW_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUILEND_OBLIGATIONS_RAW_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_WALLET_SWAPS_USER_ROLLUP",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SUI_WALLET_SWAPS_USER_ROLLUP",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_WALLET_SWAPS_USER_ROLLUP",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_OWNER_COUNTS_HOURLY_DT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "OBJECT_OWNER_COUNTS_HOURLY_DT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_OWNER_COUNTS_HOURLY_DT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OWNER_FIRST_OBJECT_MUTATION_ONGOING_TASK::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "OWNER_FIRST_OBJECT_MUTATION_ONGOING_TASK",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OWNER_FIRST_OBJECT_MUTATION_ONGOING_TASK",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BACKFILL_OWNER_FIRST_OBJECT_CREATION_TASK::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BACKFILL_OWNER_FIRST_OBJECT_CREATION_TASK",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BACKFILL_OWNER_FIRST_OBJECT_CREATION_TASK",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.NATIVE_SUI_BRIDGE_FLOWS_TASK::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "NATIVE_SUI_BRIDGE_FLOWS_TASK",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.NATIVE_SUI_BRIDGE_FLOWS_TASK",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_METRICS_TASK::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DEEPBOOK_POOLS_METRICS_TASK",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_METRICS_TASK",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BF_SUI_VS_DEEPBOOK_VOLUME_COMPARISON_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "BF_SUI_VS_DEEPBOOK_VOLUME_COMPARISON_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BF_SUI_VS_DEEPBOOK_VOLUME_COMPARISON_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CIRCLE_USDC_TRANSFERS_VIEW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "CIRCLE_USDC_TRANSFERS_VIEW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CIRCLE_USDC_TRANSFERS_VIEW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUILEND_HISTORICAL_POSITIONS_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "SUILEND_HISTORICAL_POSITIONS_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUILEND_HISTORICAL_POSITIONS_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ZO_PERPS_DAILY_METRICS_V",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "ZO_PERPS_DAILY_METRICS_V",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ZO_PERPS_DAILY_METRICS_V",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_USDC_WUSDC_METRICS",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "DAILY_USDC_WUSDC_METRICS",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_USDC_WUSDC_METRICS",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TLP_PERPS_DAILY_METRICS_VIEW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "TLP_PERPS_DAILY_METRICS_VIEW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TLP_PERPS_DAILY_METRICS_VIEW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_MOMENTUM_RAW_TASK::task",
+      "type": "task",
+      "attributes": {
+        "object_type": "task",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_MOMENTUM_RAW_TASK",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_MOMENTUM_RAW_TASK",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_MOMENTUM_RAW",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "LIQUIDITY_MOMENTUM_RAW",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_MOMENTUM_RAW",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COMBINED_DATA",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_SYMBOLS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTCINFO",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CATEGORIZEDPOOLS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AGGREGATEDDATA",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CATEGORIZED_POOLS",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_CLASSIFICATION",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_OUT_CONVERSION",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT_PARQUET",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "view",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "EVENT_PARQUET",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT_PARQUET",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT_DATA",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_IN_CONVERSION",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "dataset",
+      "attributes": {
+        "object_type": "table",
+        "database": "PIPELINE_V2_GROOT_DB",
+        "schema": "PIPELINE_V2_GROOT_SCHEMA",
+        "name": "EVENT",
+        "fqn": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+        "in_catalog": "true"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENTJSONCTE",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    },
+    {
+      "key": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLCREATEDEVENTCTE",
+      "type": "dataset",
+      "attributes": {
+        "in_catalog": "false"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_POOL_ACTIVITY_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADERS_BY_VARIANT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FIRST_PARTY_APP_SWAPS_DAILY_PERCENT_COUNT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FILTERED_DEX_TRADES_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES_BTC_POOLS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.WAL_TRADES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_NAMES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AVG_PRICES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_NAMES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_DT",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.MAIN",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.PRICES_AVERAGED",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_DECIMALS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_PRICES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_NON_SUI",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CURRENT_BALANCES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_PRICES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AVG_PRICES_NON_SUI",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_DAILY_METRICS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COMBINED_COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_BTC_PRICES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_BTC_POOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKENS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AMM_METRICS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_METRICS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING_VOLUME_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_CATEGORIZED_VOLUME_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_POOL_ACTIVITY_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SENDEROVERALLMETRICS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_POOL_ACTIVITY_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SENDERPOOLACTIVITY",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_SUMMARY_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POTENTIAL_WASH_TRADER_POOL_ACTIVITY_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADERS_BY_VARIANT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADERS_BY_VARIANT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DIRECT_BTC_MODIFICATIONS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADERS_BY_VARIANT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADERS_BY_VARIANT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_BTC_CANDIDATE_TRADES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FIRST_PARTY_APP_SWAPS_DAILY_PERCENT_COUNT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_WAL_DIGESTS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FIRST_PARTY_APP_SWAPS_DAILY_PERCENT_COUNT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_DEEP_DIGESTS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FIRST_PARTY_APP_SWAPS_DAILY_PERCENT_COUNT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TOTAL_DIGESTS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DIGESTS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_SWAPS_IN_BTC_DIGESTS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TOKEN_FREQUENCY",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_RELATED_TOP_TOKENS_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_COIN_TYPES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FILTERED_DEX_TRADES_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FILTERED_DEX_TRADES_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TRANSACTIONUSERCOINS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TRADES_WITH_TOKEN",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_DATES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_SENDERS_PER_TOKEN",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TARGET_BTC_SYMBOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_PER_TOKEN_OVERLAPS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKEN_SENDER_OVERLAP_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.PIVOTED_DATA",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES_BTC_POOLS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES_BTC_POOLS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_BASE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_TRADES_BTC_POOLS_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.WAL_TRADES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_WAL_CANDIDATE_TRADES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.WAL_TRADES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.WAL_TRADES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DIRECT_WAL_MODIFICATIONS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_NAMES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLPAIRCOUNTS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_NAMES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CANONICALPOOLPAIRS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_METASTABLE_DT",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_KRIYA_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_MOMENTUM_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_CETUS_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEFIN_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_MOMENTUM_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_KRIYA_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COININFOCTE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEMOVE_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_OBRIC_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_BLUEFIN_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_CETUS_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPEVENTCTE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_AFTERMATH_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_FLOWX_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_TRADES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLCTE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_POOL_AGG",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_USDC_PRICES",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TOKEN_AGG",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.FILTERED_TRADES",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.GLOBAL_SUI_PRICE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_LATEST_BALANCES_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_AGGREGATED_SUPPLIES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOTAL_SUPPLY_CHANGES_DAILY",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING_VOLUME_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.STG_BTC_SUPPLY_SILVER",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_SUPPLY_UPDATES",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_LEGACY_PERPS_DAILY_MARKET_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_VARIANT_DAILY_SUPPLY_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_USERS_DAILY_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO_BTC",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_PRICE_FEED",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEPOSITOR_BORROW_LIQUIDATION_MTM_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LENDING_RESERVES_MARKET_PREPROCESSED_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDATION_LENDING_EVENTS_HOURLY::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_PRICES_STABLE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_POOL_CATEGORIES_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.RECENT_BTC_TRANSACTIONS",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LABELED_TRANSACTIONS",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_OBJECT_INTERACTION",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_USER_ACTIVITY_DAILY_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_DEX_TRADES_USD_USER_ACTIVITY",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_GENERALIZED_LP_LIVE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_DECIMALS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CETUS_GENERALIZED_LP_LIVE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_DECIMALS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_LATEST_BALANCES_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_GENERALIZED_LP_LIVE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_ACCOUNT_BALANCES_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CETUS_GENERALIZED_LP_LIVE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.GET_WAL_AIRDROPPERS_STAKERS::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.UPDATE_LATEST_ACCOUNT_BALANCES::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TREASURY_CAP_HOURLY_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LENDING_RESERVES_MARKET_RAW_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_OLD",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.STG_BTC_SUPPLY_BRONZE",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_TREASURY_CAP_RAW_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUILEND_OBLIGATIONS_RAW_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_WALLET_SWAPS_USER_ROLLUP",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_OWNER_COUNTS_HOURLY_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OWNER_FIRST_OBJECT_MUTATION_ONGOING_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_LATEST_UPDATE::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BACKFILL_OWNER_FIRST_OBJECT_CREATION_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.GET_WAL_AIRDROPPERS_STAKERS::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.NATIVE_SUI_BRIDGE_FLOWS_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.OBJECT_PARQUET2",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_METRICS_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_PRICES",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_METRICS_DAILY_V_PRICE_FEED",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_PRICES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUI_PRICES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AVG_PRICES_NON_SUI",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_METRICS_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_DAILY_METRICS",
+      "type": "produces",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BF_SUI_VS_DEEPBOOK_VOLUME_COMPARISON_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_DAILY_METRICS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.NATIVE_SUI_BRIDGE_FLOWS_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COMBINED_COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_METRICS_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COMBINED_COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CIRCLE_USDC_TRANSFERS_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUILEND_HISTORICAL_POSITIONS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ZO_PERPS_DAILY_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_GENERALIZED_LP_LIVE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_ACCOUNT_BALANCES_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BLUEFIN_LEGACY_PERPS_DAILY_MARKET_METRICS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DAILY_USDC_WUSDC_METRICS",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CETUS_GENERALIZED_LP_LIVE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.TLP_PERPS_DAILY_METRICS_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDATION_LENDING_EVENTS_HOURLY::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LENDING_RESERVES_MARKET_PREPROCESSED_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_MOMENTUM_RAW_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.UPDATE_LATEST_ACCOUNT_BALANCES::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.NATIVE_SUI_BRIDGE_FLOWS_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEEPBOOK_POOLS_METRICS_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_INFO",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.DEX_BTC_PRICES",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_USERS_DAILY_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TOKENS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_MOMENTUM_RAW",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COMBINED_DATA",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_USD_DAILY_AGG::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_BASE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_DAILY_AGG",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING_VOLUME_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_SYMBOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING_VOLUME_VIEW",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_TRADING",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTCINFO",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CATEGORIZEDPOOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOL_ACTIVITY_BY_PAIR_TYPE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.AGGREGATEDDATA",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_CATEGORIZED_VOLUME_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.CATEGORIZED_POOLS",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_CATEGORIZED_VOLUME_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOL_CLASSIFICATION",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_CATEGORIZED_VOLUME_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_CATEGORIZED_VOLUME_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_BASE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.ALL_DAILY_TOKEN_PRICES_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.BTC_POOLS_DAILY_METRICS_BASE_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LATEST_BTC_POOLS_V",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_METASTABLE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_OUT_CONVERSION",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_METASTABLE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT_PARQUET",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_METASTABLE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT_DATA",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_METASTABLE_DT",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COIN_IN_CONVERSION",
+      "type": "derives_from",
+      "evidence": {
+        "source": "dynamic_table",
+        "source_file": "dynamic_tables.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_KRIYA_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_MOMENTUM_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_CETUS_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEFIN_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEFIN_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENTJSONCTE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_MOMENTUM_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_KRIYA_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COININFOCTE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_BLUEFIN_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COININFOCTE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_MOMENTUM_RAW_TASK::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COININFOCTE",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SUILEND_HISTORICAL_POSITIONS_V",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.COININFOCTE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "view",
+        "source_file": "views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEMOVE_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_BLUEMOVE_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENTJSONCTE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_OBRIC_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_OBRIC_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENTJSONCTE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_BLUEFIN_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_BLUEFIN_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLCREATEDEVENTCTE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_CETUS_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.LIQUIDITY_CETUS_RAW::task",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.POOLS_CETUS_MV",
+      "type": "consumes",
+      "evidence": {
+        "source": "task",
+        "source_file": "tasks.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_AFTERMATH_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_AFTERMATH_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENTJSONCTE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_FLOWX_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENT",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    },
+    {
+      "src": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.SWAPS_FLOWX_MV",
+      "dst": "PIPELINE_V2_GROOT_DB.PIPELINE_V2_GROOT_SCHEMA.EVENTJSONCTE",
+      "type": "derives_from",
+      "evidence": {
+        "source": "materialized_view",
+        "source_file": "materialized_views.jsonl"
+      }
+    }
+  ]
+}

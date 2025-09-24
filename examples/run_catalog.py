@@ -2,11 +2,12 @@
 """Example: Build a Snowflake data catalog via Python API and CLI.
 
 This script demonstrates:
-1) Using the Python API to build a catalog
+1) Using the Python API to build a catalog for the sample DeFi dataset
 2) The equivalent CLI commands
 
 Prereqs:
 - Configure a Snowflake CLI connection (e.g., `uv run snow connection add ...`)
+- Set up the sample dataset: python examples/sample_data/setup_sample_data.py
 - Optionally export SNOWFLAKE_PROFILE or pass --profile to the CLI
 """
 
@@ -22,21 +23,23 @@ sys.path.append(str((Path(__file__).resolve().parents[1] / "src")))
 
 
 def run_python_example():
-    out_dir = Path("./data_catalogue")
+    # Use sample data catalog directory
+    out_dir = Path("./sample_data_catalog")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Resolve build_catalog dynamically to avoid import issues when running from repo
     snowcli_tools = importlib.import_module("snowcli_tools")
     build_catalog = getattr(snowcli_tools, "build_catalog")
 
-    # Build a catalog for the current database, JSON output
+    # Build a catalog for the DeFi sample database
+    print("Building catalog for DEFI_SAMPLE_DB...")
     totals = build_catalog(
         output_dir=str(out_dir),
-        database=None,  # current DB
-        account_scope=False,  # set True to scan all DBs in the account
-        output_format="json",  # or "jsonl" for ingestion-friendly output
-        include_ddl=True,  # DDL included by default; set False to skip
-        max_ddl_concurrency=8,  # default concurrency for DDL fetches
+        database="DEFI_SAMPLE_DB",  # Sample database
+        account_scope=False,  # Focus on sample DB only
+        output_format="json",  # Human-readable JSON
+        include_ddl=True,  # Include DDL for complete metadata
+        max_ddl_concurrency=4,  # Reasonable concurrency for sample data
     )
 
     # Print summary
@@ -52,27 +55,33 @@ def run_python_example():
 
 
 def print_cli_examples():
-    print("\nEquivalent CLI examples:\n")
-    print("# Build catalog for current database (JSON). Uses default ./data_catalogue")
-    print("uv run snowflake-cli catalog")
+    print("\nEquivalent CLI examples for the sample dataset:\n")
 
-    print("\n# Build catalog for a specific database")
-    print("uv run snowflake-cli catalog -d YOUR_DATABASE -o ./data_catalogue_db")
+    print("# Build catalog for the DeFi sample database")
+    print("uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o ./sample_data_catalog")
 
-    print("\n# Build across all databases in the account")
-    print("uv run snowflake-cli catalog -a -o ./data_catalogue_all")
-
-    print("\n# Disable DDL (included by default)")
+    print("\n# Build catalog for specific schema (analytics layer)")
     print(
-        "uv run snowflake-cli catalog -d YOUR_DATABASE "
-        "-o ./data_catalogue_no_ddl --no-include-ddl"
+        "uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -s ANALYTICS -o ./analytics_catalog"
     )
 
-    print("\n# JSONL output for ingestion")
+    print("\n# Build catalog for processed layer (fact tables)")
     print(
-        "uv run snowflake-cli catalog -d YOUR_DATABASE "
-        "-o ./data_catalogue_jsonl --format jsonl"
+        "uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -s PROCESSED -o ./processed_catalog"
     )
+
+    print("\n# JSONL output (good for data ingestion)")
+    print(
+        "uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o ./sample_data_catalog --format jsonl"
+    )
+
+    print("\n# Disable DDL extraction (faster but less complete)")
+    print(
+        "uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o ./sample_data_catalog --no-include-ddl"
+    )
+
+    print("\n# Build across entire account (if you have access)")
+    print("uv run snowflake-cli catalog -a -o ./account_catalog")
 
 
 if __name__ == "__main__":
