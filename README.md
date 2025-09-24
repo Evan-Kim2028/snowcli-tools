@@ -6,7 +6,16 @@ This project leverages your existing `snow` CLI profiles to add powerful, concur
 - **Automated Data Catalogue**: Generate a comprehensive JSON/JSONL catalogue of your Snowflake objects.
 - **Dependency Graph Generation**: Generate object dependencies to understand data lineage.
 - **Parallel Query Execution**: Run multiple queries concurrently for faster bulk workloads.
- - **SQL Export from Catalog**: Generate a categorized SQL repo from your catalog JSON.
+- **SQL Export from Catalog**: Generate a categorized SQL repo from your catalog JSON.
+
+## 🆕 Advanced Lineage Features (v1.3.1)
+
+- **Column-Level Lineage**: Track data flow at the column granularity through transformations
+- **Transformation Tracking**: Capture and analyze data transformations with categorization
+- **Cross-Database Lineage**: Build unified lineage graphs across multiple Snowflake databases
+- **External Data Sources**: Map S3/Azure/GCS sources and track external dependencies
+- **Impact Analysis**: Analyze the potential impact of changes before making them
+- **Time-Travel Lineage**: Track lineage evolution over time with snapshots and comparisons
 
 ## Prerequisites
 
@@ -135,6 +144,33 @@ This helper is optional; you can always manage profiles directly with `snow`.
 ## Usage
 
 All commands are run through the `snowflake-cli` entry point.
+
+### Advanced Lineage Features
+
+Build and analyze comprehensive data lineage with column-level tracking:
+
+```python
+from snowcli_tools.lineage import (
+    ColumnLineageExtractor,
+    ImpactAnalyzer,
+    LineageHistoryManager,
+    ChangeType
+)
+
+# Extract column-level lineage
+extractor = ColumnLineageExtractor()
+lineage = extractor.extract_column_lineage(sql_text, target_table="my_table")
+
+# Analyze impact of changes
+analyzer = ImpactAnalyzer(lineage_graph)
+report = analyzer.analyze_impact("table_name", ChangeType.DROP)
+
+# Track lineage over time
+history = LineageHistoryManager()
+snapshot = history.capture_snapshot(catalog_path, tag="v1.0")
+```
+
+See [Advanced Lineage Documentation](docs/advanced_lineage_features.md) for detailed examples.
 
 ### Query Execution
 
