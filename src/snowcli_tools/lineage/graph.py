@@ -31,6 +31,15 @@ class LineageEdge:
     edge_type: EdgeType
     evidence: Dict[str, str] = field(default_factory=dict)
 
+    # Compatibility properties
+    @property
+    def source(self) -> str:
+        return self.src
+
+    @property
+    def target(self) -> str:
+        return self.dst
+
 
 class LineageGraph:
     def __init__(self) -> None:
@@ -51,6 +60,17 @@ class LineageGraph:
     def ensure_node(self, key: str, node_type: NodeType) -> None:
         if key not in self.nodes:
             self.add_node(LineageNode(key=key, node_type=node_type))
+
+    @property
+    def edges(self) -> List[LineageEdge]:
+        """Get all edges in the graph."""
+        edges = []
+        for src, edge_types in self.out_edges.items():
+            for edge_type, dsts in edge_types.items():
+                for dst in dsts:
+                    evidence = self.edge_metadata.get((src, dst, edge_type), {})
+                    edges.append(LineageEdge(src, dst, edge_type, evidence))
+        return edges
 
     def add_edge(self, edge: LineageEdge) -> None:
         self.ensure_node(
@@ -85,11 +105,18 @@ class LineageGraph:
     ) -> "LineageGraph":
         if start not in self.nodes:
             return LineageGraph()
-        allowed = (
-            set(edge_types)
-            if edge_types
-            else {EdgeType.DERIVES_FROM, EdgeType.PRODUCES, EdgeType.CONSUMES}
-        )
+        # If no specific edge types specified, include all edges (for compatibility)
+        if edge_types:
+            allowed = set(edge_types)
+        else:
+            # Include all edge types that exist in the graph
+            all_edge_types = set()
+            for edges_dict in self.out_edges.values():
+                all_edge_types.update(edges_dict.keys())
+            for edges_dict in self.in_edges.values():
+                all_edge_types.update(edges_dict.keys())
+            # Default to enum values if no edges exist yet
+            allowed = all_edge_types if all_edge_types else {EdgeType.DERIVES_FROM, EdgeType.PRODUCES, EdgeType.CONSUMES}
         subgraph = LineageGraph()
         queue: deque[Tuple[str, int]] = deque([(start, 0)])
         visited = {start}
@@ -136,7 +163,7 @@ class LineageGraph:
             "nodes": [
                 {
                     "key": node.key,
-                    "type": node.node_type.value,
+                    "type": node.node_type.value if isinstance(node.node_type, NodeType) else node.node_type,
                     "attributes": cast(Dict[str, Any], dict(node.attributes)),
                 }
                 for node in self.nodes.values()
@@ -145,7 +172,7 @@ class LineageGraph:
                 {
                     "src": src,
                     "dst": dst,
-                    "type": edge_type.value,
+                    "type": edge_type.value if isinstance(edge_type, EdgeType) else edge_type,
                     "evidence": cast(Dict[str, Any], dict(evidence)),
                 }
                 for (src, dst, edge_type), evidence in self.edge_metadata.items()
@@ -156,19 +183,33 @@ class LineageGraph:
     def from_dict(cls, payload: Dict[str, List[Dict[str, Any]]]) -> "LineageGraph":
         graph = cls()
         for node in payload.get("nodes", []):
+            node_type = node["type"]
+            if not isinstance(node_type, NodeType):
+                try:
+                    node_type = NodeType(node_type)
+                except (ValueError, KeyError):
+                    # If it's not a valid enum value, keep it as string
+                    pass
             graph.add_node(
                 LineageNode(
                     key=node["key"],
-                    node_type=NodeType(node["type"]),
+                    node_type=node_type,
                     attributes=node.get("attributes", {}),
                 )
             )
         for edge in payload.get("edges", []):
+            edge_type = edge["type"]
+            if not isinstance(edge_type, EdgeType):
+                try:
+                    edge_type = EdgeType(edge_type)
+                except (ValueError, KeyError):
+                    # If it's not a valid enum value, keep it as string
+                    pass
             graph.add_edge(
                 LineageEdge(
                     src=edge["src"],
                     dst=edge["dst"],
-                    edge_type=EdgeType(edge["type"]),
+                    edge_type=edge_type,
                     evidence=edge.get("evidence", {}),
                 )
             )
