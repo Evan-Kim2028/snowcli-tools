@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import networkx as nx
 
 from .builder import LineageBuilder
+from .constants import Limits, Timeouts
 from .graph import LineageGraph
 from .identifiers import normalize
 from .loader import CatalogLoader
@@ -108,7 +109,7 @@ class CrossDatabaseLineageBuilder:
         self,
         include_shares: bool = True,
         resolve_external_refs: bool = True,
-        timeout_seconds: int = 120,
+        timeout_seconds: int = Timeouts.DEFAULT_CROSS_DB_BUILD,
     ) -> UnifiedLineageGraph:
         try:
             with timeout(
@@ -182,9 +183,9 @@ class CrossDatabaseLineageBuilder:
         self,
         source: str,
         target: str,
-        max_depth: int = 10,
-        max_paths: int = 100,
-        timeout_seconds: int = 30,
+        max_depth: int = Limits.MAX_PATH_DEPTH,
+        max_paths: int = Limits.MAX_PATHS,
+        timeout_seconds: int = Timeouts.DEFAULT_PATH_FINDING,
     ) -> List[List[str]]:
         graph = self.unified_graph.build_networkx_graph()
 
@@ -212,7 +213,9 @@ class CrossDatabaseLineageBuilder:
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
 
-    def identify_database_hubs(self, min_connections: int = 5) -> List[Dict]:
+    def identify_database_hubs(
+        self, min_connections: int = Limits.MAX_HUB_CONNECTIONS
+    ) -> List[Dict]:
         graph = self.unified_graph.build_networkx_graph()
         hubs = []
 

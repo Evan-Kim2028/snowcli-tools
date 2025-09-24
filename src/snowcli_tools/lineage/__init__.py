@@ -1,15 +1,28 @@
 """Lineage package exposes helpers to build and query Snowflake lineage graphs."""
 
 from .builder import LineageBuilder
-from .column_parser import ColumnLineageExtractor, ColumnLineageGraph, ColumnTransformation
+from .column_parser import (
+    ColumnLineageExtractor,
+    ColumnLineageGraph,
+    ColumnTransformation,
+)
+
+# New additions for code quality
+from .constants import Formats, Limits, Patterns, Thresholds, Timeouts
 from .cross_db import CrossDatabaseLineageBuilder, UnifiedLineageGraph
-from .external import ExternalSourceMapper, ExternalLineage
+from .exceptions import LineageException, LineageParseError, ObjectNotFoundException
+from .external import ExternalLineage, ExternalSourceMapper
+from .factory import ConfigFactory, LineageFactory, ObjectFactory
 from .graph import LineageGraph
-from .history import LineageHistoryManager, LineageSnapshot, LineageDiff
-from .impact import ImpactAnalyzer, ImpactReport, ChangeType
+from .history import LineageDiff, LineageHistoryManager, LineageSnapshot
+from .impact import ChangeType, ImpactAnalyzer, ImpactReport
 from .loader import CatalogLoader, CatalogObject
+from .logging_config import get_logger, setup_logging
 from .queries import LineageQueryService
-from .transformations import TransformationTracker, TransformationMetadata
+from .transformations import TransformationMetadata, TransformationTracker
+
+# Setup default logging
+setup_logging(level="INFO")
 
 __all__ = [
     "CatalogLoader",
@@ -33,4 +46,18 @@ __all__ = [
     "LineageHistoryManager",
     "LineageSnapshot",
     "LineageDiff",
+    # New additions for code quality
+    "Limits",
+    "Timeouts",
+    "Thresholds",
+    "Patterns",
+    "Formats",
+    "LineageException",
+    "LineageParseError",
+    "ObjectNotFoundException",
+    "LineageFactory",
+    "ObjectFactory",
+    "ConfigFactory",
+    "setup_logging",
+    "get_logger",
 ]

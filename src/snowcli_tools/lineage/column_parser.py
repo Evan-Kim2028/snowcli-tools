@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Set
 from sqlglot import exp
 from sqlglot.expressions import Expression
 
+from .constants import Limits, Thresholds
 from .identifiers import normalize
 from .utils import cached_sql_parse, validate_object_name, validate_sql_injection
 
@@ -77,6 +78,15 @@ class ColumnTransformation:
             "confidence": self.confidence,
             "function": self.function_name,
         }
+
+
+@dataclass
+class TransformationInfo:
+    """Information extracted from an expression transformation."""
+
+    source_columns: List[QualifiedColumn]
+    type: TransformationType
+    function_name: Optional[str]
 
 
 @dataclass
@@ -222,98 +232,209 @@ class ColumnLineageExtractor:
         graph: ColumnLineageGraph,
         target_table: str,
         target_column_name: Optional[str] = None,
-    ):
-        if not target_column_name:
-            if alias := expr.alias:
-                target_column_name = alias
-            elif isinstance(expr, exp.Column):
-                target_column_name = expr.name
-            else:
-                target_column_name = f"column_{len(graph.transformations) + 1}"
+    ) -> None:
+        """Process a single column expression and add its transformation to the graph."""
+        # Determine target column name
+        target_column_name = self._resolve_target_column_name(
+            expr, target_column_name, graph
+        )
 
-        target_column = QualifiedColumn(
-            table=target_table,
-            column=target_column_name,
+        # Create target column object
+        target_column = self._create_qualified_column(target_table, target_column_name)
+
+        # Extract transformation details
+        transformation_info = self._extract_transformation_info(expr)
+
+        # Create and add transformation
+        transformation = self._create_transformation(
+            source_columns=transformation_info.source_columns,
+            target_column=target_column,
+            transformation_type=transformation_info.type,
+            sql_text=expr.sql(),
+            function_name=transformation_info.function_name,
+        )
+
+        graph.add_transformation(transformation)
+
+    def _resolve_target_column_name(
+        self,
+        expr: Expression,
+        target_column_name: Optional[str],
+        graph: ColumnLineageGraph,
+    ) -> str:
+        """Resolve the target column name from expression or generate one."""
+        if target_column_name:
+            return target_column_name
+
+        if alias := expr.alias:
+            return alias
+        elif isinstance(expr, exp.Column):
+            return expr.name
+        else:
+            return f"column_{len(graph.transformations) + 1}"
+
+    def _create_qualified_column(self, table: str, column: str) -> QualifiedColumn:
+        """Create a qualified column with database and schema context."""
+        return QualifiedColumn(
+            table=table,
+            column=column,
             database=self.default_database,
             schema=self.default_schema,
         )
 
-        source_columns = []
-        transformation_type = TransformationType.UNKNOWN
-        function_name = None
-        sql_text = expr.sql()
-
+    def _extract_transformation_info(self, expr: Expression) -> "TransformationInfo":
+        """Extract transformation information from an expression."""
         if isinstance(expr, exp.Column):
-            source_col = self._resolve_column(expr)
-            if source_col:
-                source_columns = [source_col]
-                transformation_type = TransformationType.DIRECT
-
+            return self._extract_column_transformation(expr)
         elif isinstance(expr, exp.Alias):
-            inner_expr = expr.this
-            if isinstance(inner_expr, exp.Column):
-                source_col = self._resolve_column(inner_expr)
-                if source_col:
-                    source_columns = [source_col]
-                    transformation_type = TransformationType.ALIAS
-            else:
-                source_columns = self._extract_columns_from_expression(inner_expr)
-                transformation_type = self._determine_transformation_type(inner_expr)
-                if isinstance(inner_expr, exp.Func):
-                    function_name = inner_expr.sql_name()
-
+            return self._extract_alias_transformation(expr)
         elif isinstance(expr, exp.Func):
-            source_columns = self._extract_columns_from_expression(expr)
-            if hasattr(expr, "is_aggregate") and expr.is_aggregate:
-                transformation_type = TransformationType.AGGREGATE
-            elif any(
-                isinstance(arg, exp.Window)
-                for arg in expr.args.values()
-                if hasattr(expr.args, "values")
-            ):
-                transformation_type = TransformationType.WINDOW
-            else:
-                # Check function name for aggregate detection
-                func_class = expr.__class__.__name__.upper()
-                if func_class in [
-                    "SUM",
-                    "AVG",
-                    "COUNT",
-                    "MAX",
-                    "MIN",
-                    "STDDEV",
-                    "VARIANCE",
-                ]:
-                    transformation_type = TransformationType.AGGREGATE
-                else:
-                    transformation_type = TransformationType.FUNCTION
+            return self._extract_function_transformation(expr)
+        elif isinstance(expr, exp.Case):
+            return self._extract_case_transformation(expr)
+        elif isinstance(expr, exp.Subquery):
+            return self._extract_subquery_transformation(expr)
+        elif isinstance(expr, exp.Literal):
+            return TransformationInfo(
+                source_columns=[],
+                type=TransformationType.LITERAL,
+                function_name=None,
+            )
+        else:
+            return self._extract_default_transformation(expr)
+
+    def _extract_column_transformation(self, expr: exp.Column) -> "TransformationInfo":
+        """Extract transformation info from a column expression."""
+        source_col = self._resolve_column(expr)
+        return TransformationInfo(
+            source_columns=[source_col] if source_col else [],
+            type=(
+                TransformationType.DIRECT if source_col else TransformationType.UNKNOWN
+            ),
+            function_name=None,
+        )
+
+    def _extract_alias_transformation(self, expr: exp.Alias) -> "TransformationInfo":
+        """Extract transformation info from an alias expression."""
+        inner_expr = expr.this
+        if isinstance(inner_expr, exp.Column):
+            source_col = self._resolve_column(inner_expr)
+            return TransformationInfo(
+                source_columns=[source_col] if source_col else [],
+                type=(
+                    TransformationType.ALIAS
+                    if source_col
+                    else TransformationType.UNKNOWN
+                ),
+                function_name=None,
+            )
+        else:
+            source_columns = self._extract_columns_from_expression(inner_expr)
+            transformation_type = self._determine_transformation_type(inner_expr)
             function_name = (
-                expr.sql_name()
-                if hasattr(expr, "sql_name")
-                else expr.__class__.__name__
+                inner_expr.sql_name() if isinstance(inner_expr, exp.Func) else None
+            )
+            return TransformationInfo(
+                source_columns=source_columns,
+                type=transformation_type,
+                function_name=function_name,
             )
 
-        elif isinstance(expr, exp.Case):
-            source_columns = self._extract_columns_from_expression(expr)
-            transformation_type = TransformationType.CASE
+    def _extract_function_transformation(self, expr: exp.Func) -> "TransformationInfo":
+        """Extract transformation info from a function expression."""
+        source_columns = self._extract_columns_from_expression(expr)
+        transformation_type = self._classify_function_type(expr)
+        function_name = (
+            expr.sql_name() if hasattr(expr, "sql_name") else expr.__class__.__name__
+        )
+        return TransformationInfo(
+            source_columns=source_columns,
+            type=transformation_type,
+            function_name=function_name,
+        )
 
-        elif isinstance(expr, exp.Subquery):
-            source_columns = self._extract_columns_from_subquery(expr)
-            transformation_type = TransformationType.SUBQUERY
+    def _classify_function_type(self, expr: exp.Func) -> TransformationType:
+        """Classify the type of function transformation."""
+        # Check for aggregate functions
+        if hasattr(expr, "is_aggregate") and expr.is_aggregate:
+            return TransformationType.AGGREGATE
 
-        elif isinstance(expr, exp.Literal):
-            transformation_type = TransformationType.LITERAL
+        # Check for window functions
+        if self._is_window_function(expr):
+            return TransformationType.WINDOW
 
-        else:
-            source_columns = self._extract_columns_from_expression(expr)
-            transformation_type = self._determine_transformation_type(expr)
+        # Check function name for common aggregates
+        func_class = expr.__class__.__name__.upper()
+        if func_class in self._get_aggregate_function_names():
+            return TransformationType.AGGREGATE
 
-        confidence = 1.0 if source_columns else 0.5
+        return TransformationType.FUNCTION
 
-        # Validate SQL to prevent injection
-        safe_sql = sql_text[:500] if validate_sql_injection(sql_text) else "[sanitized]"
+    def _is_window_function(self, expr: exp.Func) -> bool:
+        """Check if a function is a window function."""
+        return any(
+            isinstance(arg, exp.Window)
+            for arg in expr.args.values()
+            if hasattr(expr.args, "values")
+        )
 
-        transformation = ColumnTransformation(
+    @staticmethod
+    def _get_aggregate_function_names() -> Set[str]:
+        """Get the set of aggregate function names."""
+        return {"SUM", "AVG", "COUNT", "MAX", "MIN", "STDDEV", "VARIANCE"}
+
+    def _extract_case_transformation(self, expr: exp.Case) -> "TransformationInfo":
+        """Extract transformation info from a case expression."""
+        source_columns = self._extract_columns_from_expression(expr)
+        return TransformationInfo(
+            source_columns=source_columns,
+            type=TransformationType.CASE,
+            function_name=None,
+        )
+
+    def _extract_subquery_transformation(
+        self, expr: exp.Subquery
+    ) -> "TransformationInfo":
+        """Extract transformation info from a subquery expression."""
+        source_columns = self._extract_columns_from_subquery(expr)
+        return TransformationInfo(
+            source_columns=source_columns,
+            type=TransformationType.SUBQUERY,
+            function_name=None,
+        )
+
+    def _extract_default_transformation(self, expr: Expression) -> "TransformationInfo":
+        """Extract transformation info from a generic expression."""
+        source_columns = self._extract_columns_from_expression(expr)
+        transformation_type = self._determine_transformation_type(expr)
+        return TransformationInfo(
+            source_columns=source_columns,
+            type=transformation_type,
+            function_name=None,
+        )
+
+    def _create_transformation(
+        self,
+        source_columns: List[QualifiedColumn],
+        target_column: QualifiedColumn,
+        transformation_type: TransformationType,
+        sql_text: str,
+        function_name: Optional[str] = None,
+    ) -> ColumnTransformation:
+        """Create a column transformation with validated SQL."""
+        # Calculate confidence based on source columns
+        confidence = (
+            Thresholds.HIGH_CONFIDENCE if source_columns else Thresholds.MIN_CONFIDENCE
+        )
+
+        # Validate and sanitize SQL
+        safe_sql = (
+            sql_text[: Limits.MAX_SQL_LENGTH]
+            if validate_sql_injection(sql_text)
+            else "[sanitized]"
+        )
+
+        return ColumnTransformation(
             source_columns=source_columns,
             target_column=target_column,
             transformation_type=transformation_type,
@@ -321,8 +442,6 @@ class ColumnLineageExtractor:
             confidence=confidence,
             function_name=function_name,
         )
-
-        graph.add_transformation(transformation)
 
     def _process_star_column(
         self, star: exp.Star, graph: ColumnLineageGraph, target_table: str

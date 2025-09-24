@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from .audit import LineageAudit, ObjectAuditEntry
+from .constants import Timeouts
 from .graph import EdgeType, LineageEdge, LineageGraph, LineageNode, NodeType
 from .identifiers import normalize
 from .loader import CatalogLoader, CatalogObject, ObjectType
@@ -32,7 +33,9 @@ class LineageBuilder:
             return f"{base_key}::task"
         return base_key
 
-    def build(self, timeout_seconds: int = 180) -> LineageBuildResult:
+    def build(
+        self, timeout_seconds: int = Timeouts.DEFAULT_BUILD
+    ) -> LineageBuildResult:
         graph = LineageGraph()
         audit = LineageAudit()
         unknown_refs: Counter[str] = Counter()
