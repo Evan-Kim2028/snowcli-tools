@@ -308,7 +308,8 @@ class ImpactAnalyzer:
             graph.add_node(node_key, **node.attributes)
 
         for edge in self.lineage_graph.edges:
-            graph.add_edge(edge.source, edge.target, type=edge.edge_type.value)
+            edge_type = edge.edge_type.value if hasattr(edge.edge_type, 'value') else edge.edge_type
+            graph.add_edge(edge.source, edge.target, type=edge_type)
 
         return graph
 
