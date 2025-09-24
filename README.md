@@ -8,7 +8,7 @@ This project leverages your existing `snow` CLI profiles to add powerful, concur
 - **Parallel Query Execution**: Run multiple queries concurrently for faster bulk workloads.
 - **SQL Export from Catalog**: Generate a categorized SQL repo from your catalog JSON.
 
-## 🆕 Advanced Lineage Features (v1.3.1)
+## 🆕 Advanced Lineage Features (v1.3.2)
 
 - **Column-Level Lineage**: Track data flow at the column granularity through transformations
 - **Transformation Tracking**: Capture and analyze data transformations with categorization
