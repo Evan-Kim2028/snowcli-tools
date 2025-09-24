@@ -18,19 +18,22 @@ This project leverages your existing `snow` CLI profiles to add powerful, concur
 
 Install from PyPI (recommended):
 
+### Base Installation (Core CLI)
 ```bash
-# Install the package
+# Install the core package without MCP
 uv pip install snowcli-tools
 
 # Check the CLI entry point
 snowflake-cli --help
-
-# Or run ad‑hoc without installing to your environment
-uvx --from snowcli-tools snowflake-cli --version
 ```
 
-PyPI project page: https://pypi.org/project/snowcli-tools/
+### Full Installation (With MCP Server for AI Assistants)
+```bash
+# Install with MCP support for AI integrations
+uv pip install snowcli-tools[mcp]
+```
 
+### Development Installation
 ```bash
 # Clone the repository
 git clone https://github.com/Evan-Kim2028/snowflake-cli-tools-py.git
@@ -39,7 +42,12 @@ cd snowflake-cli-tools-py
 # Install project deps and the Snowflake CLI via UV
 uv sync
 uv add snowflake-cli
+
+# Install MCP support for development
+uv add --extra mcp
 ```
+
+PyPI project page: https://pypi.org/project/snowcli-tools/
 
 
 ## Quick Start
@@ -305,6 +313,135 @@ You can also execute a list of queries from a file using shell commands:
 cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
 ```
 
+## MCP Server Integration (AI Assistant Support)
+
+### What is MCP?
+
+The Model Context Protocol (MCP) is an open standard that enables AI assistants to securely interact with external data sources. Snowcli-tools includes an **optional** MCP server that provides AI assistants (VS Code, Cursor, Claude Code) with structured, type-safe access to your Snowflake database.
+
+### Key Features
+
+- **Natural Language to SQL**: Ask questions in plain English, get SQL results
+- **Context-Aware**: AI understands your schemas, relationships, and lineage
+- **Secure**: Uses your existing Snowflake CLI authentication
+- **Tool-Based Safety**: Structured tools prevent arbitrary code execution
+
+### Installation
+
+The MCP server is an optional feature that requires additional dependencies:
+
+```bash
+# Install with MCP support
+uv pip install snowcli-tools[mcp]
+
+# Or for development
+uv add snowcli-tools --extra mcp
+```
+
+### Starting the MCP Server
+
+```bash
+# Start the MCP server (recommended)
+uv run snowflake-cli mcp
+
+# Or run the example directly to see usage info
+uv run python examples/run_mcp_server.py
+```
+
+### MCP Client Configuration
+
+#### VS Code / Cursor
+Add to your MCP configuration file (usually `~/.vscode/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "snowflake": {
+      "command": "uv",
+      "args": ["run", "snowflake-cli", "mcp"],
+      "cwd": "/path/to/snowcli-tools"
+    }
+  }
+}
+```
+
+#### Claude Code
+Add to your Claude Code MCP settings:
+
+```json
+{
+  "mcp": {
+    "snowflake": {
+      "command": "uv",
+      "args": ["run", "snowflake-cli", "mcp"],
+      "cwd": "/path/to/snowcli-tools"
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+| Tool | Description | Example Use |
+|------|-------------|-------------|
+| **execute_query** | Run SQL queries with context control | "Show me yesterday's DEX trading volume" |
+| **preview_table** | Quick table data preview (default 100 rows) | "Preview the DEX_TRADES_STABLE table" |
+| **build_catalog** | Generate comprehensive data catalogs | "Build a catalog of the DEFI_SAMPLE_DB database" |
+| **query_lineage** | Analyze upstream/downstream dependencies | "What feeds into the BTC_DEX_TRADES_USD_DT table?" |
+| **build_dependency_graph** | Create object relationship graphs | "Show me how the DeFi pipeline connects" |
+| **test_connection** | Verify Snowflake connectivity | "Test my connection" |
+| **get_catalog_summary** | Retrieve catalog statistics | "What's in my catalog?" |
+
+### Real-World Usage Examples
+
+#### Data Discovery
+```
+You: "What trading data do we have?"
+AI: [Searches for DeFi-related objects]
+AI: "I found the main DEX_TRADES_STABLE table with 224M+ records,
+     plus COIN_INFO for metadata and BTC_DEX_TRADES_USD_DT for analytics.
+     Would you like to see their schemas?"
+
+You: "Show me how DEX_TRADES_STABLE connects to other tables"
+AI: [Queries lineage]
+AI: "DEX_TRADES_STABLE is sourced from OBJECT_PARQUET2 and raw DEX events,
+     then feeds into FILTERED_DEX_TRADES_VIEW and BTC_DEX_TRADES_USD_DT."
+```
+
+#### Query Development
+```
+You: "Calculate trading volume by DEX protocol last week"
+AI: [Generates and executes SQL]
+AI: "Here are the results:
+     cetus: 15.2M trades
+     bluefin: 8.7M trades
+     aftermath: 3.1M trades"
+```
+
+#### Impact Analysis
+```
+You: "What happens if I modify the COIN_INFO table?"
+AI: [Analyzes dependencies]
+AI: "Modifying COIN_INFO will impact:
+     - DEX_TRADES_STABLE (token metadata enrichment)
+     - BTC_DEX_TRADES_USD_DT (symbol mapping)
+     - FILTERED_DEX_TRADES_VIEW (coin normalization)
+     - This affects the entire DeFi analytics pipeline"
+```
+
+### Architecture
+
+The MCP server acts as a protocol adapter:
+
+```
+AI Assistant ←→ MCP Protocol (stdio) ←→ MCP Server ←→ snowcli-tools ←→ Snowflake
+```
+
+For detailed architecture and technical documentation, see:
+- `docs/mcp_server_user_guide.md` - Complete user guide
+- `docs/mcp_server_technical_guide.md` - Technical implementation details
+- `examples/run_mcp_server.py` - Example with full documentation
+
 ## CLI Commands
 
 | Command            | Description                                              |
@@ -320,6 +457,7 @@ cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
 | `config`           | Show the current tool configuration.                     |
 | `setup-connection` | Helper to create a persistent `snow` CLI connection.     |
 | `init-config`      | Create a local configuration file for this tool.         |
+| `mcp`              | Start the MCP server for AI assistant integration.       |
 
 ### Catalog design notes (portable by default)
 - Uses SHOW commands where possible (schemas, materialized views, dynamic tables, tasks, functions, procedures) for broad visibility with minimal privileges.

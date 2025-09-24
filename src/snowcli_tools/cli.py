@@ -18,6 +18,8 @@ from .lineage import LineageQueryService
 from .lineage.graph import LineageGraph, LineageNode
 from .lineage.identifiers import QualifiedName, parse_table_name
 from .lineage.queries import LineageQueryResult
+
+# MCP import is guarded - only imported when the command is called
 from .parallel import create_object_queries, query_multiple_objects
 from .snow_cli import SnowCLI, SnowCLIError
 
@@ -1166,6 +1168,55 @@ def init_config(config_path: str):
 
     except Exception as e:
         console.print(f"[red]✗[/red] Failed to create configuration: {e}")
+        sys.exit(1)
+
+
+@cli.command()
+def mcp():
+    """Start the MCP server for integration with AI assistants.
+
+    This command starts an MCP server that provides access to all snowcli-tools
+    functionality for AI assistants like VS Code, Cursor, and Claude Code.
+
+    Usage:
+        snowflake-cli mcp
+
+    The server will run on stdio and provide tools for:
+    - Executing SQL queries
+    - Building data catalogs
+    - Querying lineage information
+    - Generating dependency graphs
+    - Previewing table data
+    - Testing connections
+
+    Use this with MCP-compatible clients to get AI assistance with your Snowflake data.
+    """
+    try:
+        # Guarded import - only load MCP when the command is called
+        import asyncio
+
+        from .mcp_server import main as mcp_main
+
+        console.print("[blue]🚀[/blue] Starting Snowflake MCP Server...")
+        console.print(
+            "[blue]ℹ[/blue] This server provides AI assistants access to your Snowflake data"
+        )
+        console.print("[blue]💡[/blue] Press Ctrl+C to stop the server")
+        console.print()
+
+        # Run the MCP server
+        asyncio.run(mcp_main())
+
+    except ImportError:
+        console.print(
+            "[red]✗[/red] MCP server requires the 'mcp' extra: uv add snowcli-tools[mcp]"
+        )
+        console.print("[yellow]💡[/yellow] Install with: uv add snowcli-tools[mcp]")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]⚠[/yellow] MCP server stopped by user")
+    except Exception as e:
+        console.print(f"[red]✗[/red] MCP server failed: {e}")
         sys.exit(1)
 
 

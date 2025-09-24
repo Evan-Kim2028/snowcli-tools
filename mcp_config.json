@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "snowflake-cli-tools": {
+      "command": "uv",
+      "args": ["run", "snowflake-cli", "mcp"],
+      "cwd": "/Users/evandekim/Documents/snowflake_connector_py"
+    }
+  }
+}
