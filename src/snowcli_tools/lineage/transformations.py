@@ -222,7 +222,7 @@ class TransformationTracker:
         return sorted(patterns, key=lambda x: x.frequency, reverse=True)
 
     def get_transformation_summary(self) -> Dict[str, Any]:
-        summary = {
+        summary: Dict[str, Any] = {
             "total_transformations": len(self.transformation_history),
             "transformation_types": {},
             "categories": {},

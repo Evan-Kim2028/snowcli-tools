@@ -1,0 +1,17 @@
+{
+  "transformation_id": "d97ca4142f14",
+  "timestamp": "2025-09-24T13:33:49.066911",
+  "source_object": "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE.ADJUSTED_AMOUNT_IN",
+  "target_object": "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT.AMOUNT_IN_USD",
+  "transformation_type": "function",
+  "category": "unknown",
+  "sql_text": "adjusted_amount_in * 65000",
+  "columns_affected": [
+    "adjusted_amount_in",
+    "amount_in_usd"
+  ],
+  "business_logic": "DeFi amount processing chain",
+  "performance_impact": 0.05,
+  "data_quality_rules": [],
+  "tags": []
+}

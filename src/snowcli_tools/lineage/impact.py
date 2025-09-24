@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -9,8 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx
 
-from .graph import LineageGraph
-from .utils import networkx_descendants_at_distance
+from .graph import LineageGraph, LineageNode
 
 
 class ChangeType(Enum):
@@ -120,6 +120,8 @@ class ImpactAnalyzer:
         self.object_metadata: Dict[str, Dict] = {}
         self.user_access_map: Dict[str, List[str]] = {}
         self.role_access_map: Dict[str, List[str]] = {}
+        # Build reverse index for O(1) downstream lookups
+        self.reverse_graph = self.nx_graph.reverse(copy=True)
 
     def analyze_impact(
         self,
@@ -197,10 +199,12 @@ class ImpactAnalyzer:
         for node in self.nx_graph.nodes():
             downstream = list(nx.descendants(self.nx_graph, node))
             if len(downstream) >= min_dependent_count:
-                node_data: LineageNode | dict[str, Any] = self.lineage_graph.nodes.get(node, {})
+                node_data: LineageNode | dict[str, Any] = self.lineage_graph.nodes.get(
+                    node, {}
+                )
 
                 # Handle both LineageNode objects and dict-based nodes
-                if hasattr(node_data, 'attributes'):
+                if hasattr(node_data, "attributes"):
                     object_type = node_data.attributes.get("object_type", "unknown")
                 elif isinstance(node_data, dict):
                     object_type = node_data.get("object_type", "unknown")
@@ -263,6 +267,7 @@ class ImpactAnalyzer:
             return cycles
         except (nx.NetworkXError, nx.NetworkXNotImplemented) as e:
             import logging
+
             logging.warning(f"Could not compute cycles in graph: {e}")
             return []
 
@@ -316,7 +321,7 @@ class ImpactAnalyzer:
 
         for node_key, node in self.lineage_graph.nodes.items():
             # Handle both LineageNode objects and dict-based mock objects
-            if hasattr(node, 'attributes'):
+            if hasattr(node, "attributes"):
                 graph.add_node(node_key, **node.attributes)
             elif isinstance(node, dict):
                 # For dict-based nodes (e.g., in tests)
@@ -344,15 +349,14 @@ class ImpactAnalyzer:
     ) -> List[ImpactedObject]:
         impacted = []
 
-        downstream = networkx_descendants_at_distance(self.nx_graph, source, max_depth)
+        # Use BFS to calculate distances efficiently in O(V+E) time
+        distances = nx.single_source_shortest_path_length(
+            self.nx_graph, source, cutoff=max_depth
+        )
 
-        for target in downstream:
-            try:
-                distance = nx.shortest_path_length(self.nx_graph, source, target)
-                if distance > max_depth:
-                    continue
-            except nx.NetworkXNoPath:
-                continue
+        for target, distance in distances.items():
+            if target == source:
+                continue  # Skip the source node itself
 
             node_data = self.lineage_graph.nodes.get(target)
             if not node_data:
@@ -551,8 +555,8 @@ class ImpactAnalyzer:
 
     def _generate_impact_summary(
         self, impacted_objects: List[ImpactedObject], change_type: ChangeType
-    ) -> Dict:
-        summary = {
+    ) -> Dict[str, Any]:
+        summary: Dict[str, Any] = {
             "by_severity": {},
             "by_object_type": {},
             "by_database": {},
@@ -649,6 +653,7 @@ class ImpactAnalyzer:
             betweenness = nx.betweenness_centrality(self.nx_graph).get(node, 0)
         except (nx.NetworkXError, KeyError, ValueError) as e:
             import logging
+
             logging.debug(f"Could not calculate betweenness centrality for {node}: {e}")
             betweenness = 0
 
@@ -682,62 +687,70 @@ class ImpactAnalyzer:
         return bottlenecks
 
     def _generate_html_report(self, report: ImpactReport) -> str:
-        html = []
-        html.append("<!DOCTYPE html>")
-        html.append("<html><head>")
-        html.append("<title>Impact Analysis Report</title>")
-        html.append("<style>")
-        html.append("body { font-family: Arial, sans-serif; margin: 20px; }")
-        html.append(".critical { color: #d32f2f; }")
-        html.append(".high { color: #f57c00; }")
-        html.append(".medium { color: #fbc02d; }")
-        html.append(".low { color: #388e3c; }")
-        html.append("table { border-collapse: collapse; width: 100%; }")
-        html.append(
+        html_lines = []
+        html_lines.append("<!DOCTYPE html>")
+        html_lines.append("<html><head>")
+        html_lines.append("<title>Impact Analysis Report</title>")
+        html_lines.append("<style>")
+        html_lines.append("body { font-family: Arial, sans-serif; margin: 20px; }")
+        html_lines.append(".critical { color: #d32f2f; }")
+        html_lines.append(".high { color: #f57c00; }")
+        html_lines.append(".medium { color: #fbc02d; }")
+        html_lines.append(".low { color: #388e3c; }")
+        html_lines.append("table { border-collapse: collapse; width: 100%; }")
+        html_lines.append(
             "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }"
         )
-        html.append("th { background-color: #f2f2f2; }")
-        html.append("</style>")
-        html.append("</head><body>")
+        html_lines.append("th { background-color: #f2f2f2; }")
+        html_lines.append("</style>")
+        html_lines.append("</head><body>")
 
-        html.append(f"<h1>Impact Analysis: {report.source_object}</h1>")
-        html.append(f"<p>Change Type: <strong>{report.change_type.value}</strong></p>")
-        html.append(f"<p>Risk Score: <strong>{report.risk_score:.2f}</strong></p>")
-        html.append(
+        html_lines.append(
+            f"<h1>Impact Analysis: {html.escape(report.source_object)}</h1>"
+        )
+        html_lines.append(
+            f"<p>Change Type: <strong>{html.escape(report.change_type.value)}</strong></p>"
+        )
+        html_lines.append(
+            f"<p>Risk Score: <strong>{report.risk_score:.2f}</strong></p>"
+        )
+        html_lines.append(
             f"<p>Total Impacted: <strong>{report.total_impacted_objects}</strong></p>"
         )
 
-        html.append("<h2>Impact Summary</h2>")
-        html.append("<table>")
-        html.append("<tr><th>Severity</th><th>Count</th></tr>")
+        html_lines.append("<h2>Impact Summary</h2>")
+        html_lines.append("<table>")
+        html_lines.append("<tr><th>Severity</th><th>Count</th></tr>")
         for severity, count in report.impact_summary.get("by_severity", {}).items():
-            html.append(
-                f'<tr><td class="{severity}">{severity}</td><td>{count}</td></tr>'
+            html_lines.append(
+                f'<tr><td class="{html.escape(severity)}">{html.escape(severity)}</td><td>{count}</td></tr>'
             )
-        html.append("</table>")
+        html_lines.append("</table>")
 
-        html.append("<h2>Recommendations</h2>")
-        html.append("<ul>")
+        html_lines.append("<h2>Recommendations</h2>")
+        html_lines.append("<ul>")
         for rec in report.recommendations:
-            html.append(f"<li>{rec}</li>")
-        html.append("</ul>")
+            html_lines.append(f"<li>{html.escape(rec)}</li>")
+        html_lines.append("</ul>")
 
-        html.append("<h2>Impacted Objects</h2>")
-        html.append("<table>")
-        html.append(
+        html_lines.append("<h2>Impacted Objects</h2>")
+        html_lines.append("<table>")
+        html_lines.append(
             "<tr><th>Object</th><th>Type</th><th>Severity</th><th>Distance</th></tr>"
         )
         for obj in report.impacted_objects[:50]:
-            html.append("<tr>")
-            html.append(f"<td>{obj.fqn()}</td>")
-            html.append(f"<td>{obj.object_type}</td>")
-            html.append(f'<td class="{obj.severity.value}">{obj.severity.value}</td>')
-            html.append(f"<td>{obj.distance_from_source}</td>")
-            html.append("</tr>")
-        html.append("</table>")
+            html_lines.append("<tr>")
+            html_lines.append(f"<td>{html.escape(obj.fqn())}</td>")
+            html_lines.append(f"<td>{html.escape(str(obj.object_type))}</td>")
+            html_lines.append(
+                f'<td class="{html.escape(obj.severity.value)}">{html.escape(obj.severity.value)}</td>'
+            )
+            html_lines.append(f"<td>{html.escape(str(obj.distance_from_source))}</td>")
+            html_lines.append("</tr>")
+        html_lines.append("</table>")
 
-        html.append("</body></html>")
-        return "\n".join(html)
+        html_lines.append("</body></html>")
+        return "\n".join(html_lines)
 
     def _generate_markdown_report(self, report: ImpactReport) -> str:
         md = []

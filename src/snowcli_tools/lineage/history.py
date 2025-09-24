@@ -99,10 +99,11 @@ class LineageEvolution:
 
 
 class LineageHistoryManager:
-    def __init__(self, storage_path: Optional[Path] = None):
+    def __init__(self, storage_path: Optional[Path] = None, max_snapshots: int = 100):
         self.storage_path = storage_path or Path("./lineage_history")
         self.storage_path.mkdir(parents=True, exist_ok=True)
         self.db_path = self.storage_path / "lineage_history.db"
+        self.max_snapshots = max_snapshots  # Maximum snapshots to retain
         self._init_database()
 
     def capture_snapshot(
@@ -133,6 +134,7 @@ class LineageHistoryManager:
         )
 
         self._save_snapshot(snapshot, result.graph)
+        self._cleanup_old_snapshots()  # Clean up old snapshots to prevent memory exhaustion
 
         return snapshot
 
@@ -254,7 +256,10 @@ class LineageHistoryManager:
         schema_evolution = []
 
         for snapshot in snapshots:
-            _, graph = self.get_snapshot(snapshot.snapshot_id)
+            result = self.get_snapshot(snapshot.snapshot_id)
+            if result is None:
+                continue
+            _, graph = result
 
             if object_key in graph.nodes:
                 object_snapshots.append(snapshot)
@@ -273,8 +278,12 @@ class LineageHistoryManager:
 
         if len(object_snapshots) > 1:
             for i in range(len(object_snapshots) - 1):
-                _, graph1 = self.get_snapshot(object_snapshots[i].snapshot_id)
-                _, graph2 = self.get_snapshot(object_snapshots[i + 1].snapshot_id)
+                result1 = self.get_snapshot(object_snapshots[i].snapshot_id)
+                result2 = self.get_snapshot(object_snapshots[i + 1].snapshot_id)
+                if result1 is None or result2 is None:
+                    continue
+                _, graph1 = result1
+                _, graph2 = result2
 
                 if object_key in graph1.nodes and object_key in graph2.nodes:
                     node1 = graph1.nodes[object_key]
@@ -323,7 +332,11 @@ class LineageHistoryManager:
     ) -> Dict[str, Any]:
         snapshots = self.list_snapshots(start_date, end_date)
 
-        timeline: dict[str, list[dict[str, Any]]] = {"snapshots": [], "events": [], "statistics": {}}
+        timeline: Dict[str, Any] = {
+            "snapshots": [],
+            "events": [],
+            "statistics": {},
+        }
 
         for i, snapshot in enumerate(snapshots):
             timeline["snapshots"].append(
@@ -526,8 +539,8 @@ class LineageHistoryManager:
 
         for edge_data in data.get("edges", []):
             edge = LineageEdge(
-                source=edge_data["source"],
-                target=edge_data["target"],
+                src=edge_data["source"],
+                dst=edge_data["target"],
                 edge_type=EdgeType(edge_data["type"]),
             )
             graph.add_edge(edge)
@@ -539,6 +552,48 @@ class LineageHistoryManager:
             datetime.now().strftime("%Y%m%d_%H%M%S_")
             + hashlib.md5(str(datetime.now().timestamp()).encode()).hexdigest()[:8]
         )
+
+    def _cleanup_old_snapshots(self):
+        """Remove old snapshots that exceed the retention limit."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Get count of snapshots
+        cursor.execute("SELECT COUNT(*) FROM snapshots")
+        count = cursor.fetchone()[0]
+
+        if count > self.max_snapshots:
+            # Delete oldest snapshots and their graph files
+            cursor.execute(
+                """
+                SELECT snapshot_id FROM snapshots
+                ORDER BY timestamp ASC
+                LIMIT ?
+            """,
+                (count - self.max_snapshots,),
+            )
+
+            for row in cursor.fetchall():
+                snapshot_id = row[0]
+                graph_file = self.storage_path / f"graph_{snapshot_id}.json"
+                if graph_file.exists():
+                    graph_file.unlink()
+
+            # Delete from database
+            cursor.execute(
+                """
+                DELETE FROM snapshots
+                WHERE snapshot_id IN (
+                    SELECT snapshot_id FROM snapshots
+                    ORDER BY timestamp ASC
+                    LIMIT ?
+                )
+            """,
+                (count - self.max_snapshots,),
+            )
+
+        conn.commit()
+        conn.close()
 
     def _hash_graph(self, graph: LineageGraph) -> str:
         content = json.dumps(
@@ -744,7 +799,10 @@ class LineageHistoryManager:
 
         all_nodes = []
         for snapshot in snapshots[:5]:
-            _, graph = self.get_snapshot(snapshot.snapshot_id)
+            result = self.get_snapshot(snapshot.snapshot_id)
+            if result is None:
+                continue
+            _, graph = result
             all_nodes.append(set(graph.nodes.keys()))
 
         if not all_nodes:

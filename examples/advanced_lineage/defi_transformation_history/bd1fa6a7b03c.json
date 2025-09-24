@@ -1,0 +1,20 @@
+{
+  "transformation_id": "bd1fa6a7b03c",
+  "timestamp": "2025-09-24T13:33:49.066801",
+  "source_object": "DEFI_SAMPLE_DB.PROCESSED.INTERMEDIATE_AMOUNTS.RAW_AMOUNT",
+  "target_object": "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE.ADJUSTED_AMOUNT_IN",
+  "transformation_type": "function",
+  "category": "unknown",
+  "sql_text": "raw_amount / POWER(10, coin_decimals)",
+  "columns_affected": [
+    "raw_amount",
+    "coin_decimals",
+    "adjusted_amount_in"
+  ],
+  "business_logic": "DeFi amount processing chain",
+  "performance_impact": 0.1,
+  "data_quality_rules": [],
+  "tags": [
+    "uses_power"
+  ]
+}

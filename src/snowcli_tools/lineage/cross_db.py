@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 
@@ -125,7 +125,7 @@ class CrossDatabaseLineageBuilder:
         analysis = {}
 
         for db_name in self.unified_graph.databases:
-            db_analysis = {
+            db_analysis: Dict[str, Any] = {
                 "database": db_name,
                 "internal_objects": 0,
                 "external_dependencies": [],
@@ -161,12 +161,22 @@ class CrossDatabaseLineageBuilder:
         return analysis
 
     def find_cross_db_paths(
-        self, source: str, target: str, max_depth: int = 10
+        self, source: str, target: str, max_depth: int = 10, max_paths: int = 100
     ) -> List[List[str]]:
         graph = self.unified_graph.build_networkx_graph()
 
         try:
-            paths = list(nx.all_simple_paths(graph, source, target, cutoff=max_depth))
+            # Limit paths to prevent exponential resource exhaustion
+            paths = []
+            path_generator = nx.all_simple_paths(
+                graph, source, target, cutoff=max_depth
+            )
+
+            for i, path in enumerate(path_generator):
+                if i >= max_paths:
+                    break  # Stop after max_paths to prevent resource exhaustion
+                paths.append(path)
+
             return paths
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
@@ -261,11 +271,13 @@ class CrossDatabaseLineageBuilder:
             database_name = (
                 normalize(first_obj.database) if first_obj.database else "UNKNOWN"
             )
-            self.database_catalogs[database_name] = objects
+            if database_name:  # Only add if database_name is not None
+                self.database_catalogs[database_name] = objects
 
             builder = LineageBuilder(catalog_path)
             result = builder.build()
-            self.database_graphs[database_name] = result.graph
+            if database_name:  # Only add if database_name is not None
+                self.database_graphs[database_name] = result.graph
 
     def _merge_graphs(self):
         for db_name, graph in self.database_graphs.items():

@@ -1,0 +1,22 @@
+{
+  "transformation_id": "430960dc50c4",
+  "timestamp": "2025-09-24T13:33:49.066101",
+  "source_object": "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+  "target_object": "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT",
+  "transformation_type": "case",
+  "category": "validation",
+  "sql_text": "CASE WHEN coin_in_symbol = 'BTC' AND coin_out_symbol = 'USDT' THEN 'BTC/USDT' ELSE CONCAT(coin_in_symbol, '/', coin_out_symbol) END",
+  "columns_affected": [
+    "coin_in_symbol",
+    "coin_out_symbol",
+    "pool_name"
+  ],
+  "business_logic": "USD pricing and analytics transformations",
+  "performance_impact": 0.1,
+  "data_quality_rules": [
+    "CONDITIONAL_VALIDATION"
+  ],
+  "tags": [
+    "uses_case"
+  ]
+}

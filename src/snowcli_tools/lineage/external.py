@@ -5,12 +5,13 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import sqlglot
 from sqlglot import exp
 
 from .loader import CatalogLoader, CatalogObject, ObjectType
+from .utils import validate_path
 
 
 class ExternalSourceType(Enum):
@@ -149,8 +150,8 @@ class ExternalSourceMapper:
     def get_tables_from_source(self, source_location: str) -> List[str]:
         return self.external_lineage.source_to_tables.get(source_location, [])
 
-    def analyze_external_access_patterns(self) -> Dict[str, Dict]:
-        patterns = {
+    def analyze_external_access_patterns(self) -> Dict[str, Any]:
+        patterns: Dict[str, Any] = {
             "by_source_type": {},
             "by_bucket": {},
             "by_file_format": {},
@@ -209,15 +210,33 @@ class ExternalSourceMapper:
                 "data_flow_paths": self.external_lineage.data_flow_paths,
             }
 
+            # Validate path to prevent traversal attacks
+            if not validate_path(
+                output_path, must_exist=False, create_if_missing=False
+            ):
+                raise ValueError(f"Invalid output path: {output_path}")
+
             with open(output_path, "w") as f:
                 json.dump(data, f, indent=2)
 
         elif format == "markdown":
+            # Validate path to prevent traversal attacks
+            if not validate_path(
+                output_path, must_exist=False, create_if_missing=False
+            ):
+                raise ValueError(f"Invalid output path: {output_path}")
+
             content = self._generate_markdown_report()
             with open(output_path, "w") as f:
                 f.write(content)
 
         elif format == "dot":
+            # Validate path to prevent traversal attacks
+            if not validate_path(
+                output_path, must_exist=False, create_if_missing=False
+            ):
+                raise ValueError(f"Invalid output path: {output_path}")
+
             dot_content = self._generate_dot_graph()
             with open(output_path, "w") as f:
                 f.write(dot_content)
@@ -225,10 +244,11 @@ class ExternalSourceMapper:
         return output_path
 
     def _process_table(self, obj: CatalogObject):
-        if not obj.text:
+        text = obj.payload.get("text")
+        if not text:
             return
 
-        sql_lower = obj.text.lower()
+        sql_lower = text.lower()
 
         if "external table" in sql_lower:
             self._extract_external_table_info(obj)
@@ -237,10 +257,11 @@ class ExternalSourceMapper:
             self._extract_copy_info(obj)
 
     def _process_view_for_external_refs(self, obj: CatalogObject):
-        if not obj.text:
+        text = obj.payload.get("text")
+        if not text:
             return
 
-        sql_lower = obj.text.lower()
+        sql_lower = text.lower()
 
         if "@" in sql_lower:
             self._extract_stage_references(obj)
@@ -249,11 +270,12 @@ class ExternalSourceMapper:
             self._extract_direct_external_refs(obj)
 
     def _extract_external_table_info(self, obj: CatalogObject):
-        if not obj.text:
+        text = obj.payload.get("text")
+        if not text:
             return
 
         try:
-            parsed = sqlglot.parse_one(obj.text, read="snowflake")
+            parsed = sqlglot.parse_one(text, read="snowflake")
             if isinstance(parsed, exp.Create):
                 location = None
                 file_format = None
@@ -296,17 +318,17 @@ class ExternalSourceMapper:
 
     def _extract_stages_from_catalog(self, catalog: List[CatalogObject]):
         for obj in catalog:
-            if obj.object_type == ObjectType.STAGE or (
-                obj.text and "create stage" in obj.text.lower()
-            ):
+            text = obj.payload.get("text", "")
+            if text and "create stage" in text.lower():
                 self._extract_stage_info(obj)
 
     def _extract_stage_info(self, obj: CatalogObject):
-        if not obj.text:
+        text = obj.payload.get("text")
+        if not text:
             return
 
         try:
-            parsed = sqlglot.parse_one(obj.text, read="snowflake")
+            parsed = sqlglot.parse_one(text, read="snowflake")
             if isinstance(parsed, exp.Create):
                 url = None
                 credentials = {}
@@ -346,18 +368,20 @@ class ExternalSourceMapper:
 
     def _extract_external_tables(self, catalog: List[CatalogObject]):
         for obj in catalog:
-            if obj.text and "external table" in obj.text.lower():
+            text = obj.payload.get("text")
+            if text and "external table" in text.lower():
                 self._extract_external_table_info(obj)
 
     def _extract_copy_info(self, obj: CatalogObject):
-        if not obj.text:
+        text = obj.payload.get("text")
+        if not text:
             return
 
         copy_pattern = re.compile(
             r"copy\s+into\s+(\S+)\s+from\s+([^\s\)]+)", re.IGNORECASE | re.DOTALL
         )
 
-        matches = copy_pattern.findall(obj.text)
+        matches = copy_pattern.findall(text)
         for target_table, source_location in matches:
             source_location = source_location.strip("'\"")
 
@@ -373,11 +397,12 @@ class ExternalSourceMapper:
                         )
 
     def _extract_stage_references(self, obj: CatalogObject):
-        if not obj.text:
+        text = obj.payload.get("text")
+        if not text:
             return
 
         stage_pattern = re.compile(r"@(\w+(?:\.\w+)*)", re.IGNORECASE)
-        matches = stage_pattern.findall(obj.text)
+        matches = stage_pattern.findall(text)
 
         for stage_ref in matches:
             parts = stage_ref.split(".")
@@ -389,12 +414,13 @@ class ExternalSourceMapper:
                             stage.pipes.append(obj.fqn())
 
     def _extract_direct_external_refs(self, obj: CatalogObject):
-        if not obj.text:
+        text = obj.payload.get("text")
+        if not text:
             return
 
         url_pattern = re.compile(r"((?:s3|azure|gcs)://[^\s\)\'\"]+)", re.IGNORECASE)
 
-        matches = url_pattern.findall(obj.text)
+        matches = url_pattern.findall(text)
         for url in matches:
             source = self._parse_external_location(url)
             self._register_external_source(source)
@@ -405,7 +431,8 @@ class ExternalSourceMapper:
 
     def _analyze_copy_operations(self, catalog: List[CatalogObject]):
         for obj in catalog:
-            if obj.text and "copy into" in obj.text.lower():
+            text = obj.payload.get("text")
+            if text and "copy into" in text.lower():
                 self._extract_copy_info(obj)
 
     def _parse_external_location(self, location: str) -> ExternalSource:
@@ -573,14 +600,16 @@ class ExternalSourceMapper:
         for tables in self.external_lineage.source_to_tables.values():
             all_tables.update(tables)
 
-        for table in all_tables:
-            lines.append(f'    "{table}" [label="{table}", fillcolor="#00D2FF40"];')
+        for table_fqn in all_tables:
+            lines.append(
+                f'    "{table_fqn}" [label="{table_fqn}", fillcolor="#00D2FF40"];'
+            )
 
         lines.append("  }")
 
-        for source_loc, tables in self.external_lineage.source_to_tables.items():
-            for table in tables:
-                lines.append(f'  "{source_loc}" -> "{table}";')
+        for source_loc, table_list in self.external_lineage.source_to_tables.items():
+            for table_fqn in table_list:
+                lines.append(f'  "{source_loc}" -> "{table_fqn}";')
 
         lines.append("}")
         return "\n".join(lines)

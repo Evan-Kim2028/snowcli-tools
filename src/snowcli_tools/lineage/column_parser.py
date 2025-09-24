@@ -8,7 +8,7 @@ from sqlglot import exp
 from sqlglot.expressions import Expression
 
 from .identifiers import normalize
-from .utils import cached_sql_parse, validate_object_name
+from .utils import cached_sql_parse, validate_object_name, validate_sql_injection
 
 
 class TransformationType(Enum):
@@ -33,13 +33,21 @@ class QualifiedColumn:
     alias: Optional[str] = None
 
     def fqn(self) -> str:
-        parts = []
+        parts: List[str] = []
         if self.database:
-            parts.append(normalize(self.database))
+            normalized = normalize(self.database)
+            if normalized:
+                parts.append(normalized)
         if self.schema:
-            parts.append(normalize(self.schema))
-        parts.append(normalize(self.table))
-        parts.append(normalize(self.column))
+            normalized = normalize(self.schema)
+            if normalized:
+                parts.append(normalized)
+        table_normalized = normalize(self.table)
+        if table_normalized:
+            parts.append(table_normalized)
+        column_normalized = normalize(self.column)
+        if column_normalized:
+            parts.append(column_normalized)
         return ".".join(parts)
 
     def __hash__(self):
@@ -154,17 +162,17 @@ class ColumnLineageExtractor:
             table_name = target_table
 
         if expr := stmt.args.get("expression"):
-            if isinstance(expr, exp.Select):
+            if isinstance(expr, exp.Select) and table_name:
                 self._process_select_columns(expr, graph, table_name)
 
     def _process_insert_statement(self, stmt: exp.Insert, graph: ColumnLineageGraph):
         table_name = self._extract_table_name(stmt.this)
 
         if expr := stmt.expression:
-            if isinstance(expr, exp.Select):
+            if isinstance(expr, exp.Select) and table_name:
                 target_columns = []
-                if columns := stmt.columns:
-                    target_columns = [col.name for col in columns]
+                if hasattr(stmt, "columns") and stmt.columns:
+                    target_columns = [col.name for col in stmt.columns]
                 self._process_select_columns(expr, graph, table_name, target_columns)
 
     def _process_select_statement(
@@ -183,11 +191,12 @@ class ColumnLineageExtractor:
     def _process_merge_statement(self, stmt: exp.Merge, graph: ColumnLineageGraph):
         target_table = self._extract_table_name(stmt.this)
 
-        for when_clause in stmt.args.get("whens", []):
-            if updates := when_clause.args.get("updates"):
-                for update in updates:
-                    if isinstance(update, exp.Update):
-                        self._process_update_columns(update, graph, target_table)
+        if target_table:
+            for when_clause in stmt.args.get("whens", []):
+                if updates := when_clause.args.get("updates"):
+                    for update in updates:
+                        if isinstance(update, exp.Update):
+                            self._process_update_columns(update, graph, target_table)
 
     def _process_select_columns(
         self,
@@ -301,11 +310,14 @@ class ColumnLineageExtractor:
 
         confidence = 1.0 if source_columns else 0.5
 
+        # Validate SQL to prevent injection
+        safe_sql = sql_text[:500] if validate_sql_injection(sql_text) else "[sanitized]"
+
         transformation = ColumnTransformation(
             source_columns=source_columns,
             target_column=target_column,
             transformation_type=transformation_type,
-            transformation_sql=sql_text[:500],
+            transformation_sql=safe_sql,
             confidence=confidence,
             function_name=function_name,
         )
@@ -342,11 +354,19 @@ class ColumnLineageExtractor:
                     source_columns = self._extract_columns_from_expression(right)
                     transformation_type = self._determine_transformation_type(right)
 
+                    # Validate SQL to prevent injection
+                    sql_text = right.sql()
+                    safe_sql = (
+                        sql_text[:500]
+                        if validate_sql_injection(sql_text)
+                        else "[sanitized]"
+                    )
+
                     transformation = ColumnTransformation(
                         source_columns=source_columns,
                         target_column=target_column,
                         transformation_type=transformation_type,
-                        transformation_sql=right.sql()[:500],
+                        transformation_sql=safe_sql,
                         confidence=1.0 if source_columns else 0.5,
                     )
 
