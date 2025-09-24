@@ -15,32 +15,65 @@ def validate_object_name(name: str) -> bool:
     if not name:
         return False
 
-    # Basic validation for Snowflake naming
-    pattern = r"^[A-Za-z_][A-Za-z0-9_$.]*$"
+    # Handle quoted identifiers (can contain spaces and other chars)
+    if name.startswith('"') and name.endswith('"'):
+        return len(name) > 2  # Must have content between quotes
+
+    # Split on dots for qualified names
     parts = name.split(".")
 
     for part in parts:
-        if not re.match(pattern, part.strip('"')):
+        # Remove quotes if present
+        clean_part = part.strip('"')
+
+        # Allow quoted identifiers with spaces
+        if part.startswith('"') and part.endswith('"'):
+            if len(clean_part) == 0:
+                return False
+            continue
+
+        # Basic validation for unquoted identifiers
+        pattern = r"^[A-Za-z_][A-Za-z0-9_$]*$"
+        if not re.match(pattern, clean_part):
             return False
 
     return True
 
 
 def validate_path(
-    path: Path, must_exist: bool = False, create_if_missing: bool = False
+    path: Path, must_exist: bool = False, create_if_missing: bool = False, allow_absolute_only: bool = True
 ) -> bool:
-    """Validate file system path with optional creation."""
+    """Validate file system path with path traversal protection."""
     try:
         path = Path(path)
 
-        if must_exist and not path.exists():
+        # Path traversal protection
+        resolved_path = path.resolve()
+
+        # Check for path traversal attempts
+        path_str = str(path)
+        if ".." in path_str or path_str.startswith("/"):
+            if allow_absolute_only and not path.is_absolute():
+                return False
+
+        # Ensure resolved path doesn't escape intended boundaries
+        dangerous_patterns = ["../", "..\\", "%2e%2e", "..%2f", "..%5c"]
+        for pattern in dangerous_patterns:
+            if pattern in path_str.lower():
+                return False
+
+        # Validate against null bytes and control characters
+        if "\x00" in path_str or any(ord(c) < 32 for c in path_str if c not in ['\t', '\n', '\r']):
+            return False
+
+        if must_exist and not resolved_path.exists():
             if create_if_missing and path.suffix == "":  # It's a directory
-                path.mkdir(parents=True, exist_ok=True)
+                resolved_path.mkdir(parents=True, exist_ok=True)
                 return True
             return False
 
         # Check write permissions for parent directory
-        parent = path.parent
+        parent = resolved_path.parent
         if not parent.exists() and create_if_missing:
             parent.mkdir(parents=True, exist_ok=True)
 
@@ -56,33 +89,46 @@ def validate_path(
 
         return True
 
-    except (OSError, ValueError):
+    except (OSError, ValueError, RuntimeError):
         return False
 
 
 def safe_file_write(path: Path, content: str | bytes, mode: str = "w") -> bool:
-    """Safely write to file with atomic operations."""
+    """Safely write to file with atomic operations and path validation."""
     try:
         path = Path(path)
+
+        # Validate path for security
+        if not validate_path(path, must_exist=False, create_if_missing=True):
+            return False
+
         temp_path = path.with_suffix(path.suffix + ".tmp")
+
+        # Validate content size to prevent excessive memory usage
+        if isinstance(content, str):
+            if len(content) > 100 * 1024 * 1024:  # 100MB limit
+                return False
+        elif isinstance(content, bytes):
+            if len(content) > 100 * 1024 * 1024:  # 100MB limit
+                return False
 
         # Write to temporary file
         if isinstance(content, bytes):
             temp_path.write_bytes(content)
         else:
-            temp_path.write_text(content)
+            temp_path.write_text(content, encoding='utf-8')
 
         # Atomic rename
         temp_path.replace(path)
         return True
 
-    except (OSError, IOError):
+    except (OSError, IOError, UnicodeError):
         # Clean up temp file if it exists
-        if temp_path.exists():
-            try:
+        try:
+            if 'temp_path' in locals() and temp_path.exists():
                 temp_path.unlink()
-            except Exception:
-                pass
+        except Exception:
+            pass
         return False
 
 
@@ -137,10 +183,15 @@ def safe_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
 
     try:
         # Handle multi-statement SQL
-        statements = sqlglot.parse(sql, read=dialect, error_level=ErrorLevel.WARN)
+        statements = sqlglot.parse(sql, read=dialect, error_level=ErrorLevel.RAISE)
 
-        # Filter out None results
-        valid_statements = [stmt for stmt in statements if stmt is not None]
+        # Filter out None results and validate statements
+        valid_statements = []
+        for stmt in statements:
+            if stmt is not None:
+                # Additional validation - check if statement has meaningful content
+                if hasattr(stmt, 'sql') and stmt.sql().strip():
+                    valid_statements.append(stmt)
 
         if not valid_statements:
             return None
@@ -181,30 +232,55 @@ def clean_old_snapshots(storage_path: Path, keep_count: int = 100, keep_days: in
     if len(graph_files) <= keep_count:
         return
 
-    # Remove old files
-    for graph_file in graph_files[:-keep_count]:
+    # Remove old files - always remove oldest files beyond keep_count
+    files_to_remove = graph_files[:-keep_count]
+    cutoff_date = datetime.now() - timedelta(days=keep_days)
+
+    for graph_file in files_to_remove:
         try:
-            # Check if it's older than cutoff
+            # Always remove if we have too many files, or if it's too old
             mtime = datetime.fromtimestamp(graph_file.stat().st_mtime)
-            if mtime < cutoff_date:
+            if len(graph_files) > keep_count or mtime < cutoff_date:
                 graph_file.unlink()
         except (OSError, IOError):
             pass
 
 
 def validate_sql_injection(value: str) -> bool:
-    """Basic SQL injection prevention check."""
+    """Enhanced SQL injection prevention check."""
+    if not isinstance(value, str) or not value.strip():
+        return False
+
+    # Comprehensive dangerous patterns with better coverage
     dangerous_patterns = [
-        r";\s*(DROP|DELETE|TRUNCATE|ALTER|CREATE)\s+",
-        r"--[^\n]*$",
-        r"/\*.*\*/",
-        r"(UNION\s+ALL|UNION\s+SELECT)",
-        r"(OR\s+1\s*=\s*1|AND\s+1\s*=\s*1)",
+        # SQL statement injection
+        r";\s*(DROP|DELETE|TRUNCATE|ALTER|CREATE|INSERT|UPDATE|EXEC|EXECUTE)\s+",
+        # Comment-based bypasses
+        r"--[^\n]*",
+        r"/\*.*?\*/",
+        r"#.*$",
+        # Union-based injection
+        r"\b(UNION\s+(ALL\s+)?SELECT|UNION\s+ALL)",
+        # Boolean-based injection
+        r"\b(OR|AND)\s+(\d+\s*[=<>!]\s*\d+|'[^']*'\s*[=<>!]\s*'[^']*')",
+        # Time-based injection
+        r"\b(WAITFOR|SLEEP|BENCHMARK|pg_sleep)\s*\(",
+        # Stacked queries
+        r";\s*[A-Za-z]",
+        # Information gathering
+        r"\b(information_schema|sys\.tables|mysql\.user)",
+        # Special characters that often indicate injection
+        r"['\"`;].*['\"`;]",
+        # Hex encoding attempts
+        r"0x[0-9a-fA-F]+",
+        # Script tags (for XSS prevention as well)
+        r"<\s*script[^>]*>",
     ]
 
-    value_upper = value.upper()
+    value_normalized = re.sub(r"\s+", " ", value.strip().upper())
+
     for pattern in dangerous_patterns:
-        if re.search(pattern, value_upper):
+        if re.search(pattern, value_normalized, re.IGNORECASE | re.MULTILINE | re.DOTALL):
             return False
 
     return True
