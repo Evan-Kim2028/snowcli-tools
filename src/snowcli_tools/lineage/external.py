@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -32,7 +33,7 @@ class ExternalSource:
     file_pattern: Optional[str] = None
     file_format: Optional[str] = None
     encryption: Optional[Dict] = None
-    credentials: Optional[Dict] = None
+    credentials_ref: Optional[str] = None  # Reference to env var or vault key
 
     def to_dict(self) -> dict:
         return {
@@ -42,8 +43,35 @@ class ExternalSource:
             "file_pattern": self.file_pattern,
             "file_format": self.file_format,
             "encryption": self.encryption,
-            "has_credentials": bool(self.credentials),
+            "has_credentials": bool(self.credentials_ref),
+            "credentials_ref": self.credentials_ref,  # Don't expose actual credentials
         }
+
+    def get_credentials(self) -> Optional[Dict]:
+        """Securely retrieve credentials from environment variables or vault."""
+        if not self.credentials_ref:
+            return None
+
+        # Check if it's an environment variable reference
+        if self.credentials_ref.startswith("env:"):
+            env_var = self.credentials_ref[4:]
+            creds_json = os.environ.get(env_var)
+            if creds_json:
+                try:
+                    return json.loads(creds_json)
+                except json.JSONDecodeError:
+                    # If not JSON, treat as single value credential
+                    return {"credential": creds_json}
+            return None
+
+        # Check if it's a vault reference (placeholder for actual vault integration)
+        if self.credentials_ref.startswith("vault:"):
+            # This would integrate with HashiCorp Vault, AWS Secrets Manager, etc.
+            # For now, return None to indicate vault integration needed
+            return None
+
+        # Default: treat as environment variable name
+        return {"credential": os.environ.get(self.credentials_ref)}
 
     def get_bucket_name(self) -> Optional[str]:
         if self.source_type == ExternalSourceType.S3:
@@ -340,14 +368,34 @@ class ExternalSourceMapper:
                         if prop_name == "URL":
                             url = self._extract_property_value(prop)
                         elif prop_name in ["STORAGE_INTEGRATION", "CREDENTIALS"]:
-                            credentials[prop_name] = self._extract_property_value(prop)
+                            # Store reference to credentials, not the actual values
+                            value = self._extract_property_value(prop)
+                            # Check if it looks like a credential value
+                            if value and not value.startswith(("env:", "vault:")):
+                                # Log warning about inline credentials
+                                import logging
+
+                                logging.warning(
+                                    f"Inline credentials detected in {obj.name}. "
+                                    "Consider using environment variables (env:VAR_NAME) "
+                                    "or vault references (vault:secret/path)"
+                                )
+                            credentials[prop_name] = value
                         elif prop_name in ["ENCRYPTION"]:
                             encryption[prop_name] = self._extract_property_value(prop)
 
                 if url:
                     source = self._parse_external_location(url)
                     source.stage_name = obj.name
-                    source.credentials = credentials if credentials else None
+                    # Store credential reference, not actual credentials
+                    if credentials:
+                        # If multiple credential properties, combine them
+                        if "STORAGE_INTEGRATION" in credentials:
+                            source.credentials_ref = f"storage_integration:{credentials['STORAGE_INTEGRATION']}"
+                        elif "CREDENTIALS" in credentials:
+                            source.credentials_ref = credentials["CREDENTIALS"]
+                        else:
+                            source.credentials_ref = json.dumps(credentials)
                     source.encryption = encryption if encryption else None
 
                     mapping = StageMapping(

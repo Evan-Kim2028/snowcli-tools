@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import networkx as nx
 
 from .graph import LineageGraph, LineageNode
+from .utils import TimeoutError, timeout
 
 
 class ChangeType(Enum):
@@ -129,27 +130,55 @@ class ImpactAnalyzer:
         change_type: ChangeType,
         max_depth: int = 10,
         include_upstream: bool = False,
+        timeout_seconds: int = 60,
     ) -> ImpactReport:
         if object_name not in self.nx_graph:
             raise ValueError(f"Object {object_name} not found in lineage graph")
 
-        impacted_objects = self._find_impacted_objects(
-            object_name, change_type, max_depth, include_upstream
-        )
+        try:
+            with timeout(
+                timeout_seconds, f"Impact analysis timed out after {timeout_seconds}s"
+            ):
+                impacted_objects = self._find_impacted_objects(
+                    object_name, change_type, max_depth, include_upstream
+                )
 
-        critical_paths = self._identify_critical_paths(object_name, impacted_objects)
+                critical_paths = self._identify_critical_paths(
+                    object_name, impacted_objects
+                )
 
-        impact_summary = self._generate_impact_summary(impacted_objects, change_type)
+                impact_summary = self._generate_impact_summary(
+                    impacted_objects, change_type
+                )
 
-        risk_score = self._calculate_risk_score(
-            impacted_objects, critical_paths, change_type
-        )
+                risk_score = self._calculate_risk_score(
+                    impacted_objects, critical_paths, change_type
+                )
 
-        recommendations = self._generate_recommendations(
-            change_type, impacted_objects, risk_score
-        )
+                recommendations = self._generate_recommendations(
+                    change_type, impacted_objects, risk_score
+                )
 
-        notification_list = self._build_notification_list(impacted_objects)
+                notification_list = self._build_notification_list(impacted_objects)
+
+        except TimeoutError:
+            # Return partial results if timeout occurs
+            return ImpactReport(
+                source_object=object_name,
+                change_type=change_type,
+                analysis_timestamp=datetime.now(),
+                total_impacted_objects=0,
+                impacted_objects=[],
+                critical_paths=[],
+                risk_score=0.0,
+                impact_summary={
+                    "error": f"Analysis timed out after {timeout_seconds} seconds"
+                },
+                recommendations=[
+                    "Analysis incomplete due to timeout. Consider increasing timeout or reducing max_depth."
+                ],
+                notification_list=[],
+            )
 
         return ImpactReport(
             source_object=object_name,

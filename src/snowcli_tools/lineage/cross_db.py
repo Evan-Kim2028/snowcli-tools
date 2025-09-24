@@ -11,6 +11,7 @@ from .builder import LineageBuilder
 from .graph import LineageGraph
 from .identifiers import normalize
 from .loader import CatalogLoader
+from .utils import TimeoutError, timeout
 
 
 @dataclass
@@ -104,20 +105,37 @@ class CrossDatabaseLineageBuilder:
         self.unified_graph = UnifiedLineageGraph()
 
     def build_cross_db_lineage(
-        self, include_shares: bool = True, resolve_external_refs: bool = True
+        self,
+        include_shares: bool = True,
+        resolve_external_refs: bool = True,
+        timeout_seconds: int = 120,
     ) -> UnifiedLineageGraph:
-        for catalog_path in self.catalog_paths:
-            self._load_database_lineage(catalog_path)
+        try:
+            with timeout(
+                timeout_seconds,
+                f"Cross-database lineage build timed out after {timeout_seconds}s",
+            ):
+                for catalog_path in self.catalog_paths:
+                    self._load_database_lineage(catalog_path)
 
-        self._merge_graphs()
+                self._merge_graphs()
 
-        if resolve_external_refs:
-            self._resolve_external_references()
+                if resolve_external_refs:
+                    self._resolve_external_references()
 
-        if include_shares:
-            self._process_data_shares()
+                if include_shares:
+                    self._process_data_shares()
 
-        self._identify_cross_db_references()
+                self._identify_cross_db_references()
+
+        except TimeoutError:
+            # Return partial results if timeout occurs
+            import logging
+
+            logging.warning(
+                f"Cross-database lineage build timed out after {timeout_seconds} seconds"
+            )
+            # Return what we have built so far
 
         return self.unified_graph
 
@@ -161,23 +179,36 @@ class CrossDatabaseLineageBuilder:
         return analysis
 
     def find_cross_db_paths(
-        self, source: str, target: str, max_depth: int = 10, max_paths: int = 100
+        self,
+        source: str,
+        target: str,
+        max_depth: int = 10,
+        max_paths: int = 100,
+        timeout_seconds: int = 30,
     ) -> List[List[str]]:
         graph = self.unified_graph.build_networkx_graph()
 
         try:
-            # Limit paths to prevent exponential resource exhaustion
-            paths = []
-            path_generator = nx.all_simple_paths(
-                graph, source, target, cutoff=max_depth
-            )
+            with timeout(
+                timeout_seconds, f"Path finding timed out after {timeout_seconds}s"
+            ):
+                # Limit paths to prevent exponential resource exhaustion
+                paths = []
+                path_generator = nx.all_simple_paths(
+                    graph, source, target, cutoff=max_depth
+                )
 
-            for i, path in enumerate(path_generator):
-                if i >= max_paths:
-                    break  # Stop after max_paths to prevent resource exhaustion
-                paths.append(path)
+                for i, path in enumerate(path_generator):
+                    if i >= max_paths:
+                        break  # Stop after max_paths to prevent resource exhaustion
+                    paths.append(path)
 
-            return paths
+                return paths
+        except TimeoutError:
+            import logging
+
+            logging.warning(f"Path finding between {source} and {target} timed out")
+            return []  # Return empty list on timeout
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
 

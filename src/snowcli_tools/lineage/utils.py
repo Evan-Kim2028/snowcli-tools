@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import re
+import signal
 import sqlite3
+import threading
 from contextlib import contextmanager
-from functools import lru_cache
+from functools import lru_cache, wraps
 from pathlib import Path
-from typing import Any, Dict, Generator, Optional, Set
+from typing import Any, Callable, Generator, Optional, Set, TypeVar
 
 import networkx as nx
+
+T = TypeVar("T")
 
 
 @lru_cache(maxsize=1000)
@@ -144,7 +148,6 @@ def safe_file_write(path: Path, content: str | bytes, mode: str = "w") -> bool:
 @contextmanager
 def safe_db_connection(db_path: Path) -> Generator:
     """Context manager for safe SQLite connections."""
-    import sqlite3
 
     conn = None
     try:
@@ -331,3 +334,95 @@ def get_cache_key(*args) -> str:
 def cached_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
     """Parse SQL with caching using functools.lru_cache."""
     return safe_sql_parse(sql, dialect)
+
+
+class TimeoutError(Exception):
+    """Raised when an operation times out."""
+
+    pass
+
+
+@contextmanager
+def timeout(seconds: int, error_message: str = "Operation timed out"):
+    """Context manager for setting a timeout on operations.
+
+    Args:
+        seconds: Timeout in seconds
+        error_message: Custom error message for timeout
+
+    Example:
+        with timeout(30):
+            expensive_operation()
+    """
+
+    def timeout_handler(signum, frame):
+        raise TimeoutError(error_message)
+
+    # Check if running on a system that supports SIGALRM
+    if hasattr(signal, "SIGALRM"):
+        # Set the signal handler and alarm
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(seconds)
+
+        try:
+            yield
+        finally:
+            # Cancel the alarm and restore the previous handler
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+    else:
+        # For Windows/non-Unix systems, just yield without timeout
+        # (More complex threading solution would be needed for cross-platform)
+        yield
+
+
+def with_timeout(seconds: int = 30, default: T = None) -> Callable:
+    """Decorator to add timeout to functions.
+
+    Args:
+        seconds: Timeout in seconds
+        default: Default value to return on timeout
+
+    Example:
+        @with_timeout(30)
+        def expensive_function():
+            ...
+    """
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> T:
+            # For non-Unix systems or when SIGALRM is not available
+            if not hasattr(signal, "SIGALRM"):
+                result = [TimeoutError("Operation timed out")]
+
+                def target():
+                    try:
+                        result[0] = func(*args, **kwargs)
+                    except Exception as e:
+                        result[0] = e
+
+                thread = threading.Thread(target=target)
+                thread.daemon = True
+                thread.start()
+                thread.join(timeout=seconds)
+
+                if thread.is_alive():
+                    return default
+
+                if isinstance(result[0], Exception):
+                    if isinstance(result[0], TimeoutError):
+                        return default
+                    raise result[0]
+                return result[0]
+            else:
+                # Use signal-based timeout for Unix systems
+                try:
+                    with timeout(seconds):
+                        return func(*args, **kwargs)
+                except TimeoutError:
+                    return default
+
+        return wrapper
+
+    return decorator
