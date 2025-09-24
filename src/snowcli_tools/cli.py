@@ -18,7 +18,8 @@ from .lineage import LineageQueryService
 from .lineage.graph import LineageGraph, LineageNode
 from .lineage.identifiers import QualifiedName, parse_table_name
 from .lineage.queries import LineageQueryResult
-from .mcp_server import main as mcp_main
+
+# MCP import is guarded - only imported when the command is called
 from .parallel import create_object_queries, query_multiple_objects
 from .snow_cli import SnowCLI, SnowCLIError
 
@@ -1191,7 +1192,10 @@ def mcp():
     Use this with MCP-compatible clients to get AI assistance with your Snowflake data.
     """
     try:
+        # Guarded import - only load MCP when the command is called
         import asyncio
+
+        from .mcp_server import main as mcp_main
 
         console.print("[blue]🚀[/blue] Starting Snowflake MCP Server...")
         console.print(
@@ -1203,6 +1207,12 @@ def mcp():
         # Run the MCP server
         asyncio.run(mcp_main())
 
+    except ImportError:
+        console.print(
+            "[red]✗[/red] MCP server requires the 'mcp' extra: uv add snowcli-tools[mcp]"
+        )
+        console.print("[yellow]💡[/yellow] Install with: uv add snowcli-tools[mcp]")
+        sys.exit(1)
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠[/yellow] MCP server stopped by user")
     except Exception as e:
