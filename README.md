@@ -18,19 +18,22 @@ This project leverages your existing `snow` CLI profiles to add powerful, concur
 
 Install from PyPI (recommended):
 
+### Base Installation (Core CLI)
 ```bash
-# Install the package
+# Install the core package without MCP
 uv pip install snowcli-tools
 
 # Check the CLI entry point
 snowflake-cli --help
-
-# Or run ad‑hoc without installing to your environment
-uvx --from snowcli-tools snowflake-cli --version
 ```
 
-PyPI project page: https://pypi.org/project/snowcli-tools/
+### Full Installation (With MCP Server for AI Assistants)
+```bash
+# Install with MCP support for AI integrations
+uv pip install snowcli-tools[mcp]
+```
 
+### Development Installation
 ```bash
 # Clone the repository
 git clone https://github.com/Evan-Kim2028/snowflake-cli-tools-py.git
@@ -39,7 +42,12 @@ cd snowflake-cli-tools-py
 # Install project deps and the Snowflake CLI via UV
 uv sync
 uv add snowflake-cli
+
+# Install MCP support for development
+uv add --extra mcp
 ```
+
+PyPI project page: https://pypi.org/project/snowcli-tools/
 
 
 ## Quick Start

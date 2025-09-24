@@ -8,7 +8,15 @@ The MCP (Model Context Protocol) server for snowcli-tools provides AI assistants
 
 ### Prerequisites
 
-1. **Configure Snowflake Connection**: Set up a Snowflake CLI connection profile
+1. **Install with MCP Support**: The MCP server requires the optional `mcp` extra:
+   ```bash
+   # Install with MCP support
+   uv add snowcli-tools[mcp]
+   ```
+
+   If you get an ImportError when running `snowflake-cli mcp`, install the extra as shown above.
+
+2. **Configure Snowflake Connection**: Set up a Snowflake CLI connection profile
    ```bash
    uv run snow connection add \
      --connection-name my-profile \

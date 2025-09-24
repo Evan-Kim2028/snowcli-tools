@@ -2,7 +2,12 @@
 
 ## Architecture Overview
 
-The MCP server is implemented as a thin wrapper around the existing snowcli-tools functionality. It exposes CLI capabilities as structured tools that AI assistants can call through the MCP protocol.
+The MCP server is implemented as an **optional feature** using Python packaging extras. It is a thin wrapper around the existing snowcli-tools functionality that exposes CLI capabilities as structured tools that AI assistants can call through the MCP protocol.
+
+### Optional Dependencies
+- MCP functionality requires the `[mcp]` extra: `pip install snowcli-tools[mcp]`
+- Core CLI works without MCP dependencies
+- Import errors are handled gracefully with helpful messages
 
 ### Key Components
 
@@ -277,5 +282,15 @@ When updating the MCP server:
 - [ ] Update version numbers if needed
 - [ ] Check for security implications of changes
 - [ ] Update examples and configuration samples
+
+### Optional Feature Maintenance
+
+Since MCP is now an optional feature, also check:
+
+- [ ] Does the change affect base functionality? (Should be rare)
+- [ ] Update installation documentation if needed
+- [ ] Test both base install (`pip install snowcli-tools`) and full install (`pip install snowcli-tools[mcp]`)
+- [ ] Verify graceful ImportError handling in CLI
+- [ ] Update CI to test both installation modes
 
 This ensures the MCP server stays synchronized with the main CLI functionality and provides a consistent experience across all interfaces.
