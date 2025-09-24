@@ -5,14 +5,16 @@ from __future__ import annotations
 import re
 import sqlite3
 from contextlib import contextmanager
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Generator, Optional, Set
 
 import networkx as nx
 
 
+@lru_cache(maxsize=1000)
 def validate_object_name(name: str) -> bool:
-    """Validate Snowflake object name format."""
+    """Validate Snowflake object name format with caching."""
     if not name:
         return False
 
@@ -260,8 +262,9 @@ def clean_old_snapshots(storage_path: Path, keep_count: int = 100, keep_days: in
             pass
 
 
+@lru_cache(maxsize=1000)
 def validate_sql_injection(value: str) -> bool:
-    """Enhanced SQL injection prevention check."""
+    """Enhanced SQL injection prevention check with caching."""
     if not isinstance(value, str) or not value.strip():
         return False
 
@@ -321,52 +324,10 @@ def get_cache_key(*args) -> str:
     return hashlib.md5(combined.encode()).hexdigest()
 
 
-class LRUCache:
-    """Simple LRU cache implementation for SQL parsing results."""
-
-    def __init__(self, max_size: int = 100):
-        self.max_size = max_size
-        self.cache: Dict[str, Any] = {}
-        self.access_order: list = []
-
-    def get(self, key: str) -> Optional[Any]:
-        if key in self.cache:
-            # Move to end (most recently used)
-            self.access_order.remove(key)
-            self.access_order.append(key)
-            return self.cache[key]
-        return None
-
-    def put(self, key: str, value: Any):
-        if key in self.cache:
-            self.access_order.remove(key)
-        elif len(self.cache) >= self.max_size:
-            # Remove least recently used
-            lru_key = self.access_order.pop(0)
-            del self.cache[lru_key]
-
-        self.cache[key] = value
-        self.access_order.append(key)
-
-    def clear(self):
-        self.cache.clear()
-        self.access_order.clear()
+# LRUCache class removed - replaced with functools.lru_cache decorators
 
 
-# Global SQL parse cache
-_sql_parse_cache = LRUCache(max_size=500)
-
-
+@lru_cache(maxsize=500)
 def cached_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
-    """Parse SQL with caching."""
-    cache_key = get_cache_key(sql, dialect)
-
-    cached_result = _sql_parse_cache.get(cache_key)
-    if cached_result is not None:
-        return cached_result
-
-    result = safe_sql_parse(sql, dialect)
-    if result is not None:
-        _sql_parse_cache.put(cache_key, result)
-
-    return result
+    """Parse SQL with caching using functools.lru_cache."""
+    return safe_sql_parse(sql, dialect)

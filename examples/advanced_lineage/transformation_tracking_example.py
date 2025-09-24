@@ -1,230 +1,158 @@
 #!/usr/bin/env python
 """
-Example: Transformation Tracking and Analysis
+Transformation Tracking Example: "How do I trace DeFi data transformations?"
 
-This example demonstrates how to:
-1. Track and categorize data transformations
-2. Analyze transformation patterns
-3. Build transformation chains
-4. Export transformation history
+This example shows how to track transformations in your DeFi pipeline.
+Use case: You want to understand how raw blockchain events become
+analytics-ready data and identify performance bottlenecks.
 """
 
 from pathlib import Path
-from datetime import datetime
-from snowcli_tools.lineage import (
-    ColumnLineageExtractor,
-    TransformationTracker,
-    ColumnTransformation,
-    QualifiedColumn
-)
-from snowcli_tools.lineage.column_parser import TransformationType
+
+from snowcli_tools.lineage import ColumnTransformation, TransformationTracker
+from snowcli_tools.lineage.column_parser import QualifiedColumn, TransformationType
 
 
 def main():
-    # Initialize the transformation tracker
-    tracker = TransformationTracker(storage_path=Path("./transformation_history"))
+    print("Transformation Tracking Analysis")
+    print("=" * 50)
+    print()
 
-    print("=" * 60)
-    print("Example 1: Tracking Individual Transformations")
-    print("=" * 60)
+    # Initialize tracker
+    tracker = TransformationTracker(storage_path=Path("./defi_transformation_history"))
 
-    # Create sample transformations
+    # Example transformation: Raw blockchain amount → Clean USD value
     transformations = [
+        # Step 1: Decimal adjustment (most common DeFi transformation)
         ColumnTransformation(
             source_columns=[
-                QualifiedColumn(table="raw_data", column="customer_name",
-                              database="STAGING", schema="PUBLIC")
+                QualifiedColumn(
+                    table="RAW_DEX_EVENTS",
+                    column="amount_in",
+                    database="DEFI_SAMPLE_DB",
+                    schema="RAW",
+                ),
+                QualifiedColumn(
+                    table="COIN_INFO",
+                    column="coin_decimals",
+                    database="DEFI_SAMPLE_DB",
+                    schema="PROCESSED",
+                ),
             ],
             target_column=QualifiedColumn(
-                table="clean_data", column="customer_name",
-                database="ANALYTICS", schema="PUBLIC"
+                table="DEX_TRADES_STABLE",
+                column="adjusted_amount_in",
+                database="DEFI_SAMPLE_DB",
+                schema="PROCESSED",
             ),
             transformation_type=TransformationType.FUNCTION,
-            transformation_sql="TRIM(UPPER(customer_name))",
-            function_name="TRIM",
-            confidence=1.0
+            transformation_sql="amount_in / POWER(10, coin_decimals)",
+            function_name="POWER",
+            confidence=0.95,
         ),
+        # Step 2: USD conversion
         ColumnTransformation(
             source_columns=[
-                QualifiedColumn(table="clean_data", column="order_amount",
-                              database="ANALYTICS", schema="PUBLIC"),
-                QualifiedColumn(table="clean_data", column="tax_rate",
-                              database="ANALYTICS", schema="PUBLIC")
+                QualifiedColumn(
+                    table="DEX_TRADES_STABLE",
+                    column="adjusted_amount_in",
+                    database="DEFI_SAMPLE_DB",
+                    schema="PROCESSED",
+                )
             ],
             target_column=QualifiedColumn(
-                table="financial_summary", column="total_with_tax",
-                database="ANALYTICS", schema="PUBLIC"
+                table="BTC_DEX_TRADES_USD_DT",
+                column="amount_in_usd",
+                database="DEFI_SAMPLE_DB",
+                schema="ANALYTICS",
             ),
             transformation_type=TransformationType.FUNCTION,
-            transformation_sql="order_amount * (1 + tax_rate)",
-            confidence=1.0
+            transformation_sql="adjusted_amount_in * 65000",  # BTC price
+            confidence=0.9,
         ),
-        ColumnTransformation(
-            source_columns=[
-                QualifiedColumn(table="clean_data", column="order_status",
-                              database="ANALYTICS", schema="PUBLIC")
-            ],
-            target_column=QualifiedColumn(
-                table="order_metrics", column="is_completed",
-                database="ANALYTICS", schema="PUBLIC"
-            ),
-            transformation_type=TransformationType.CASE,
-            transformation_sql="CASE WHEN order_status = 'COMPLETED' THEN 1 ELSE 0 END",
-            confidence=0.95
-        )
     ]
 
-    # Track each transformation
-    for trans in transformations:
+    print("Tracking key transformations...")
+
+    # Track transformations with business context
+    tracked_transformations = []
+    for i, trans in enumerate(transformations):
+        if i == 0:
+            logic = "Convert raw token amounts to decimal-adjusted values"
+            source_obj = "DEFI_SAMPLE_DB.RAW.RAW_DEX_EVENTS"
+            target_obj = "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE"
+        else:
+            logic = "Apply current market price for USD valuation"
+            source_obj = "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE"
+            target_obj = "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT"
+
         metadata = tracker.track_transformation(
             trans,
-            source_object="STAGING.PUBLIC.raw_data",
-            target_object="ANALYTICS.PUBLIC.clean_data",
-            business_logic="Data cleansing and standardization"
+            source_object=source_obj,
+            target_object=target_obj,
+            business_logic=logic,
         )
-        print(f"\nTracked: {metadata.transformation_id}")
-        print(f"  Category: {metadata.category.value}")
-        print(f"  Type: {metadata.transformation_type.value}")
-        print(f"  Columns: {', '.join(metadata.columns_affected)}")
+        tracked_transformations.append(metadata)
 
-    # Example 2: Analyze transformation patterns
-    print("\n" + "=" * 60)
-    print("Example 2: Pattern Analysis")
-    print("=" * 60)
+    print(f"Tracked {len(tracked_transformations)} transformations")
 
+    # Analyze transformation patterns
     patterns = tracker.analyze_patterns(min_frequency=1)
 
-    print("\nIdentified Patterns:")
-    for pattern in patterns:
+    print("\nTransformation Patterns Found:")
+    for pattern in patterns[:3]:  # Show top 3
         print(f"\n  Pattern: {pattern.name}")
-        print(f"  Category: {pattern.category.value}")
-        print(f"  Frequency: {pattern.frequency}")
-        print(f"  Example SQL: {pattern.example[:50]}...")
+        print(f"    Category: {pattern.category.value}")
+        print(f"    Used {pattern.frequency} times")
+        if pattern.example:
+            example_short = (
+                pattern.example[:60] + "..."
+                if len(pattern.example) > 60
+                else pattern.example
+            )
+            print(f"    Example: {example_short}")
 
-    # Example 3: Find transformation chains
-    print("\n" + "=" * 60)
-    print("Example 3: Transformation Chains")
-    print("=" * 60)
-
-    # Add more transformations to create a chain
-    chain_transformations = [
-        ColumnTransformation(
-            source_columns=[
-                QualifiedColumn(table="source", column="raw_date",
-                              database="STAGING", schema="PUBLIC")
-            ],
-            target_column=QualifiedColumn(
-                table="intermediate", column="parsed_date",
-                database="STAGING", schema="PUBLIC"
-            ),
-            transformation_type=TransformationType.FUNCTION,
-            transformation_sql="TO_DATE(raw_date, 'YYYY-MM-DD')",
-            function_name="TO_DATE",
-            confidence=1.0
-        ),
-        ColumnTransformation(
-            source_columns=[
-                QualifiedColumn(table="intermediate", column="parsed_date",
-                              database="STAGING", schema="PUBLIC")
-            ],
-            target_column=QualifiedColumn(
-                table="final", column="fiscal_quarter",
-                database="ANALYTICS", schema="PUBLIC"
-            ),
-            transformation_type=TransformationType.FUNCTION,
-            transformation_sql="QUARTER(parsed_date)",
-            function_name="QUARTER",
-            confidence=1.0
-        )
-    ]
-
-    for trans in chain_transformations:
-        tracker.track_transformation(
-            trans,
-            source_object=trans.source_columns[0].fqn() if trans.source_columns else "unknown",
-            target_object=trans.target_column.fqn()
-        )
-
+    # Show transformation chains
     chains = tracker.find_transformation_chains(
-        start_column="STAGING.PUBLIC.source.raw_date",
-        max_depth=5
+        start_column="DEFI_SAMPLE_DB.RAW.RAW_DEX_EVENTS.amount_in", max_depth=3
     )
 
-    print(f"\nFound {len(chains)} transformation chains")
-    for chain in chains:
-        print(f"\n  Chain ID: {chain.chain_id}")
-        print(f"  Start: {chain.start_point}")
-        print(f"  End: {chain.end_point}")
-        print(f"  Length: {chain.total_transformations}")
-        print(f"  Complexity: {chain.complexity_score:.2f}")
-        print(f"  Categories: {', '.join([c.value for c in chain.categories_involved])}")
+    if chains:
+        print("\nTransformation Chain Found:")
+        chain = chains[0]  # Show first chain
+        print("  Start: Raw blockchain amount")
+        print("  End: USD analytics value")
+        print(f"  Steps: {chain.total_transformations}")
+        print(f"  Complexity: {chain.complexity_score:.1f}/10")
 
-    # Example 4: Get transformation summary
-    print("\n" + "=" * 60)
-    print("Example 4: Transformation Summary")
-    print("=" * 60)
-
+    # Get summary statistics
     summary = tracker.get_transformation_summary()
 
-    print("\nTransformation Statistics:")
-    print(f"  Total Transformations: {summary['total_transformations']}")
+    print("\nSummary:")
+    print(f"  Total transformations tracked: {summary['total_transformations']}")
 
-    print("\n  By Type:")
-    for t_type, count in summary['transformation_types'].items():
-        print(f"    {t_type}: {count}")
+    if summary["transformation_types"]:
+        most_common_type = max(
+            summary["transformation_types"], key=summary["transformation_types"].get
+        )
+        print(f"  Most common type: {most_common_type}")
 
-    print("\n  By Category:")
-    for category, count in summary['categories'].items():
-        print(f"    {category}: {count}")
+    if summary["categories"]:
+        print(f"  Categories found: {len(summary['categories'])}")
 
-    print("\n  Top Transformed Columns:")
-    for col, count in list(summary['most_transformed_columns'].items())[:5]:
-        print(f"    {col}: {count} transformations")
+    # Show practical insights
+    print("\nKey Insights:")
+    print("  Decimal adjustment is critical for DeFi data accuracy")
+    print("  Price conversions introduce confidence uncertainty")
+    print("  Transformation chains help trace data quality issues")
 
-    # Example 5: Export transformation history
-    print("\n" + "=" * 60)
-    print("Example 5: Exporting Transformation History")
-    print("=" * 60)
-
-    # Export as JSON
-    json_path = tracker.export_transformations(
-        Path("./transformation_report.json"),
-        format="json"
-    )
-    print(f"\nExported to JSON: {json_path}")
-
-    # Export as Markdown report
-    md_path = tracker.export_transformations(
-        Path("./transformation_report.md"),
-        format="markdown"
-    )
-    print(f"Exported to Markdown: {md_path}")
-
-    # Example 6: Performance impact analysis
-    print("\n" + "=" * 60)
-    print("Example 6: Performance Impact Analysis")
-    print("=" * 60)
-
-    high_impact = [
-        t for t in tracker.transformation_history
-        if t.performance_impact and t.performance_impact > 0.5
-    ]
-
-    print(f"\nHigh performance impact transformations: {len(high_impact)}")
-    for trans in high_impact:
-        print(f"  - {trans.transformation_id}: Impact score {trans.performance_impact:.2f}")
-        print(f"    Type: {trans.transformation_type.value}")
-        print(f"    Category: {trans.category.value}")
-
-    # Example 7: Data quality rules extraction
-    print("\n" + "=" * 60)
-    print("Example 7: Data Quality Rules")
-    print("=" * 60)
-
-    for trans in tracker.transformation_history:
-        if trans.data_quality_rules:
-            print(f"\nTransformation: {trans.transformation_id}")
-            print(f"  Rules: {', '.join(trans.data_quality_rules)}")
+    # Advanced usage hints
+    print("\nAdvanced Usage:")
+    sample_data_path = Path(__file__).parent.parent / "sample_data"
+    print("  Track transformations across your entire DeFi pipeline")
+    print("  Identify performance bottlenecks in complex calculations")
+    print(f"  Sample schema available at: {sample_data_path}")
+    print("  Export tracking history for compliance documentation")
 
 
 if __name__ == "__main__":

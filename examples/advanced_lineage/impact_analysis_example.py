@@ -1,235 +1,168 @@
 #!/usr/bin/env python
 """
-Example: Lineage Impact Analysis
+Impact Analysis Example
 
-This example demonstrates how to:
-1. Analyze impact of changes to database objects
-2. Calculate blast radius
-3. Find single points of failure
-4. Generate impact reports
+This example shows how to analyze the impact of changes in your DeFi pipeline.
+Use case: You want to modify the core DEX trades table and need to understand
+what downstream analytics and reports might be affected.
 """
 
 from pathlib import Path
-from snowcli_tools.lineage import (
-    LineageBuilder,
-    ImpactAnalyzer,
-    ChangeType
-)
+
+from snowcli_tools.lineage import ChangeType, ImpactAnalyzer, LineageGraph
+from snowcli_tools.lineage.graph import EdgeType, LineageEdge, LineageNode, NodeType
 
 
 def main():
-    # Build lineage graph from catalog
-    catalog_path = Path("./data_catalogue")
-    builder = LineageBuilder(catalog_path)
-    result = builder.build()
+    print("Impact Analysis")
+    print("=" * 50)
+    print()
 
-    # Initialize impact analyzer
-    analyzer = ImpactAnalyzer(result.graph)
+    # Create a mock DeFi lineage graph (in practice, loaded from your catalog)
+    print("Building DeFi pipeline graph...")
 
-    print("=" * 60)
-    print("Example 1: Basic Impact Analysis")
-    print("=" * 60)
+    graph = LineageGraph()
 
-    # Analyze impact of dropping a table
-    source_object = "STAGING.PUBLIC.RAW_CUSTOMERS"
-    change_type = ChangeType.DROP
+    # Add key DeFi pipeline tables
+    defi_tables = [
+        ("DEFI_SAMPLE_DB.RAW.RAW_DEX_EVENTS", "Raw blockchain events"),
+        ("DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE", "Core processed trades"),
+        ("DEFI_SAMPLE_DB.PROCESSED.COIN_INFO", "Cryptocurrency metadata"),
+        (
+            "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT",
+            "BTC trades with USD pricing",
+        ),
+        ("DEFI_SAMPLE_DB.ANALYTICS.FILTERED_DEX_TRADES_VIEW", "Analytics view"),
+        ("DEFI_SAMPLE_DB.REPORTS.DAILY_VOLUME_REPORT", "Daily trading reports"),
+    ]
 
+    for table_name, description in defi_tables:
+        node = LineageNode(
+            key=table_name,
+            node_type=NodeType.DATASET,
+            attributes={"name": table_name.split(".")[-1], "description": description},
+        )
+        graph.add_node(node)
+
+    # Add dependencies (who depends on whom)
+    dependencies = [
+        (
+            "DEFI_SAMPLE_DB.RAW.RAW_DEX_EVENTS",
+            "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+        ),
+        (
+            "DEFI_SAMPLE_DB.PROCESSED.COIN_INFO",
+            "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+        ),
+        (
+            "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+            "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT",
+        ),
+        (
+            "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+            "DEFI_SAMPLE_DB.ANALYTICS.FILTERED_DEX_TRADES_VIEW",
+        ),
+        (
+            "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT",
+            "DEFI_SAMPLE_DB.REPORTS.DAILY_VOLUME_REPORT",
+        ),
+    ]
+
+    for src, dst in dependencies:
+        edge = LineageEdge(src=src, dst=dst, edge_type=EdgeType.DERIVES_FROM)
+        graph.add_edge(edge)
+
+    analyzer = ImpactAnalyzer(graph)
+    print(f"Created pipeline with {len(graph.nodes)} tables")
+
+    # Scenario: What happens if we modify the core DEX trades table?
+    target_table = "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE"
+
+    print(f"\nAnalyzing impact of changing: {target_table.split('.')[-1]}")
+
+    # Analyze impact of schema change
     report = analyzer.analyze_impact(
-        object_name=source_object,
-        change_type=change_type,
+        object_name=target_table,
+        change_type=ChangeType.ALTER_SCHEMA,
         max_depth=5,
-        include_upstream=False
+        include_upstream=False,
     )
-
-    print(f"\nImpact Analysis for: {source_object}")
-    print(f"Change Type: {change_type.value}")
-    print(f"Risk Score: {report.risk_score:.2f}")
-    print(f"Total Impacted Objects: {report.total_impacted_objects}")
 
     print("\nImpact Summary:")
-    for severity, count in report.impact_summary['by_severity'].items():
-        print(f"  {severity}: {count}")
+    print(f"  Risk Score: {report.risk_score:.1f}/10")
+    print(f"  Tables Affected: {report.total_impacted_objects}")
 
-    print("\nTop Impacted Objects:")
-    for obj in report.impacted_objects[:5]:
-        print(f"  - {obj.fqn()}")
-        print(f"    Type: {obj.object_type}")
-        print(f"    Severity: {obj.severity.value}")
-        print(f"    Distance: {obj.distance_from_source}")
-        print(f"    Impact: {obj.impact_type}")
+    if report.impacted_objects:
+        print("\nObjects That Will Break:")
+        for obj in report.impacted_objects[:4]:  # Show top 4
+            print(f"  {obj.fqn().split('.')[-1]}")
+            print(f"    Severity: {obj.severity.value}")
+            print(f"    Distance: {obj.distance_from_source} hops away")
 
-    # Example 2: Blast radius calculation
-    print("\n" + "=" * 60)
-    print("Example 2: Blast Radius Analysis")
-    print("=" * 60)
-
+    # Calculate blast radius
     blast_radius = analyzer.calculate_blast_radius(
-        object_name=source_object,
-        max_depth=5
+        object_name=target_table, max_depth=5
     )
 
-    print(f"\nBlast Radius for: {source_object}")
-    print(f"  Total Downstream: {blast_radius['total_downstream']}")
-    print(f"  Total Upstream: {blast_radius['total_upstream']}")
+    print("\nBlast Radius:")
+    print(
+        f"  Immediate impact: {blast_radius['downstream_by_distance'].get(1, []).__len__()} tables"
+    )
+    print(f"  Total downstream: {blast_radius['total_downstream']} objects")
 
-    print("\nDownstream by Distance:")
-    for distance, objects in blast_radius['downstream_by_distance'].items():
-        print(f"  Distance {distance}: {len(objects)} objects")
-        for obj in objects[:3]:
-            print(f"    - {obj}")
+    # Find critical dependencies
+    spofs = analyzer.find_single_points_of_failure(min_dependent_count=1)
 
-    # Example 3: Find single points of failure
-    print("\n" + "=" * 60)
-    print("Example 3: Single Points of Failure")
-    print("=" * 60)
+    if spofs:
+        print("\nCritical Tables (Single Points of Failure):")
+        for spof in spofs[:3]:  # Show top 3
+            table_name = spof["object"].split(".")[-1]
+            print(f"  {table_name}")
+            print(f"    Affects {spof['downstream_count']} downstream objects")
+            print(f"    Criticality: {spof['criticality_score']:.1f}/10")
 
-    spofs = analyzer.find_single_points_of_failure(min_dependent_count=3)
-
-    print(f"\nIdentified {len(spofs)} Single Points of Failure:")
-    for spof in spofs[:5]:
-        print(f"\n  Object: {spof['object']}")
-        print(f"  Type: {spof['object_type']}")
-        print(f"  Downstream Count: {spof['downstream_count']}")
-        print(f"  Criticality Score: {spof['criticality_score']:.2f}")
-        print(f"  Sample Dependencies:")
-        for dep in spof['downstream_objects'][:3]:
-            print(f"    - {dep}")
-
-    # Example 4: Change propagation time analysis
-    print("\n" + "=" * 60)
-    print("Example 4: Change Propagation Time")
-    print("=" * 60)
-
-    # Define refresh schedules (in hours)
+    # Timing analysis with realistic DeFi refresh schedules
     refresh_schedules = {
-        "STAGING.PUBLIC.RAW_CUSTOMERS": 1.0,
-        "ANALYTICS.PUBLIC.DIM_CUSTOMERS": 2.0,
-        "ANALYTICS.PUBLIC.FACT_SALES": 4.0,
-        "REPORTING.PUBLIC.CUSTOMER_SUMMARY": 6.0
+        "DEFI_SAMPLE_DB.RAW.RAW_DEX_EVENTS": 0.25,  # 15 min (real-time blockchain)
+        "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE": 1.0,  # 1 hour
+        "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT": 6.0,  # 6 hours
+        "DEFI_SAMPLE_DB.ANALYTICS.FILTERED_DEX_TRADES_VIEW": 0.0,  # Real-time view
+        "DEFI_SAMPLE_DB.REPORTS.DAILY_VOLUME_REPORT": 24.0,  # Daily
     }
 
     propagation = analyzer.analyze_change_propagation_time(
-        object_name=source_object,
-        refresh_schedules=refresh_schedules
+        object_name=target_table, refresh_schedules=refresh_schedules
     )
 
-    print(f"\nChange Propagation Analysis for: {source_object}")
-    print(f"  Total Affected: {propagation['total_affected']}")
-    print(f"  Max Propagation Time: {propagation['max_propagation_time_hours']:.1f} hours")
+    print("\nChange Propagation Timeline:")
+    print(f"  Total affected: {propagation['total_affected']} objects")
+    print(
+        f"  Full propagation time: {propagation['max_propagation_time_hours']:.1f} hours"
+    )
 
-    print("\nPropagation Timeline:")
-    for obj, details in list(propagation['propagation_details'].items())[:5]:
-        print(f"  {obj}:")
-        print(f"    Time: {details['estimated_time_hours']:.1f} hours")
-        print(f"    Path Length: {details['path_length']} hops")
-
-    # Example 5: Multiple change scenarios
-    print("\n" + "=" * 60)
-    print("Example 5: Multiple Change Scenarios")
-    print("=" * 60)
-
-    scenarios = [
-        ("STAGING.PUBLIC.RAW_CUSTOMERS", ChangeType.DROP),
-        ("ANALYTICS.PUBLIC.DIM_CUSTOMERS", ChangeType.ALTER_SCHEMA),
-        ("ANALYTICS.PUBLIC.FACT_SALES", ChangeType.DROP_COLUMN),
-        ("REPORTING.PUBLIC.CUSTOMER_SUMMARY", ChangeType.MODIFY_LOGIC)
+    # Show a few key timing details
+    key_objects = [
+        obj
+        for obj in propagation["propagation_details"].keys()
+        if "ANALYTICS" in obj or "REPORTS" in obj
     ]
+    for obj in key_objects[:2]:
+        details = propagation["propagation_details"][obj]
+        obj_name = obj.split(".")[-1]
+        print(f"  {obj_name}: {details['estimated_time_hours']:.1f} hours")
 
-    heatmap = analyzer.generate_impact_heatmap(scenarios)
+    # Show recommendations
+    if report.recommendations:
+        print("\nRecommendations:")
+        for rec in report.recommendations[:3]:  # Show top 3
+            print(f"  {rec}")
 
-    print("\nImpact Heatmap:")
-    for object_name, impact in heatmap.items():
-        print(f"\n  {object_name}:")
-        print(f"    Change: {impact['change_type']}")
-        print(f"    Risk Score: {impact['risk_score']:.2f}")
-        print(f"    Total Impacted: {impact['total_impacted']}")
-        print(f"    Critical Count: {impact['critical_count']}")
-
-    # Example 6: Circular dependency detection
-    print("\n" + "=" * 60)
-    print("Example 6: Circular Dependencies")
-    print("=" * 60)
-
-    cycles = analyzer.identify_circular_dependencies()
-
-    if cycles:
-        print(f"\n⚠️ Found {len(cycles)} circular dependencies:")
-        for i, cycle in enumerate(cycles[:3], 1):
-            print(f"\n  Cycle {i}:")
-            for obj in cycle:
-                print(f"    -> {obj}")
-            print(f"    -> {cycle[0]} (circular)")
-    else:
-        print("\n✓ No circular dependencies detected")
-
-    # Example 7: Critical path analysis
-    print("\n" + "=" * 60)
-    print("Example 7: Critical Path Analysis")
-    print("=" * 60)
-
-    if report.critical_paths:
-        print(f"\nCritical Paths from {source_object}:")
-        for path in report.critical_paths[:3]:
-            print(f"\n  To: {path.target_object}")
-            print(f"  Path Length: {path.path_length}")
-            print(f"  Path: {' -> '.join(path.path[:5])}")
-            if path.critical_nodes:
-                print(f"  Critical Nodes: {', '.join(path.critical_nodes)}")
-            if path.bottlenecks:
-                print(f"  Bottlenecks: {', '.join(path.bottlenecks)}")
-
-    # Example 8: Recommendations
-    print("\n" + "=" * 60)
-    print("Example 8: Impact Mitigation Recommendations")
-    print("=" * 60)
-
-    print("\nRecommendations:")
-    for rec in report.recommendations:
-        print(f"  • {rec}")
-
-    # Example 9: Notification list
-    print("\n" + "=" * 60)
-    print("Example 9: Notification List")
-    print("=" * 60)
-
-    if report.notification_list:
-        print("\nUsers to Notify:")
-        for notification in report.notification_list[:5]:
-            print(f"  User: {notification['user']}")
-            print(f"  Severity: {notification['severity']}")
-            print(f"  Object: {notification['object']}")
-            print(f"  Impact: {notification['impact_type']}")
-    else:
-        print("\nNo notifications required")
-
-    # Example 10: Export impact report
-    print("\n" + "=" * 60)
-    print("Example 10: Exporting Impact Report")
-    print("=" * 60)
-
-    # Export as HTML
-    html_path = analyzer.export_impact_report(
-        report,
-        Path("./impact_report.html"),
-        format="html"
-    )
-    print(f"\nExported to HTML: {html_path}")
-
-    # Export as JSON
-    json_path = analyzer.export_impact_report(
-        report,
-        Path("./impact_report.json"),
-        format="json"
-    )
-    print(f"Exported to JSON: {json_path}")
-
-    # Export as Markdown
-    md_path = analyzer.export_impact_report(
-        report,
-        Path("./impact_report.md"),
-        format="markdown"
-    )
-    print(f"Exported to Markdown: {md_path}")
+    print("\nAdvanced Usage:")
+    sample_data_path = Path(__file__).parent.parent / "sample_data"
+    print("  Load your actual lineage from catalog files")
+    print("  Test multiple change scenarios (DROP, ALTER, etc.)")
+    print(f"  Sample data pipeline: {sample_data_path}")
+    print("  Set up monitoring for critical dependency changes")
 
 
 if __name__ == "__main__":

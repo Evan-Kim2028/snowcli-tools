@@ -26,7 +26,7 @@ from snowcli_tools.lineage.utils import (
     networkx_descendants_at_distance,
     safe_sql_parse,
     validate_sql_injection,
-    LRUCache,
+    cached_sql_parse,
 )
 
 
@@ -205,28 +205,31 @@ class TestP1HighPriorityIssues(TestCase):
             self.assertLessEqual(len(remaining), 100)
 
     def test_performance_optimization_cache(self):
-        """Test LRU cache for SQL parsing."""
-        cache = LRUCache(max_size=3)
+        """Test functools.lru_cache for SQL parsing optimization."""
+        # Clear cache first to ensure clean test state
+        cached_sql_parse.cache_clear()
 
-        # Test basic operations
-        cache.put("key1", "value1")
-        cache.put("key2", "value2")
-        cache.put("key3", "value3")
+        # Test that caching works by checking cache_info
+        self.assertEqual(cached_sql_parse.cache_info().currsize, 0)
 
-        self.assertEqual(cache.get("key1"), "value1")
-        self.assertEqual(cache.get("key2"), "value2")
-        self.assertEqual(cache.get("key3"), "value3")
+        # Parse some SQL statements
+        sql1 = "SELECT * FROM users"
+        sql2 = "SELECT name FROM customers"
 
-        # Test LRU eviction
-        cache.put("key4", "value4")  # Should evict key1 (least recently used)
-        self.assertIsNone(cache.get("key1"))
-        self.assertEqual(cache.get("key4"), "value4")
+        result1 = cached_sql_parse(sql1)
+        self.assertEqual(cached_sql_parse.cache_info().hits, 0)
+        self.assertEqual(cached_sql_parse.cache_info().misses, 1)
 
-        # Test access order update
-        cache.get("key2")  # Access key2
-        cache.put("key5", "value5")  # Should evict key3 (now least recently used)
-        self.assertIsNone(cache.get("key3"))
-        self.assertEqual(cache.get("key2"), "value2")
+        result2 = cached_sql_parse(sql2)
+        self.assertEqual(cached_sql_parse.cache_info().misses, 2)
+
+        # Parse same SQL again - should hit cache
+        result1_cached = cached_sql_parse(sql1)
+        self.assertEqual(cached_sql_parse.cache_info().hits, 1)
+
+        # Verify results are consistent
+        self.assertIsNotNone(result1)
+        self.assertEqual(result1.sql(), result1_cached.sql())
 
     def test_object_name_validation(self):
         """Test Snowflake object name validation."""
@@ -404,20 +407,30 @@ class TestTimeTravel(TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = LineageHistoryManager(storage_path=Path(tmpdir))
 
-            # Mock the catalog and graph building
-            with mock.patch.object(manager, "_save_snapshot"):
-                with mock.patch("snowcli_tools.lineage.history.LineageBuilder"):
-                    snapshot1 = manager.capture_snapshot(
-                        Path(tmpdir),
-                        tag="v1",
-                        description="First"
-                    )
+            # Mock the catalog and graph building but don't mock _save_snapshot
+            # so that snapshots are actually saved to the database
+            with mock.patch("snowcli_tools.lineage.history.LineageBuilder") as mock_builder:
+                # Mock the builder to return a minimal graph
+                mock_result = mock.Mock()
+                mock_result.graph = mock.Mock()
+                mock_result.graph.nodes = {}
+                mock_result.graph.edge_metadata = {}
+                mock_result.graph.edges = []  # Mock the edges property
+                mock_result.audit = mock.Mock()
+                mock_result.audit.entries = []  # Mock the audit entries
+                mock_builder.return_value.build.return_value = mock_result
 
-                    snapshot2 = manager.capture_snapshot(
-                        Path(tmpdir),
-                        tag="v2",
-                        description="Second"
-                    )
+                snapshot1 = manager.capture_snapshot(
+                    Path(tmpdir),
+                    tag="v1",
+                    description="First"
+                )
+
+                snapshot2 = manager.capture_snapshot(
+                    Path(tmpdir),
+                    tag="v2",
+                    description="Second"
+                )
 
             # Test snapshot listing
             snapshots = manager.list_snapshots()
