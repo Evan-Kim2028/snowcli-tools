@@ -116,7 +116,11 @@ class LineageGraph:
             for edges_dict in self.in_edges.values():
                 all_edge_types.update(edges_dict.keys())
             # Default to enum values if no edges exist yet
-            allowed = all_edge_types if all_edge_types else {EdgeType.DERIVES_FROM, EdgeType.PRODUCES, EdgeType.CONSUMES}
+            allowed = (
+                all_edge_types
+                if all_edge_types
+                else {EdgeType.DERIVES_FROM, EdgeType.PRODUCES, EdgeType.CONSUMES}
+            )
         subgraph = LineageGraph()
         queue: deque[Tuple[str, int]] = deque([(start, 0)])
         visited = {start}
@@ -163,7 +167,11 @@ class LineageGraph:
             "nodes": [
                 {
                     "key": node.key,
-                    "type": node.node_type.value if isinstance(node.node_type, NodeType) else node.node_type,
+                    "type": (
+                        node.node_type.value
+                        if isinstance(node.node_type, NodeType)
+                        else node.node_type
+                    ),
                     "attributes": cast(Dict[str, Any], dict(node.attributes)),
                 }
                 for node in self.nodes.values()
@@ -172,7 +180,11 @@ class LineageGraph:
                 {
                     "src": src,
                     "dst": dst,
-                    "type": edge_type.value if isinstance(edge_type, EdgeType) else edge_type,
+                    "type": (
+                        edge_type.value
+                        if isinstance(edge_type, EdgeType)
+                        else edge_type
+                    ),
                     "evidence": cast(Dict[str, Any], dict(evidence)),
                 }
                 for (src, dst, edge_type), evidence in self.edge_metadata.items()

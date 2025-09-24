@@ -5,13 +5,11 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
-from urllib.parse import urlparse
+from typing import Dict, List, Optional
 
 import sqlglot
 from sqlglot import exp
 
-from .identifiers import normalize
 from .loader import CatalogLoader, CatalogObject, ObjectType
 
 
@@ -43,20 +41,20 @@ class ExternalSource:
             "file_pattern": self.file_pattern,
             "file_format": self.file_format,
             "encryption": self.encryption,
-            "has_credentials": bool(self.credentials)
+            "has_credentials": bool(self.credentials),
         }
 
     def get_bucket_name(self) -> Optional[str]:
         if self.source_type == ExternalSourceType.S3:
-            match = re.match(r's3://([^/]+)', self.location)
+            match = re.match(r"s3://([^/]+)", self.location)
             if match:
                 return match.group(1)
         elif self.source_type == ExternalSourceType.AZURE_BLOB:
-            match = re.match(r'azure://([^.]+)', self.location)
+            match = re.match(r"azure://([^.]+)", self.location)
             if match:
                 return match.group(1)
         elif self.source_type == ExternalSourceType.GCS:
-            match = re.match(r'gcs://([^/]+)', self.location)
+            match = re.match(r"gcs://([^/]+)", self.location)
             if match:
                 return match.group(1)
         return None
@@ -106,10 +104,12 @@ class ExternalSourceMapper:
         self.loader = CatalogLoader(self.catalog_path)
         self.external_lineage = ExternalLineage()
 
-    def map_external_sources(self,
-                           include_stages: bool = True,
-                           include_external_tables: bool = True,
-                           include_copy_history: bool = False) -> ExternalLineage:
+    def map_external_sources(
+        self,
+        include_stages: bool = True,
+        include_external_tables: bool = True,
+        include_copy_history: bool = False,
+    ) -> ExternalLineage:
         catalog = self.loader.load()
 
         for obj in catalog:
@@ -156,21 +156,22 @@ class ExternalSourceMapper:
             "by_file_format": {},
             "external_table_count": len(self.external_lineage.external_tables),
             "stage_count": len(self.external_lineage.stages),
-            "unique_sources": len(self.external_lineage.external_sources)
+            "unique_sources": len(self.external_lineage.external_sources),
         }
 
         for source in self.external_lineage.external_sources.values():
             source_type = source.source_type.value
-            patterns["by_source_type"][source_type] = \
+            patterns["by_source_type"][source_type] = (
                 patterns["by_source_type"].get(source_type, 0) + 1
+            )
 
             if bucket := source.get_bucket_name():
-                patterns["by_bucket"][bucket] = \
-                    patterns["by_bucket"].get(bucket, 0) + 1
+                patterns["by_bucket"][bucket] = patterns["by_bucket"].get(bucket, 0) + 1
 
             if source.file_format:
-                patterns["by_file_format"][source.file_format] = \
+                patterns["by_file_format"][source.file_format] = (
                     patterns["by_file_format"].get(source.file_format, 0) + 1
+                )
 
         return patterns
 
@@ -190,7 +191,7 @@ class ExternalSourceMapper:
                         "external_source": table.external_source.to_dict(),
                         "columns": table.columns,
                         "partition_columns": table.partition_columns,
-                        "auto_refresh": table.auto_refresh
+                        "auto_refresh": table.auto_refresh,
                     }
                     for table in self.external_lineage.external_tables
                 ],
@@ -199,13 +200,13 @@ class ExternalSourceMapper:
                         "fqn": stage.fqn(),
                         "external_source": stage.external_source.to_dict(),
                         "copy_operations": stage.copy_operations,
-                        "pipes": stage.pipes
+                        "pipes": stage.pipes,
                     }
                     for stage in self.external_lineage.stages
                 ],
                 "source_to_tables": self.external_lineage.source_to_tables,
                 "bucket_summary": self.external_lineage.bucket_summary,
-                "data_flow_paths": self.external_lineage.data_flow_paths
+                "data_flow_paths": self.external_lineage.data_flow_paths,
             }
 
             with open(output_path, "w") as f:
@@ -281,7 +282,7 @@ class ExternalSourceMapper:
                         database=obj.database or "",
                         schema=obj.schema or "",
                         external_source=source,
-                        auto_refresh=auto_refresh
+                        auto_refresh=auto_refresh,
                     )
 
                     self.external_lineage.external_tables.append(mapping)
@@ -290,12 +291,14 @@ class ExternalSourceMapper:
         except (sqlglot.errors.ParseError, AttributeError, KeyError) as e:
             # Log but don't crash - external table parsing can fail
             import logging
+
             logging.debug(f"Failed to parse external table info: {e}")
 
     def _extract_stages_from_catalog(self, catalog: List[CatalogObject]):
         for obj in catalog:
-            if obj.object_type == ObjectType.STAGE or \
-               (obj.text and "create stage" in obj.text.lower()):
+            if obj.object_type == ObjectType.STAGE or (
+                obj.text and "create stage" in obj.text.lower()
+            ):
                 self._extract_stage_info(obj)
 
     def _extract_stage_info(self, obj: CatalogObject):
@@ -329,7 +332,7 @@ class ExternalSourceMapper:
                         stage_name=obj.name,
                         database=obj.database or "",
                         schema=obj.schema or "",
-                        external_source=source
+                        external_source=source,
                     )
 
                     self.external_lineage.stages.append(mapping)
@@ -338,6 +341,7 @@ class ExternalSourceMapper:
         except (sqlglot.errors.ParseError, AttributeError, KeyError) as e:
             # Log but don't crash - external table parsing can fail
             import logging
+
             logging.debug(f"Failed to parse external table info: {e}")
 
     def _extract_external_tables(self, catalog: List[CatalogObject]):
@@ -350,8 +354,7 @@ class ExternalSourceMapper:
             return
 
         copy_pattern = re.compile(
-            r'copy\s+into\s+(\S+)\s+from\s+([^\s\)]+)',
-            re.IGNORECASE | re.DOTALL
+            r"copy\s+into\s+(\S+)\s+from\s+([^\s\)]+)", re.IGNORECASE | re.DOTALL
         )
 
         matches = copy_pattern.findall(obj.text)
@@ -362,16 +365,18 @@ class ExternalSourceMapper:
                 stage_name = source_location[1:].split("/")[0]
                 for stage in self.external_lineage.stages:
                     if stage.stage_name == stage_name:
-                        stage.copy_operations.append({
-                            "target_table": target_table,
-                            "source_location": source_location
-                        })
+                        stage.copy_operations.append(
+                            {
+                                "target_table": target_table,
+                                "source_location": source_location,
+                            }
+                        )
 
     def _extract_stage_references(self, obj: CatalogObject):
         if not obj.text:
             return
 
-        stage_pattern = re.compile(r'@(\w+(?:\.\w+)*)', re.IGNORECASE)
+        stage_pattern = re.compile(r"@(\w+(?:\.\w+)*)", re.IGNORECASE)
         matches = stage_pattern.findall(obj.text)
 
         for stage_ref in matches:
@@ -387,10 +392,7 @@ class ExternalSourceMapper:
         if not obj.text:
             return
 
-        url_pattern = re.compile(
-            r'((?:s3|azure|gcs)://[^\s\)\'\"]+)',
-            re.IGNORECASE
-        )
+        url_pattern = re.compile(r"((?:s3|azure|gcs)://[^\s\)\'\"]+)", re.IGNORECASE)
 
         matches = url_pattern.findall(obj.text)
         for url in matches:
@@ -424,10 +426,7 @@ class ExternalSourceMapper:
         else:
             source_type = ExternalSourceType.UNKNOWN
 
-        return ExternalSource(
-            source_type=source_type,
-            location=location
-        )
+        return ExternalSource(source_type=source_type, location=location)
 
     def _register_external_source(self, source: ExternalSource):
         key = source.location
@@ -455,7 +454,10 @@ class ExternalSourceMapper:
 
             for op in stage.copy_operations:
                 target = op.get("target_table")
-                if target and target not in self.external_lineage.source_to_tables[source_key]:
+                if (
+                    target
+                    and target not in self.external_lineage.source_to_tables[source_key]
+                ):
                     self.external_lineage.source_to_tables[source_key].append(target)
 
     def _analyze_buckets(self):
@@ -467,20 +469,24 @@ class ExternalSourceMapper:
                         "source_type": source.source_type.value,
                         "tables": [],
                         "stages": [],
-                        "total_references": 0
+                        "total_references": 0,
                     }
 
                 for table in self.external_lineage.external_tables:
                     if table.external_source.get_bucket_name() == bucket:
-                        self.external_lineage.bucket_summary[bucket]["tables"].append(table.fqn())
+                        self.external_lineage.bucket_summary[bucket]["tables"].append(
+                            table.fqn()
+                        )
 
                 for stage in self.external_lineage.stages:
                     if stage.external_source.get_bucket_name() == bucket:
-                        self.external_lineage.bucket_summary[bucket]["stages"].append(stage.fqn())
+                        self.external_lineage.bucket_summary[bucket]["stages"].append(
+                            stage.fqn()
+                        )
 
-                self.external_lineage.bucket_summary[bucket]["total_references"] = \
-                    len(self.external_lineage.bucket_summary[bucket]["tables"]) + \
-                    len(self.external_lineage.bucket_summary[bucket]["stages"])
+                self.external_lineage.bucket_summary[bucket]["total_references"] = len(
+                    self.external_lineage.bucket_summary[bucket]["tables"]
+                ) + len(self.external_lineage.bucket_summary[bucket]["stages"])
 
     def _trace_data_flow_paths(self):
         for source_location, tables in self.external_lineage.source_to_tables.items():
@@ -489,7 +495,7 @@ class ExternalSourceMapper:
                     "source": source_location,
                     "source_type": self._get_source_type(source_location),
                     "targets": tables,
-                    "flow_type": "direct" if "@" not in source_location else "staged"
+                    "flow_type": "direct" if "@" not in source_location else "staged",
                 }
                 self.external_lineage.data_flow_paths.append(path)
 
@@ -519,7 +525,7 @@ class ExternalSourceMapper:
             report.append(f"- Type: {info['source_type']}\n")
             report.append(f"- Total References: {info['total_references']}\n")
             report.append(f"- Tables: {', '.join(info['tables'][:5])}")
-            if len(info['tables']) > 5:
+            if len(info["tables"]) > 5:
                 report.append(f" and {len(info['tables']) - 5} more")
             report.append("\n\n")
 
@@ -527,7 +533,7 @@ class ExternalSourceMapper:
         for path in self.external_lineage.data_flow_paths[:20]:
             report.append(f"- **{path['source']}** -> ")
             report.append(f"{', '.join(path['targets'][:3])}")
-            if len(path['targets']) > 3:
+            if len(path["targets"]) > 3:
                 report.append(f" and {len(path['targets']) - 3} more")
             report.append(f" ({path['flow_type']})\n")
 
@@ -535,12 +541,12 @@ class ExternalSourceMapper:
 
     def _generate_dot_graph(self) -> str:
         lines = ["digraph ExternalLineage {"]
-        lines.append('  rankdir=LR;')
-        lines.append('  node [shape=box];')
+        lines.append("  rankdir=LR;")
+        lines.append("  node [shape=box];")
 
-        lines.append('  subgraph cluster_external {')
+        lines.append("  subgraph cluster_external {")
         lines.append('    label="External Sources";')
-        lines.append('    style=filled;')
+        lines.append("    style=filled;")
         lines.append('    fillcolor="#FFE5B420";')
 
         for source in self.external_lineage.external_sources.values():
@@ -550,13 +556,15 @@ class ExternalSourceMapper:
                 ExternalSourceType.AZURE_BLOB: "#0078D4",
                 ExternalSourceType.GCS: "#4285F4",
             }.get(source.source_type, "#95A5A6")
-            lines.append(f'    "{source.location}" [label="{label}", fillcolor="{color}40"];')
+            lines.append(
+                f'    "{source.location}" [label="{label}", fillcolor="{color}40"];'
+            )
 
-        lines.append('  }')
+        lines.append("  }")
 
-        lines.append('  subgraph cluster_snowflake {')
+        lines.append("  subgraph cluster_snowflake {")
         lines.append('    label="Snowflake Objects";')
-        lines.append('    style=filled;')
+        lines.append("    style=filled;")
         lines.append('    fillcolor="#00D2FF20";')
 
         all_tables = set()
@@ -568,7 +576,7 @@ class ExternalSourceMapper:
         for table in all_tables:
             lines.append(f'    "{table}" [label="{table}", fillcolor="#00D2FF40"];')
 
-        lines.append('  }')
+        lines.append("  }")
 
         for source_loc, tables in self.external_lineage.source_to_tables.items():
             for table in tables:

@@ -5,11 +5,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx
 
-from .builder import LineageBuilder
 from .graph import LineageGraph
 from .utils import networkx_descendants_at_distance
 
@@ -62,7 +61,7 @@ class ImpactedObject:
             "estimated_refresh_time": self.estimated_refresh_time,
             "affected_users": self.affected_users,
             "affected_roles": self.affected_roles,
-            "remediation_steps": self.remediation_steps
+            "remediation_steps": self.remediation_steps,
         }
 
 
@@ -82,7 +81,7 @@ class ImpactPath:
             "path": self.path,
             "length": self.path_length,
             "critical_nodes": self.critical_nodes,
-            "bottlenecks": self.bottlenecks
+            "bottlenecks": self.bottlenecks,
         }
 
 
@@ -110,7 +109,7 @@ class ImpactReport:
             "impact_summary": self.impact_summary,
             "risk_score": self.risk_score,
             "recommendations": self.recommendations,
-            "notification_list": self.notification_list
+            "notification_list": self.notification_list,
         }
 
 
@@ -122,11 +121,13 @@ class ImpactAnalyzer:
         self.user_access_map: Dict[str, List[str]] = {}
         self.role_access_map: Dict[str, List[str]] = {}
 
-    def analyze_impact(self,
-                       object_name: str,
-                       change_type: ChangeType,
-                       max_depth: int = 10,
-                       include_upstream: bool = False) -> ImpactReport:
+    def analyze_impact(
+        self,
+        object_name: str,
+        change_type: ChangeType,
+        max_depth: int = 10,
+        include_upstream: bool = False,
+    ) -> ImpactReport:
         if object_name not in self.nx_graph:
             raise ValueError(f"Object {object_name} not found in lineage graph")
 
@@ -158,12 +159,12 @@ class ImpactAnalyzer:
             impact_summary=impact_summary,
             risk_score=risk_score,
             recommendations=recommendations,
-            notification_list=notification_list
+            notification_list=notification_list,
         )
 
-    def calculate_blast_radius(self,
-                              object_name: str,
-                              max_depth: int = 5) -> Dict[str, Any]:
+    def calculate_blast_radius(
+        self, object_name: str, max_depth: int = 5
+    ) -> Dict[str, Any]:
         if object_name not in self.nx_graph:
             return {"error": f"Object {object_name} not found"}
 
@@ -187,11 +188,10 @@ class ImpactAnalyzer:
             "total_upstream": len(upstream),
             "downstream_by_distance": downstream_by_distance,
             "immediate_downstream": downstream_by_distance.get(1, []),
-            "max_distance_analyzed": max_depth
+            "max_distance_analyzed": max_depth,
         }
 
-    def find_single_points_of_failure(self,
-                                     min_dependent_count: int = 3) -> List[Dict]:
+    def find_single_points_of_failure(self, min_dependent_count: int = 3) -> List[Dict]:
         spofs = []
 
         for node in self.nx_graph.nodes():
@@ -204,16 +204,16 @@ class ImpactAnalyzer:
                     "object_type": node_data.attributes.get("object_type", "unknown"),
                     "downstream_count": len(downstream),
                     "downstream_objects": downstream[:10],
-                    "criticality_score": self._calculate_criticality(node, downstream)
+                    "criticality_score": self._calculate_criticality(node, downstream),
                 }
 
                 spofs.append(spof_info)
 
         return sorted(spofs, key=lambda x: x["criticality_score"], reverse=True)
 
-    def analyze_change_propagation_time(self,
-                                       object_name: str,
-                                       refresh_schedules: Optional[Dict[str, float]] = None) -> Dict:
+    def analyze_change_propagation_time(
+        self, object_name: str, refresh_schedules: Optional[Dict[str, float]] = None
+    ) -> Dict:
         if object_name not in self.nx_graph:
             return {"error": f"Object {object_name} not found"}
 
@@ -227,14 +227,13 @@ class ImpactAnalyzer:
                 propagation_times[target] = {
                     "path": path,
                     "estimated_time_hours": time_estimate,
-                    "path_length": len(path) - 1
+                    "path_length": len(path) - 1,
                 }
             except nx.NetworkXNoPath:
                 continue
 
         max_time = max(
-            (t["estimated_time_hours"] for t in propagation_times.values()),
-            default=0
+            (t["estimated_time_hours"] for t in propagation_times.values()), default=0
         )
 
         return {
@@ -245,20 +244,21 @@ class ImpactAnalyzer:
                 sorted(
                     propagation_times.items(),
                     key=lambda x: x[1]["estimated_time_hours"],
-                    reverse=True
+                    reverse=True,
                 )[:20]
-            )
+            ),
         }
 
     def identify_circular_dependencies(self) -> List[List[str]]:
         try:
             cycles = list(nx.simple_cycles(self.nx_graph))
             return cycles
-        except:
+        except Exception:
             return []
 
-    def generate_impact_heatmap(self,
-                               change_scenarios: List[Tuple[str, ChangeType]]) -> Dict:
+    def generate_impact_heatmap(
+        self, change_scenarios: List[Tuple[str, ChangeType]]
+    ) -> Dict:
         heatmap = {}
 
         for object_name, change_type in change_scenarios:
@@ -271,17 +271,17 @@ class ImpactAnalyzer:
                 "risk_score": impact.risk_score,
                 "total_impacted": impact.total_impacted_objects,
                 "critical_count": sum(
-                    1 for obj in impact.impacted_objects
+                    1
+                    for obj in impact.impacted_objects
                     if obj.severity == ImpactSeverity.CRITICAL
-                )
+                ),
             }
 
         return heatmap
 
-    def export_impact_report(self,
-                            report: ImpactReport,
-                            output_path: Path,
-                            format: str = "html") -> Path:
+    def export_impact_report(
+        self, report: ImpactReport, output_path: Path, format: str = "html"
+    ) -> Path:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -308,16 +308,22 @@ class ImpactAnalyzer:
             graph.add_node(node_key, **node.attributes)
 
         for edge in self.lineage_graph.edges:
-            edge_type = edge.edge_type.value if hasattr(edge.edge_type, 'value') else edge.edge_type
+            edge_type = (
+                edge.edge_type.value
+                if hasattr(edge.edge_type, "value")
+                else edge.edge_type
+            )
             graph.add_edge(edge.source, edge.target, type=edge_type)
 
         return graph
 
-    def _find_impacted_objects(self,
-                              source: str,
-                              change_type: ChangeType,
-                              max_depth: int,
-                              include_upstream: bool) -> List[ImpactedObject]:
+    def _find_impacted_objects(
+        self,
+        source: str,
+        change_type: ChangeType,
+        max_depth: int,
+        include_upstream: bool,
+    ) -> List[ImpactedObject]:
         impacted = []
 
         downstream = networkx_descendants_at_distance(self.nx_graph, source, max_depth)
@@ -345,7 +351,7 @@ class ImpactAnalyzer:
                 impact_type=impact_type,
                 severity=severity,
                 distance_from_source=distance,
-                remediation_steps=self._suggest_remediation(change_type, node_data)
+                remediation_steps=self._suggest_remediation(change_type, node_data),
             )
 
             impacted.append(impacted_obj)
@@ -372,20 +378,23 @@ class ImpactAnalyzer:
                     impact_type="upstream_dependency",
                     severity=ImpactSeverity.INFO,
                     distance_from_source=-distance,
-                    remediation_steps=[]
+                    remediation_steps=[],
                 )
 
                 impacted.append(impacted_obj)
 
-        return sorted(impacted, key=lambda x: (x.severity.value, x.distance_from_source))
+        return sorted(
+            impacted, key=lambda x: (x.severity.value, x.distance_from_source)
+        )
 
-    def _identify_critical_paths(self,
-                                source: str,
-                                impacted_objects: List[ImpactedObject]) -> List[ImpactPath]:
+    def _identify_critical_paths(
+        self, source: str, impacted_objects: List[ImpactedObject]
+    ) -> List[ImpactPath]:
         critical_paths = []
 
         critical_targets = [
-            obj.fqn() for obj in impacted_objects
+            obj.fqn()
+            for obj in impacted_objects
             if obj.severity in [ImpactSeverity.CRITICAL, ImpactSeverity.HIGH]
         ][:10]
 
@@ -404,23 +413,24 @@ class ImpactAnalyzer:
                 critical_nodes = self._identify_critical_nodes_in_path(path)
                 bottlenecks = self._identify_bottlenecks_in_path(path)
 
-                critical_paths.append(ImpactPath(
-                    source_object=source,
-                    target_object=target,
-                    path=path,
-                    path_length=len(path) - 1,
-                    critical_nodes=critical_nodes,
-                    bottlenecks=bottlenecks
-                ))
+                critical_paths.append(
+                    ImpactPath(
+                        source_object=source,
+                        target_object=target,
+                        path=path,
+                        path_length=len(path) - 1,
+                        critical_nodes=critical_nodes,
+                        bottlenecks=bottlenecks,
+                    )
+                )
             except nx.NetworkXNoPath:
                 continue
 
         return critical_paths
 
-    def _determine_severity(self,
-                           distance: int,
-                           change_type: ChangeType,
-                           node_data) -> ImpactSeverity:
+    def _determine_severity(
+        self, distance: int, change_type: ChangeType, node_data
+    ) -> ImpactSeverity:
         base_severity = {
             ChangeType.DROP: ImpactSeverity.CRITICAL,
             ChangeType.ALTER_SCHEMA: ImpactSeverity.HIGH,
@@ -431,7 +441,7 @@ class ImpactAnalyzer:
             ChangeType.ADD_COLUMN: ImpactSeverity.LOW,
             ChangeType.PERMISSION_CHANGE: ImpactSeverity.MEDIUM,
             ChangeType.REFRESH_SCHEDULE: ImpactSeverity.LOW,
-            ChangeType.UNKNOWN: ImpactSeverity.INFO
+            ChangeType.UNKNOWN: ImpactSeverity.INFO,
         }.get(change_type, ImpactSeverity.INFO)
 
         if distance == 1:
@@ -485,10 +495,12 @@ class ImpactAnalyzer:
 
         return remediation
 
-    def _calculate_risk_score(self,
-                             impacted_objects: List[ImpactedObject],
-                             critical_paths: List[ImpactPath],
-                             change_type: ChangeType) -> float:
+    def _calculate_risk_score(
+        self,
+        impacted_objects: List[ImpactedObject],
+        critical_paths: List[ImpactPath],
+        change_type: ChangeType,
+    ) -> float:
         score = 0.0
 
         severity_weights = {
@@ -496,7 +508,7 @@ class ImpactAnalyzer:
             ImpactSeverity.HIGH: 0.7,
             ImpactSeverity.MEDIUM: 0.4,
             ImpactSeverity.LOW: 0.2,
-            ImpactSeverity.INFO: 0.1
+            ImpactSeverity.INFO: 0.1,
         }
 
         for obj in impacted_objects:
@@ -519,16 +531,16 @@ class ImpactAnalyzer:
 
         return min(score / 10.0, 1.0)
 
-    def _generate_impact_summary(self,
-                                impacted_objects: List[ImpactedObject],
-                                change_type: ChangeType) -> Dict:
+    def _generate_impact_summary(
+        self, impacted_objects: List[ImpactedObject], change_type: ChangeType
+    ) -> Dict:
         summary = {
             "by_severity": {},
             "by_object_type": {},
             "by_database": {},
             "average_distance": 0,
             "max_distance": 0,
-            "direct_impacts": 0
+            "direct_impacts": 0,
         }
 
         for obj in impacted_objects:
@@ -536,8 +548,9 @@ class ImpactAnalyzer:
             summary["by_severity"][sev] = summary["by_severity"].get(sev, 0) + 1
 
             obj_type = obj.object_type
-            summary["by_object_type"][obj_type] = \
+            summary["by_object_type"][obj_type] = (
                 summary["by_object_type"].get(obj_type, 0) + 1
+            )
 
             db = obj.database
             summary["by_database"][db] = summary["by_database"].get(db, 0) + 1
@@ -552,14 +565,18 @@ class ImpactAnalyzer:
 
         return summary
 
-    def _generate_recommendations(self,
-                                 change_type: ChangeType,
-                                 impacted_objects: List[ImpactedObject],
-                                 risk_score: float) -> List[str]:
+    def _generate_recommendations(
+        self,
+        change_type: ChangeType,
+        impacted_objects: List[ImpactedObject],
+        risk_score: float,
+    ) -> List[str]:
         recommendations = []
 
         if risk_score > 0.7:
-            recommendations.append("⚠️ HIGH RISK: Consider breaking this change into smaller increments")
+            recommendations.append(
+                "⚠️ HIGH RISK: Consider breaking this change into smaller increments"
+            )
             recommendations.append("Schedule change during maintenance window")
             recommendations.append("Prepare rollback plan before execution")
 
@@ -568,22 +585,26 @@ class ImpactAnalyzer:
             recommendations.append("Verify no active queries reference this object")
 
         critical_count = sum(
-            1 for obj in impacted_objects
-            if obj.severity == ImpactSeverity.CRITICAL
+            1 for obj in impacted_objects if obj.severity == ImpactSeverity.CRITICAL
         )
 
         if critical_count > 0:
-            recommendations.append(f"Review {critical_count} critical dependencies before proceeding")
+            recommendations.append(
+                f"Review {critical_count} critical dependencies before proceeding"
+            )
             recommendations.append("Test changes in development environment first")
 
         if len(impacted_objects) > 20:
-            recommendations.append("Consider sending advance notification to stakeholders")
+            recommendations.append(
+                "Consider sending advance notification to stakeholders"
+            )
             recommendations.append("Document changes in release notes")
 
         return recommendations
 
-    def _build_notification_list(self,
-                                impacted_objects: List[ImpactedObject]) -> List[Dict[str, str]]:
+    def _build_notification_list(
+        self, impacted_objects: List[ImpactedObject]
+    ) -> List[Dict[str, str]]:
         notifications = []
         notified_users = set()
 
@@ -591,12 +612,14 @@ class ImpactAnalyzer:
             if obj.severity in [ImpactSeverity.CRITICAL, ImpactSeverity.HIGH]:
                 for user in obj.affected_users:
                     if user not in notified_users:
-                        notifications.append({
-                            "user": user,
-                            "severity": obj.severity.value,
-                            "object": obj.fqn(),
-                            "impact_type": obj.impact_type
-                        })
+                        notifications.append(
+                            {
+                                "user": user,
+                                "severity": obj.severity.value,
+                                "object": obj.fqn(),
+                                "impact_type": obj.impact_type,
+                            }
+                        )
                         notified_users.add(user)
 
         return notifications
@@ -606,15 +629,15 @@ class ImpactAnalyzer:
 
         try:
             betweenness = nx.betweenness_centrality(self.nx_graph).get(node, 0)
-        except:
+        except Exception:
             betweenness = 0
 
         criticality = (downstream_count / 100.0) + (betweenness * 2)
         return min(criticality, 1.0)
 
-    def _estimate_propagation_time(self,
-                                  path: List[str],
-                                  refresh_schedules: Optional[Dict[str, float]]) -> float:
+    def _estimate_propagation_time(
+        self, path: List[str], refresh_schedules: Optional[Dict[str, float]]
+    ) -> float:
         if not refresh_schedules:
             return len(path) * 0.5
 
@@ -640,87 +663,95 @@ class ImpactAnalyzer:
 
     def _generate_html_report(self, report: ImpactReport) -> str:
         html = []
-        html.append('<!DOCTYPE html>')
-        html.append('<html><head>')
-        html.append('<title>Impact Analysis Report</title>')
-        html.append('<style>')
-        html.append('body { font-family: Arial, sans-serif; margin: 20px; }')
-        html.append('.critical { color: #d32f2f; }')
-        html.append('.high { color: #f57c00; }')
-        html.append('.medium { color: #fbc02d; }')
-        html.append('.low { color: #388e3c; }')
-        html.append('table { border-collapse: collapse; width: 100%; }')
-        html.append('th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }')
-        html.append('th { background-color: #f2f2f2; }')
-        html.append('</style>')
-        html.append('</head><body>')
+        html.append("<!DOCTYPE html>")
+        html.append("<html><head>")
+        html.append("<title>Impact Analysis Report</title>")
+        html.append("<style>")
+        html.append("body { font-family: Arial, sans-serif; margin: 20px; }")
+        html.append(".critical { color: #d32f2f; }")
+        html.append(".high { color: #f57c00; }")
+        html.append(".medium { color: #fbc02d; }")
+        html.append(".low { color: #388e3c; }")
+        html.append("table { border-collapse: collapse; width: 100%; }")
+        html.append(
+            "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }"
+        )
+        html.append("th { background-color: #f2f2f2; }")
+        html.append("</style>")
+        html.append("</head><body>")
 
-        html.append(f'<h1>Impact Analysis: {report.source_object}</h1>')
-        html.append(f'<p>Change Type: <strong>{report.change_type.value}</strong></p>')
-        html.append(f'<p>Risk Score: <strong>{report.risk_score:.2f}</strong></p>')
-        html.append(f'<p>Total Impacted: <strong>{report.total_impacted_objects}</strong></p>')
+        html.append(f"<h1>Impact Analysis: {report.source_object}</h1>")
+        html.append(f"<p>Change Type: <strong>{report.change_type.value}</strong></p>")
+        html.append(f"<p>Risk Score: <strong>{report.risk_score:.2f}</strong></p>")
+        html.append(
+            f"<p>Total Impacted: <strong>{report.total_impacted_objects}</strong></p>"
+        )
 
-        html.append('<h2>Impact Summary</h2>')
-        html.append('<table>')
-        html.append('<tr><th>Severity</th><th>Count</th></tr>')
+        html.append("<h2>Impact Summary</h2>")
+        html.append("<table>")
+        html.append("<tr><th>Severity</th><th>Count</th></tr>")
         for severity, count in report.impact_summary.get("by_severity", {}).items():
-            html.append(f'<tr><td class="{severity}">{severity}</td><td>{count}</td></tr>')
-        html.append('</table>')
+            html.append(
+                f'<tr><td class="{severity}">{severity}</td><td>{count}</td></tr>'
+            )
+        html.append("</table>")
 
-        html.append('<h2>Recommendations</h2>')
-        html.append('<ul>')
+        html.append("<h2>Recommendations</h2>")
+        html.append("<ul>")
         for rec in report.recommendations:
-            html.append(f'<li>{rec}</li>')
-        html.append('</ul>')
+            html.append(f"<li>{rec}</li>")
+        html.append("</ul>")
 
-        html.append('<h2>Impacted Objects</h2>')
-        html.append('<table>')
-        html.append('<tr><th>Object</th><th>Type</th><th>Severity</th><th>Distance</th></tr>')
+        html.append("<h2>Impacted Objects</h2>")
+        html.append("<table>")
+        html.append(
+            "<tr><th>Object</th><th>Type</th><th>Severity</th><th>Distance</th></tr>"
+        )
         for obj in report.impacted_objects[:50]:
-            html.append(f'<tr>')
-            html.append(f'<td>{obj.fqn()}</td>')
-            html.append(f'<td>{obj.object_type}</td>')
+            html.append("<tr>")
+            html.append(f"<td>{obj.fqn()}</td>")
+            html.append(f"<td>{obj.object_type}</td>")
             html.append(f'<td class="{obj.severity.value}">{obj.severity.value}</td>')
-            html.append(f'<td>{obj.distance_from_source}</td>')
-            html.append(f'</tr>')
-        html.append('</table>')
+            html.append(f"<td>{obj.distance_from_source}</td>")
+            html.append("</tr>")
+        html.append("</table>")
 
-        html.append('</body></html>')
-        return '\n'.join(html)
+        html.append("</body></html>")
+        return "\n".join(html)
 
     def _generate_markdown_report(self, report: ImpactReport) -> str:
         md = []
-        md.append(f'# Impact Analysis Report: {report.source_object}\n')
-        md.append(f'**Change Type:** {report.change_type.value}\n')
-        md.append(f'**Risk Score:** {report.risk_score:.2f}\n')
-        md.append(f'**Analysis Time:** {report.analysis_timestamp.isoformat()}\n')
-        md.append(f'**Total Impacted Objects:** {report.total_impacted_objects}\n\n')
+        md.append(f"# Impact Analysis Report: {report.source_object}\n")
+        md.append(f"**Change Type:** {report.change_type.value}\n")
+        md.append(f"**Risk Score:** {report.risk_score:.2f}\n")
+        md.append(f"**Analysis Time:** {report.analysis_timestamp.isoformat()}\n")
+        md.append(f"**Total Impacted Objects:** {report.total_impacted_objects}\n\n")
 
-        md.append('## Impact Summary\n')
-        md.append('| Severity | Count |\n')
-        md.append('|----------|-------|\n')
+        md.append("## Impact Summary\n")
+        md.append("| Severity | Count |\n")
+        md.append("|----------|-------|\n")
         for severity, count in report.impact_summary.get("by_severity", {}).items():
-            md.append(f'| {severity} | {count} |\n')
-        md.append('\n')
+            md.append(f"| {severity} | {count} |\n")
+        md.append("\n")
 
-        md.append('## Recommendations\n')
+        md.append("## Recommendations\n")
         for rec in report.recommendations:
-            md.append(f'- {rec}\n')
-        md.append('\n')
+            md.append(f"- {rec}\n")
+        md.append("\n")
 
-        md.append('## Critical Paths\n')
+        md.append("## Critical Paths\n")
         for path in report.critical_paths[:5]:
-            md.append(f'- **{path.source_object}** → **{path.target_object}**\n')
-            md.append(f'  - Path length: {path.path_length}\n')
+            md.append(f"- **{path.source_object}** → **{path.target_object}**\n")
+            md.append(f"  - Path length: {path.path_length}\n")
             md.append(f'  - Critical nodes: {", ".join(path.critical_nodes[:3])}\n')
-        md.append('\n')
+        md.append("\n")
 
-        md.append('## Top Impacted Objects\n')
-        md.append('| Object | Type | Severity | Distance | Impact Type |\n')
-        md.append('|--------|------|----------|----------|-------------|\n')
+        md.append("## Top Impacted Objects\n")
+        md.append("| Object | Type | Severity | Distance | Impact Type |\n")
+        md.append("|--------|------|----------|----------|-------------|\n")
         for obj in report.impacted_objects[:20]:
-            md.append(f'| {obj.fqn()} | {obj.object_type} | ')
-            md.append(f'{obj.severity.value} | {obj.distance_from_source} | ')
-            md.append(f'{obj.impact_type} |\n')
+            md.append(f"| {obj.fqn()} | {obj.object_type} | ")
+            md.append(f"{obj.severity.value} | {obj.distance_from_source} | ")
+            md.append(f"{obj.impact_type} |\n")
 
-        return ''.join(md)
+        return "".join(md)

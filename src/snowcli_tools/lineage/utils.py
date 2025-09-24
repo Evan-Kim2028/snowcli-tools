@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 from contextlib import contextmanager
 from pathlib import Path
@@ -17,8 +16,8 @@ def validate_object_name(name: str) -> bool:
         return False
 
     # Basic validation for Snowflake naming
-    pattern = r'^[A-Za-z_][A-Za-z0-9_$.]*$'
-    parts = name.split('.')
+    pattern = r"^[A-Za-z_][A-Za-z0-9_$.]*$"
+    parts = name.split(".")
 
     for part in parts:
         if not re.match(pattern, part.strip('"')):
@@ -27,13 +26,15 @@ def validate_object_name(name: str) -> bool:
     return True
 
 
-def validate_path(path: Path, must_exist: bool = False, create_if_missing: bool = False) -> bool:
+def validate_path(
+    path: Path, must_exist: bool = False, create_if_missing: bool = False
+) -> bool:
     """Validate file system path with optional creation."""
     try:
         path = Path(path)
 
         if must_exist and not path.exists():
-            if create_if_missing and path.suffix == '':  # It's a directory
+            if create_if_missing and path.suffix == "":  # It's a directory
                 path.mkdir(parents=True, exist_ok=True)
                 return True
             return False
@@ -45,7 +46,7 @@ def validate_path(path: Path, must_exist: bool = False, create_if_missing: bool 
 
         if parent.exists():
             # Test write permission
-            test_file = parent / '.write_test'
+            test_file = parent / ".write_test"
             try:
                 test_file.touch()
                 test_file.unlink()
@@ -59,11 +60,11 @@ def validate_path(path: Path, must_exist: bool = False, create_if_missing: bool 
         return False
 
 
-def safe_file_write(path: Path, content: str | bytes, mode: str = 'w') -> bool:
+def safe_file_write(path: Path, content: str | bytes, mode: str = "w") -> bool:
     """Safely write to file with atomic operations."""
     try:
         path = Path(path)
-        temp_path = path.with_suffix(path.suffix + '.tmp')
+        temp_path = path.with_suffix(path.suffix + ".tmp")
 
         # Write to temporary file
         if isinstance(content, bytes):
@@ -75,12 +76,12 @@ def safe_file_write(path: Path, content: str | bytes, mode: str = 'w') -> bool:
         temp_path.replace(path)
         return True
 
-    except (OSError, IOError) as e:
+    except (OSError, IOError):
         # Clean up temp file if it exists
         if temp_path.exists():
             try:
                 temp_path.unlink()
-            except:
+            except Exception:
                 pass
         return False
 
@@ -98,11 +99,13 @@ def safe_db_connection(db_path: Path) -> Generator:
         if conn:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
 
 
-def networkx_descendants_at_distance(graph: nx.DiGraph, source: str, distance: int) -> Set[str]:
+def networkx_descendants_at_distance(
+    graph: nx.DiGraph, source: str, distance: int
+) -> Set[str]:
     """Get all descendants at a specific distance or less from source node."""
     if source not in graph:
         return set()
@@ -127,7 +130,7 @@ def networkx_descendants_at_distance(graph: nx.DiGraph, source: str, distance: i
 def safe_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
     """Safely parse SQL with better error handling."""
     import sqlglot
-    from sqlglot.errors import ParseError, ErrorLevel
+    from sqlglot.errors import ErrorLevel, ParseError
 
     if not sql or not sql.strip():
         return None
@@ -149,11 +152,13 @@ def safe_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
     except ParseError as e:
         # Log the parse error but don't raise
         import logging
+
         logging.warning(f"SQL parse error: {e}")
         return None
     except Exception as e:
         # Unexpected error - log but don't crash
         import logging
+
         logging.error(f"Unexpected error parsing SQL: {e}")
         return None
 
@@ -161,7 +166,6 @@ def safe_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
 def clean_old_snapshots(storage_path: Path, keep_count: int = 100, keep_days: int = 90):
     """Clean up old snapshot files to prevent unbounded growth."""
     from datetime import datetime, timedelta
-    import json
 
     storage_path = Path(storage_path)
     if not storage_path.exists():
@@ -191,11 +195,11 @@ def clean_old_snapshots(storage_path: Path, keep_count: int = 100, keep_days: in
 def validate_sql_injection(value: str) -> bool:
     """Basic SQL injection prevention check."""
     dangerous_patterns = [
-        r';\s*(DROP|DELETE|TRUNCATE|ALTER|CREATE)\s+',
-        r'--[^\n]*$',
-        r'/\*.*\*/',
-        r'(UNION\s+ALL|UNION\s+SELECT)',
-        r'(OR\s+1\s*=\s*1|AND\s+1\s*=\s*1)',
+        r";\s*(DROP|DELETE|TRUNCATE|ALTER|CREATE)\s+",
+        r"--[^\n]*$",
+        r"/\*.*\*/",
+        r"(UNION\s+ALL|UNION\s+SELECT)",
+        r"(OR\s+1\s*=\s*1|AND\s+1\s*=\s*1)",
     ]
 
     value_upper = value.upper()
