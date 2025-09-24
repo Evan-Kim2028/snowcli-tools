@@ -171,7 +171,7 @@ class ImpactAnalyzer:
         downstream = list(nx.descendants(self.nx_graph, object_name))
         upstream = list(nx.ancestors(self.nx_graph, object_name))
 
-        downstream_by_distance = {}
+        downstream_by_distance: dict[int, list[str]] = {}
         for target in downstream:
             try:
                 distance = nx.shortest_path_length(self.nx_graph, object_name, target)
@@ -197,11 +197,19 @@ class ImpactAnalyzer:
         for node in self.nx_graph.nodes():
             downstream = list(nx.descendants(self.nx_graph, node))
             if len(downstream) >= min_dependent_count:
-                node_data = self.lineage_graph.nodes.get(node, {})
+                node_data: LineageNode | dict[str, Any] = self.lineage_graph.nodes.get(node, {})
+
+                # Handle both LineageNode objects and dict-based nodes
+                if hasattr(node_data, 'attributes'):
+                    object_type = node_data.attributes.get("object_type", "unknown")
+                elif isinstance(node_data, dict):
+                    object_type = node_data.get("object_type", "unknown")
+                else:
+                    object_type = "unknown"
 
                 spof_info = {
                     "object": node,
-                    "object_type": node_data.attributes.get("object_type", "unknown"),
+                    "object_type": object_type,
                     "downstream_count": len(downstream),
                     "downstream_objects": downstream[:10],
                     "criticality_score": self._calculate_criticality(node, downstream),
@@ -305,7 +313,15 @@ class ImpactAnalyzer:
         graph = nx.DiGraph()
 
         for node_key, node in self.lineage_graph.nodes.items():
-            graph.add_node(node_key, **node.attributes)
+            # Handle both LineageNode objects and dict-based mock objects
+            if hasattr(node, 'attributes'):
+                graph.add_node(node_key, **node.attributes)
+            elif isinstance(node, dict):
+                # For dict-based nodes (e.g., in tests)
+                graph.add_node(node_key, **node)
+            else:
+                # Fallback for other types
+                graph.add_node(node_key)
 
         for edge in self.lineage_graph.edges:
             edge_type = (

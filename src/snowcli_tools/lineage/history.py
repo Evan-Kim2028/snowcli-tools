@@ -323,7 +323,7 @@ class LineageHistoryManager:
     ) -> Dict[str, Any]:
         snapshots = self.list_snapshots(start_date, end_date)
 
-        timeline = {"snapshots": [], "events": [], "statistics": {}}
+        timeline: dict[str, list[dict[str, Any]]] = {"snapshots": [], "events": [], "statistics": {}}
 
         for i, snapshot in enumerate(snapshots):
             timeline["snapshots"].append(

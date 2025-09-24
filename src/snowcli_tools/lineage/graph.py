@@ -110,7 +110,7 @@ class LineageGraph:
             allowed = set(edge_types)
         else:
             # Include all edge types that exist in the graph
-            all_edge_types = set()
+            all_edge_types: set[EdgeType] = set()
             for edges_dict in self.out_edges.values():
                 all_edge_types.update(edges_dict.keys())
             for edges_dict in self.in_edges.values():
