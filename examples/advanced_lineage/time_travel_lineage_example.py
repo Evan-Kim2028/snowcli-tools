@@ -23,6 +23,12 @@ def main():
     sample_data_path = Path(__file__).parent.parent / "sample_data"
     catalog_path = sample_data_path / "catalog"
 
+    # Check if catalog path exists
+    if not catalog_path.exists():
+        print(f"Note: Sample catalog path not found at {catalog_path}")
+        print("Using mock data for demonstration")
+        catalog_path = Path("/tmp/mock_catalog")  # Will trigger mock data in try/except
+
     print("Capturing lineage snapshots...")
 
     try:

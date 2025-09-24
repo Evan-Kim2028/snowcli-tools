@@ -25,6 +25,13 @@ def main():
         sample_data_path / "catalog" / "analytics_db",
     ]
 
+    # Check if paths exist
+    existing_paths = [p for p in catalog_paths if p.exists()]
+    if not existing_paths:
+        print(f"Note: Sample catalog paths not found at {sample_data_path}")
+        print("Using mock data for demonstration")
+        catalog_paths = []  # Will trigger mock data in try/except
+
     print("Building cross-database lineage graph...")
     builder = CrossDatabaseLineageBuilder(catalog_paths)
 

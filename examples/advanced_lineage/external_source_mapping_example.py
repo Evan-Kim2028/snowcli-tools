@@ -21,6 +21,12 @@ def main():
     sample_data_path = Path(__file__).parent.parent / "sample_data"
     catalog_path = sample_data_path / "catalog"
 
+    # Check if catalog path exists
+    if not catalog_path.exists():
+        print(f"Note: Sample catalog path not found at {catalog_path}")
+        print("Using mock data for demonstration")
+        catalog_path = Path("/tmp/mock_catalog")  # Will trigger mock data in try/except
+
     print("Mapping external data sources...")
     mapper = ExternalSourceMapper(catalog_path)
 
@@ -57,9 +63,12 @@ def main():
             print("\nCloud Storage Buckets:")
             for bucket_name, info in list(external_lineage.bucket_summary.items())[:3]:
                 print(f"  {bucket_name}")
-                print(f"    Type: {info['source_type']}")
-                print(f"    Tables: {len(info['tables'])}")
-                print(f"    Stages: {len(info['stages'])}")
+                if "source_type" in info:
+                    print(f"    Type: {info['source_type']}")
+                if "tables" in info:
+                    print(f"    Tables: {len(info['tables'])}")
+                if "stages" in info:
+                    print(f"    Stages: {len(info['stages'])}")
 
         # Show external table details
         if external_lineage.external_tables:
