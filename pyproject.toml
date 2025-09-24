@@ -22,11 +22,6 @@ mcp = [
     "mcp>=1.0.0",
 ]
 
-[project.optional-dependencies]
-mcp = [
-    "mcp>=1.0.0",
-]
-
 [project.scripts]
 snowflake-cli = "snowcli_tools.cli:main"
 
