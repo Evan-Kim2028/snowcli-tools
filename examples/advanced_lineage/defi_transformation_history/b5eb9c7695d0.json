@@ -1,0 +1,20 @@
+{
+  "transformation_id": "b5eb9c7695d0",
+  "timestamp": "2025-09-24T13:47:56.419202",
+  "source_object": "DEFI_SAMPLE_DB.RAW.RAW_DEX_EVENTS",
+  "target_object": "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+  "transformation_type": "function",
+  "category": "unknown",
+  "sql_text": "amount_in / POWER(10, coin_decimals)",
+  "columns_affected": [
+    "amount_in",
+    "coin_decimals",
+    "adjusted_amount_in"
+  ],
+  "business_logic": "Convert raw token amounts to decimal-adjusted values",
+  "performance_impact": 0.1,
+  "data_quality_rules": [],
+  "tags": [
+    "uses_power"
+  ]
+}

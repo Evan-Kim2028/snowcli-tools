@@ -6,7 +6,16 @@ This project leverages your existing `snow` CLI profiles to add powerful, concur
 - **Automated Data Catalogue**: Generate a comprehensive JSON/JSONL catalogue of your Snowflake objects.
 - **Dependency Graph Generation**: Generate object dependencies to understand data lineage.
 - **Parallel Query Execution**: Run multiple queries concurrently for faster bulk workloads.
- - **SQL Export from Catalog**: Generate a categorized SQL repo from your catalog JSON.
+- **SQL Export from Catalog**: Generate a categorized SQL repo from your catalog JSON.
+
+## 🆕 Advanced Lineage Features (v1.3.2)
+
+- **Column-Level Lineage**: Track data flow at the column granularity through transformations
+- **Transformation Tracking**: Capture and analyze data transformations with categorization
+- **Cross-Database Lineage**: Build unified lineage graphs across multiple Snowflake databases
+- **External Data Sources**: Map S3/Azure/GCS sources and track external dependencies
+- **Impact Analysis**: Analyze the potential impact of changes before making them
+- **Time-Travel Lineage**: Track lineage evolution over time with snapshots and comparisons
 
 ## Prerequisites
 
@@ -135,6 +144,33 @@ This helper is optional; you can always manage profiles directly with `snow`.
 ## Usage
 
 All commands are run through the `snowflake-cli` entry point.
+
+### Advanced Lineage Features
+
+Build and analyze comprehensive data lineage with column-level tracking:
+
+```python
+from snowcli_tools.lineage import (
+    ColumnLineageExtractor,
+    ImpactAnalyzer,
+    LineageHistoryManager,
+    ChangeType
+)
+
+# Extract column-level lineage
+extractor = ColumnLineageExtractor()
+lineage = extractor.extract_column_lineage(sql_text, target_table="my_table")
+
+# Analyze impact of changes
+analyzer = ImpactAnalyzer(lineage_graph)
+report = analyzer.analyze_impact("table_name", ChangeType.DROP)
+
+# Track lineage over time
+history = LineageHistoryManager()
+snapshot = history.capture_snapshot(catalog_path, tag="v1.0")
+```
+
+See [Advanced Lineage Documentation](docs/advanced_lineage_features.md) for detailed examples.
 
 ### Query Execution
 
@@ -313,30 +349,9 @@ You can also execute a list of queries from a file using shell commands:
 cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
 ```
 
-## MCP Server Integration (AI Assistant Support)
+## MCP Server Integration
 
-### What is MCP?
-
-The Model Context Protocol (MCP) is an open standard that enables AI assistants to securely interact with external data sources. Snowcli-tools includes an **optional** MCP server that provides AI assistants (VS Code, Cursor, Claude Code) with structured, type-safe access to your Snowflake database.
-
-### Key Features
-
-- **Natural Language to SQL**: Ask questions in plain English, get SQL results
-- **Context-Aware**: AI understands your schemas, relationships, and lineage
-- **Secure**: Uses your existing Snowflake CLI authentication
-- **Tool-Based Safety**: Structured tools prevent arbitrary code execution
-
-### Installation
-
-The MCP server is an optional feature that requires additional dependencies:
-
-```bash
-# Install with MCP support
-uv pip install snowcli-tools[mcp]
-
-# Or for development
-uv add snowcli-tools --extra mcp
-```
+Snowcli-tools includes an MCP (Model Context Protocol) server that provides AI assistants with direct access to your Snowflake data and metadata.
 
 ### Starting the MCP Server
 
@@ -344,37 +359,37 @@ uv add snowcli-tools --extra mcp
 # Start the MCP server (recommended)
 uv run snowflake-cli mcp
 
-# Or run the example directly to see usage info
+# Or run the example directly
 uv run python examples/run_mcp_server.py
 ```
 
 ### MCP Client Configuration
 
-#### VS Code / Cursor
-Add to your MCP configuration file (usually `~/.vscode/mcp.json`):
+#### VS Code / Cursor Configuration
+Create or update your MCP configuration file (usually `~/.vscode/mcp.json` or similar):
 
 ```json
 {
   "mcpServers": {
-    "snowflake": {
+    "snowflake-cli-tools": {
       "command": "uv",
       "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/snowcli-tools"
+      "cwd": "/path/to/your/snowflake_connector_py"
     }
   }
 }
 ```
 
-#### Claude Code
+#### Claude Code Configuration
 Add to your Claude Code MCP settings:
 
 ```json
 {
   "mcp": {
-    "snowflake": {
+    "snowflake-cli-tools": {
       "command": "uv",
       "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/snowcli-tools"
+      "cwd": "/path/to/your/snowflake_connector_py"
     }
   }
 }
@@ -382,65 +397,27 @@ Add to your Claude Code MCP settings:
 
 ### Available MCP Tools
 
-| Tool | Description | Example Use |
-|------|-------------|-------------|
-| **execute_query** | Run SQL queries with context control | "Show me yesterday's DEX trading volume" |
-| **preview_table** | Quick table data preview (default 100 rows) | "Preview the DEX_TRADES_STABLE table" |
-| **build_catalog** | Generate comprehensive data catalogs | "Build a catalog of the DEFI_SAMPLE_DB database" |
-| **query_lineage** | Analyze upstream/downstream dependencies | "What feeds into the BTC_DEX_TRADES_USD_DT table?" |
-| **build_dependency_graph** | Create object relationship graphs | "Show me how the DeFi pipeline connects" |
-| **test_connection** | Verify Snowflake connectivity | "Test my connection" |
-| **get_catalog_summary** | Retrieve catalog statistics | "What's in my catalog?" |
+The MCP server exposes these tools to AI assistants:
 
-### Real-World Usage Examples
+- **execute_query**: Run SQL queries against your Snowflake database
+- **preview_table**: Preview table contents with optional filtering
+- **build_catalog**: Generate comprehensive data catalogs from your Snowflake metadata
+- **query_lineage**: Analyze data lineage and dependencies for any object
+- **build_dependency_graph**: Create dependency graphs showing object relationships
+- **test_connection**: Verify your Snowflake connection is working
+- **get_catalog_summary**: Get summaries of existing catalog data
 
-#### Data Discovery
-```
-You: "What trading data do we have?"
-AI: [Searches for DeFi-related objects]
-AI: "I found the main DEX_TRADES_STABLE table with 224M+ records,
-     plus COIN_INFO for metadata and BTC_DEX_TRADES_USD_DT for analytics.
-     Would you like to see their schemas?"
+### Usage Examples
 
-You: "Show me how DEX_TRADES_STABLE connects to other tables"
-AI: [Queries lineage]
-AI: "DEX_TRADES_STABLE is sourced from OBJECT_PARQUET2 and raw DEX events,
-     then feeds into FILTERED_DEX_TRADES_VIEW and BTC_DEX_TRADES_USD_DT."
-```
+Once configured, AI assistants can:
 
-#### Query Development
-```
-You: "Calculate trading volume by DEX protocol last week"
-AI: [Generates and executes SQL]
-AI: "Here are the results:
-     cetus: 15.2M trades
-     bluefin: 8.7M trades
-     aftermath: 3.1M trades"
-```
+- "Show me the schema of the CUSTOMERS table"
+- "Build a catalog of all tables in the SALES database"
+- "What's the lineage for the USER_ACTIVITY view?"
+- "Execute this query and show me the results"
+- "Generate a dependency graph for my data warehouse"
 
-#### Impact Analysis
-```
-You: "What happens if I modify the COIN_INFO table?"
-AI: [Analyzes dependencies]
-AI: "Modifying COIN_INFO will impact:
-     - DEX_TRADES_STABLE (token metadata enrichment)
-     - BTC_DEX_TRADES_USD_DT (symbol mapping)
-     - FILTERED_DEX_TRADES_VIEW (coin normalization)
-     - This affects the entire DeFi analytics pipeline"
-```
-
-### Architecture
-
-The MCP server acts as a protocol adapter:
-
-```
-AI Assistant ←→ MCP Protocol (stdio) ←→ MCP Server ←→ snowcli-tools ←→ Snowflake
-```
-
-For detailed architecture and technical documentation, see:
-- `docs/mcp_server_user_guide.md` - Complete user guide
-- `docs/mcp_server_technical_guide.md` - Technical implementation details
-- `examples/run_mcp_server.py` - Example with full documentation
+The MCP server maintains context and provides structured responses, making it much more reliable than shell command parsing.
 
 ## CLI Commands
 

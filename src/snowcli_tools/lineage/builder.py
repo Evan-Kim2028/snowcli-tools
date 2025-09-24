@@ -6,10 +6,12 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from .audit import LineageAudit, ObjectAuditEntry
+from .constants import Timeouts
 from .graph import EdgeType, LineageEdge, LineageGraph, LineageNode, NodeType
 from .identifiers import normalize
 from .loader import CatalogLoader, CatalogObject, ObjectType
 from .sql_parser import LineageParseResult, SqlLineageExtractor, extract_select_clause
+from .utils import TimeoutError, timeout
 
 
 @dataclass
@@ -31,75 +33,95 @@ class LineageBuilder:
             return f"{base_key}::task"
         return base_key
 
-    def build(self) -> LineageBuildResult:
+    def build(
+        self, timeout_seconds: int = Timeouts.DEFAULT_BUILD
+    ) -> LineageBuildResult:
         graph = LineageGraph()
         audit = LineageAudit()
         unknown_refs: Counter[str] = Counter()
 
-        objects = self.loader.load()
-        catalog_keys = {
-            obj.fqn(): obj for obj in objects if obj.object_type != ObjectType.TASK
-        }
+        try:
+            with timeout(
+                timeout_seconds, f"Lineage build timed out after {timeout_seconds}s"
+            ):
+                objects = self.loader.load()
+                catalog_keys = {
+                    obj.fqn(): obj
+                    for obj in objects
+                    if obj.object_type != ObjectType.TASK
+                }
 
-        for obj in objects:
-            key = self._node_key(obj)
-            if obj.object_type == ObjectType.TASK:
-                graph.add_node(
-                    LineageNode(
-                        key=key,
-                        node_type=NodeType.TASK,
-                        attributes={
-                            "object_type": obj.object_type.value,
-                            "database": normalize(obj.database) or "",
-                            "schema": normalize(obj.schema) or "",
-                            "name": normalize(obj.name) or obj.name,
-                            "fqn": obj.fqn(),
-                            "in_catalog": "true",
-                        },
+                for obj in objects:
+                    key = self._node_key(obj)
+                    if obj.object_type == ObjectType.TASK:
+                        graph.add_node(
+                            LineageNode(
+                                key=key,
+                                node_type=NodeType.TASK,
+                                attributes={
+                                    "object_type": obj.object_type.value,
+                                    "database": normalize(obj.database) or "",
+                                    "schema": normalize(obj.schema) or "",
+                                    "name": normalize(obj.name) or obj.name,
+                                    "fqn": obj.fqn(),
+                                    "in_catalog": "true",
+                                },
+                            )
+                        )
+                    else:
+                        graph.add_node(
+                            LineageNode(
+                                key=key,
+                                node_type=NodeType.DATASET,
+                                attributes={
+                                    "object_type": obj.object_type.value,
+                                    "database": normalize(obj.database) or "",
+                                    "schema": normalize(obj.schema) or "",
+                                    "name": normalize(obj.name) or obj.name,
+                                    "fqn": obj.fqn(),
+                                    "in_catalog": "true",
+                                },
+                            )
+                        )
+
+                for obj in objects:
+                    key = self._node_key(obj)
+                    entry = ObjectAuditEntry(
+                        key=key, object_type=obj.object_type, status="parsed"
                     )
-                )
-            else:
-                graph.add_node(
-                    LineageNode(
-                        key=key,
-                        node_type=NodeType.DATASET,
-                        attributes={
-                            "object_type": obj.object_type.value,
-                            "database": normalize(obj.database) or "",
-                            "schema": normalize(obj.schema) or "",
-                            "name": normalize(obj.name) or obj.name,
-                            "fqn": obj.fqn(),
-                            "in_catalog": "true",
-                        },
-                    )
+                    if obj.object_type == ObjectType.TABLE:
+                        entry.status = "base"
+                        audit.entries.append(entry)
+                        continue
+                    if obj.object_type == ObjectType.TASK:
+                        result = self._handle_task(obj, graph, catalog_keys)
+                    else:
+                        result = self._handle_dataset(
+                            obj, graph, catalog_keys, unknown_refs
+                        )
+                    if result is None:
+                        entry.status = "missing_sql"
+                    else:
+                        entry.upstreams = len(result.upstreams)
+                        entry.produces = len(result.produces)
+                        if any(issue.level == "error" for issue in result.issues):
+                            entry.status = "parse_error"
+                        entry.issues = [issue.message for issue in result.issues]
+                    audit.entries.append(entry)
+
+                audit.unknown_references = dict(
+                    sorted(unknown_refs.items(), key=lambda x: x[0])
                 )
 
-        for obj in objects:
-            key = self._node_key(obj)
-            entry = ObjectAuditEntry(
-                key=key, object_type=obj.object_type, status="parsed"
+        except TimeoutError:
+            # Return partial results on timeout
+            import logging
+
+            logging.warning(f"Lineage build timed out after {timeout_seconds} seconds")
+            audit.unknown_references = dict(
+                sorted(unknown_refs.items(), key=lambda x: x[0])
             )
-            if obj.object_type == ObjectType.TABLE:
-                entry.status = "base"
-                audit.entries.append(entry)
-                continue
-            if obj.object_type == ObjectType.TASK:
-                result = self._handle_task(obj, graph, catalog_keys)
-            else:
-                result = self._handle_dataset(obj, graph, catalog_keys, unknown_refs)
-            if result is None:
-                entry.status = "missing_sql"
-            else:
-                entry.upstreams = len(result.upstreams)
-                entry.produces = len(result.produces)
-                if any(issue.level == "error" for issue in result.issues):
-                    entry.status = "parse_error"
-                entry.issues = [issue.message for issue in result.issues]
-            audit.entries.append(entry)
 
-        audit.unknown_references = dict(
-            sorted(unknown_refs.items(), key=lambda x: x[0])
-        )
         return LineageBuildResult(graph=graph, audit=audit)
 
     def _handle_dataset(

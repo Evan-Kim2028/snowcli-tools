@@ -1,0 +1,17 @@
+{
+  "transformation_id": "3d045988ad73",
+  "timestamp": "2025-09-24T13:47:56.419497",
+  "source_object": "DEFI_SAMPLE_DB.PROCESSED.DEX_TRADES_STABLE",
+  "target_object": "DEFI_SAMPLE_DB.ANALYTICS.BTC_DEX_TRADES_USD_DT",
+  "transformation_type": "function",
+  "category": "unknown",
+  "sql_text": "adjusted_amount_in * 65000",
+  "columns_affected": [
+    "adjusted_amount_in",
+    "amount_in_usd"
+  ],
+  "business_logic": "Apply current market price for USD valuation",
+  "performance_impact": 0.05,
+  "data_quality_rules": [],
+  "tags": []
+}
