@@ -261,7 +261,9 @@ class ImpactAnalyzer:
         try:
             cycles = list(nx.simple_cycles(self.nx_graph))
             return cycles
-        except Exception:
+        except (nx.NetworkXError, nx.NetworkXNotImplemented) as e:
+            import logging
+            logging.warning(f"Could not compute cycles in graph: {e}")
             return []
 
     def generate_impact_heatmap(
@@ -645,7 +647,9 @@ class ImpactAnalyzer:
 
         try:
             betweenness = nx.betweenness_centrality(self.nx_graph).get(node, 0)
-        except Exception:
+        except (nx.NetworkXError, KeyError, ValueError) as e:
+            import logging
+            logging.debug(f"Could not calculate betweenness centrality for {node}: {e}")
             betweenness = 0
 
         criticality = (downstream_count / 100.0) + (betweenness * 2)

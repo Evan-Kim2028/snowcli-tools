@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, Generator, Optional, Set
@@ -41,7 +42,10 @@ def validate_object_name(name: str) -> bool:
 
 
 def validate_path(
-    path: Path, must_exist: bool = False, create_if_missing: bool = False, allow_absolute_only: bool = True
+    path: Path,
+    must_exist: bool = False,
+    create_if_missing: bool = False,
+    allow_absolute_only: bool = True,
 ) -> bool:
     """Validate file system path with path traversal protection."""
     try:
@@ -63,7 +67,9 @@ def validate_path(
                 return False
 
         # Validate against null bytes and control characters
-        if "\x00" in path_str or any(ord(c) < 32 for c in path_str if c not in ['\t', '\n', '\r']):
+        if "\x00" in path_str or any(
+            ord(c) < 32 for c in path_str if c not in ["\t", "\n", "\r"]
+        ):
             return False
 
         if must_exist and not resolved_path.exists():
@@ -116,7 +122,7 @@ def safe_file_write(path: Path, content: str | bytes, mode: str = "w") -> bool:
         if isinstance(content, bytes):
             temp_path.write_bytes(content)
         else:
-            temp_path.write_text(content, encoding='utf-8')
+            temp_path.write_text(content, encoding="utf-8")
 
         # Atomic rename
         temp_path.replace(path)
@@ -125,9 +131,10 @@ def safe_file_write(path: Path, content: str | bytes, mode: str = "w") -> bool:
     except (OSError, IOError, UnicodeError):
         # Clean up temp file if it exists
         try:
-            if 'temp_path' in locals() and temp_path.exists():
+            if "temp_path" in locals() and temp_path.exists():
                 temp_path.unlink()
-        except Exception:
+        except (OSError, IOError, PermissionError):
+            # Best effort cleanup - failures here don't affect the main operation
             pass
         return False
 
@@ -145,7 +152,8 @@ def safe_db_connection(db_path: Path) -> Generator:
         if conn:
             try:
                 conn.close()
-            except Exception:
+            except (OSError, sqlite3.Error):
+                # Database connection cleanup failed - not critical
                 pass
 
 
@@ -190,7 +198,7 @@ def safe_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
         for stmt in statements:
             if stmt is not None:
                 # Additional validation - check if statement has meaningful content
-                if hasattr(stmt, 'sql') and stmt.sql().strip():
+                if hasattr(stmt, "sql") and stmt.sql().strip():
                     valid_statements.append(stmt)
 
         if not valid_statements:
@@ -206,11 +214,17 @@ def safe_sql_parse(sql: str, dialect: str = "snowflake") -> Optional[Any]:
 
         logging.warning(f"SQL parse error: {e}")
         return None
-    except Exception as e:
-        # Unexpected error - log but don't crash
+    except (AttributeError, TypeError, ValueError) as e:
+        # Handle malformed expressions or unsupported SQL features
         import logging
 
-        logging.error(f"Unexpected error parsing SQL: {e}")
+        logging.error(f"Error processing SQL structure: {e}")
+        return None
+    except ImportError as e:
+        # Missing sqlglot or dependencies
+        import logging
+
+        logging.error(f"SQL parsing dependency error: {e}")
         return None
 
 
@@ -280,7 +294,9 @@ def validate_sql_injection(value: str) -> bool:
     value_normalized = re.sub(r"\s+", " ", value.strip().upper())
 
     for pattern in dangerous_patterns:
-        if re.search(pattern, value_normalized, re.IGNORECASE | re.MULTILINE | re.DOTALL):
+        if re.search(
+            pattern, value_normalized, re.IGNORECASE | re.MULTILINE | re.DOTALL
+        ):
             return False
 
     return True
