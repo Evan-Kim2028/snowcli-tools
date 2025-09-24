@@ -305,6 +305,76 @@ You can also execute a list of queries from a file using shell commands:
 cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
 ```
 
+## MCP Server Integration
+
+Snowcli-tools includes an MCP (Model Context Protocol) server that provides AI assistants with direct access to your Snowflake data and metadata.
+
+### Starting the MCP Server
+
+```bash
+# Start the MCP server (recommended)
+uv run snowflake-cli mcp
+
+# Or run the example directly
+uv run python examples/run_mcp_server.py
+```
+
+### MCP Client Configuration
+
+#### VS Code / Cursor Configuration
+Create or update your MCP configuration file (usually `~/.vscode/mcp.json` or similar):
+
+```json
+{
+  "mcpServers": {
+    "snowflake-cli-tools": {
+      "command": "uv",
+      "args": ["run", "snowflake-cli", "mcp"],
+      "cwd": "/path/to/your/snowflake_connector_py"
+    }
+  }
+}
+```
+
+#### Claude Code Configuration
+Add to your Claude Code MCP settings:
+
+```json
+{
+  "mcp": {
+    "snowflake-cli-tools": {
+      "command": "uv",
+      "args": ["run", "snowflake-cli", "mcp"],
+      "cwd": "/path/to/your/snowflake_connector_py"
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+The MCP server exposes these tools to AI assistants:
+
+- **execute_query**: Run SQL queries against your Snowflake database
+- **preview_table**: Preview table contents with optional filtering
+- **build_catalog**: Generate comprehensive data catalogs from your Snowflake metadata
+- **query_lineage**: Analyze data lineage and dependencies for any object
+- **build_dependency_graph**: Create dependency graphs showing object relationships
+- **test_connection**: Verify your Snowflake connection is working
+- **get_catalog_summary**: Get summaries of existing catalog data
+
+### Usage Examples
+
+Once configured, AI assistants can:
+
+- "Show me the schema of the CUSTOMERS table"
+- "Build a catalog of all tables in the SALES database"
+- "What's the lineage for the USER_ACTIVITY view?"
+- "Execute this query and show me the results"
+- "Generate a dependency graph for my data warehouse"
+
+The MCP server maintains context and provides structured responses, making it much more reliable than shell command parsing.
+
 ## CLI Commands
 
 | Command            | Description                                              |
@@ -320,6 +390,7 @@ cat queries.txt | xargs -I {} uv run snowflake-cli query "{}"
 | `config`           | Show the current tool configuration.                     |
 | `setup-connection` | Helper to create a persistent `snow` CLI connection.     |
 | `init-config`      | Create a local configuration file for this tool.         |
+| `mcp`              | Start the MCP server for AI assistant integration.       |
 
 ### Catalog design notes (portable by default)
 - Uses SHOW commands where possible (schemas, materialized views, dynamic tables, tasks, functions, procedures) for broad visibility with minimal privileges.
