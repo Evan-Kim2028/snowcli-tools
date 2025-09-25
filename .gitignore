@@ -150,6 +150,7 @@ Thumbs.db
 notes/*
 data_catalogue/*
 dependencies/*
+lineage/*
 # Local test consumer
 tmp_consumer_rye/
 AGENTS.md

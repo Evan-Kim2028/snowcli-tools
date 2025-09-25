@@ -311,7 +311,6 @@ class TestMCPServerErrorHandling:
         """Test catalog summary error handling."""
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", side_effect=Exception("File read error")):
-
                 with pytest.raises(
                     Exception, match="Failed to read catalog summary: File read error"
                 ):

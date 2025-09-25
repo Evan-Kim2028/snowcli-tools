@@ -104,8 +104,7 @@ def main() -> None:
 
     if not args.catalog_dir.exists():
         print(
-            f"[lineage-example] Catalog directory {args.catalog_dir} not found. "
-            "Run the following commands first:",
+            f"[lineage-example] Catalog directory {args.catalog_dir} not found. Run the following commands first:",
         )
         print("  uv run python examples/sample_data/setup_sample_data.py")
         print(f"  uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o {args.catalog_dir}")

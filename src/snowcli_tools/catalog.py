@@ -484,10 +484,7 @@ def build_catalog(
                 if sig:
                     # `sig` may already include parentheses; normalize
                     sig_norm = sig if sig.startswith("(") else f"({sig})"
-                    fq = (
-                        f"{_quote_ident(db)}.{_quote_ident(sch)}."
-                        f"{_quote_ident(name)}{sig_norm}"
-                    )
+                    fq = f"{_quote_ident(db)}.{_quote_ident(sch)}.{_quote_ident(name)}{sig_norm}"
                 else:
                     fq = f"{_quote_ident(db)}.{_quote_ident(sch)}.{_quote_ident(name)}"
                 category = (id_category or obj_type).upper()

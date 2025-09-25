@@ -584,8 +584,12 @@ Nodes: {len(result.graph.nodes)}
 Edges: {len(result.graph.edge_metadata)}
 
 Objects found:
-{chr(10).join(f"- {node.attributes.get('name', key)} ({node.node_type.value})"
-              for key, node in result.graph.nodes.items())}"""
+{
+                    chr(10).join(
+                        f"- {node.attributes.get('name', key)} ({node.node_type.value})"
+                        for key, node in result.graph.nodes.items()
+                    )
+                }"""
 
         except Exception as e:
             raise Exception(f"Lineage query failed: {e}")
