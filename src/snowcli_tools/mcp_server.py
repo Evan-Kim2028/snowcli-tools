@@ -6,8 +6,10 @@ like VS Code, Cursor, and Claude Code.
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import mcp.server.stdio
@@ -17,15 +19,10 @@ from mcp.server.models import InitializationOptions
 
 # Version compatibility detection
 try:
-    # Check if the new get_capabilities API exists by testing the signature
-    import inspect
-
-    from mcp.server import Server
-
-    test_server = Server("test")
-    sig = inspect.signature(test_server.get_capabilities)
-    # New API has parameters, old API doesn't
-    MCP_NEW_API = len(sig.parameters) > 0
+    # Inspect the class method directly without creating an instance
+    sig = inspect.signature(Server.get_capabilities)
+    # New API has parameters beyond 'self', old API doesn't
+    MCP_NEW_API = len(sig.parameters) > 1  # Account for 'self' parameter
 except Exception:
     MCP_NEW_API = False
 
@@ -40,16 +37,33 @@ except Exception:
 from .catalog import build_catalog
 from .config import get_config
 from .dependency import build_dependency_graph, to_dot
-from .lineage import (
-    LineageQueryService,
-    ColumnLineageExtractor,
-    TransformationTracker,
-    ImpactAnalyzer,
-    ChangeType,
-    ExternalSourceMapper,
-    LineageHistoryManager,
-)
+from .lineage import LineageQueryService
 from .snow_cli import SnowCLI, SnowCLIError
+
+
+# Custom exceptions for MCP server
+class MCPServerError(Exception):
+    """Base exception for MCP server errors."""
+
+    pass
+
+
+class ConfigurationError(MCPServerError):
+    """Raised when configuration is invalid or missing."""
+
+    pass
+
+
+class ComponentVerificationError(MCPServerError):
+    """Raised when component verification fails."""
+
+    pass
+
+
+class ConnectionError(MCPServerError):
+    """Raised when connection to Snowflake fails."""
+
+    pass
 
 
 class SnowflakeMCPServer:
@@ -59,6 +73,27 @@ class SnowflakeMCPServer:
         self.server = Server("snowflake-cli-tools")
         self.snow_cli = SnowCLI()
         self.config = get_config()
+        self._lineage_service: Optional[LineageQueryService] = None
+        self._initialized_components = set()  # Track initialized components for cleanup
+
+    async def _cleanup_resources(self):
+        """Clean up any resources that were initialized during server startup."""
+        try:
+            # Close any open connections
+            if hasattr(self.snow_cli, "_connection") and self.snow_cli._connection:
+                close_method = getattr(self.snow_cli._connection, "close", None)
+                if callable(close_method):
+                    maybe_awaitable = close_method()
+                    if inspect.isawaitable(maybe_awaitable):
+                        await maybe_awaitable
+
+            self._lineage_service = None
+
+            # Clear initialized components tracking
+            self._initialized_components.clear()
+
+        except Exception as e:
+            print(f"Warning: Error during resource cleanup: {e}")
 
     def _get_server_capabilities(self):
         """Get server capabilities with version compatibility."""
@@ -69,27 +104,105 @@ class SnowflakeMCPServer:
                     notification_options=None,  # Use None or {} for basic setup
                     experimental_capabilities={},
                 )
-            except Exception:
-                # Fallback to old API if new API fails
+            except (TypeError, AttributeError) as e:
+                # Fallback to old API if signature mismatch occurs
+                print(f"Warning: New API failed ({e}), falling back to old API")
                 return self.server.get_capabilities()
         else:
             # Use old API for older MCP versions
             return self.server.get_capabilities()
 
+    def _validate_configuration_schema(self) -> None:
+        """Validate configuration schema and required fields."""
+        if not self.config:
+            raise ConfigurationError(
+                "No configuration found - check your Snowflake CLI setup"
+            )
+
+        snowflake_config = getattr(self.config, "snowflake", None)
+        if snowflake_config is None:
+            raise ConfigurationError(
+                "Invalid configuration structure - missing snowflake section"
+            )
+
+        profile = getattr(snowflake_config, "profile", None)
+        if not profile:
+            raise ConfigurationError(
+                "No Snowflake CLI profile configured - set SNOWFLAKE_PROFILE or update config"
+            )
+
+        try:
+            connections = self.snow_cli.list_connections()
+        except SnowCLIError as exc:
+            raise ConfigurationError(
+                f"Unable to list Snowflake CLI connections: {exc}"
+            ) from exc
+
+        profile_names = {
+            conn.get("name")
+            for conn in connections
+            if isinstance(conn, dict) and conn.get("name")
+        }
+
+        if profile not in profile_names:
+            raise ConfigurationError(
+                f"Configured Snowflake CLI profile '{profile}' not found. "
+                "Run `snow connection list` to verify available profiles."
+            )
+
     async def _verify_components(self) -> bool:
         """Verify that all required components are available and functional."""
         try:
-            # Test Snowflake connection
-            if not self.config:
-                print("Warning: No configuration found")
-                return False
+            # Validate configuration schema
+            self._validate_configuration_schema()
+
+            # Test connection with timeout
+            try:
+                import asyncio
+
+                if not hasattr(self.snow_cli, "test_connection") or not callable(
+                    self.snow_cli.test_connection
+                ):
+                    raise ComponentVerificationError(
+                        "SnowCLI implementation missing test_connection() method"
+                    )
+
+                # Run connection test with timeout to prevent hanging
+                connection_test = asyncio.create_task(
+                    asyncio.to_thread(self.snow_cli.test_connection)
+                )
+                result = await asyncio.wait_for(connection_test, timeout=10.0)
+
+                if not result:
+                    raise ConnectionError(
+                        "Failed to connect to Snowflake - check credentials and network"
+                    )
+            except asyncio.TimeoutError:
+                connection_test.cancel()
+                raise ConnectionError(
+                    "Connection test timed out - check network connectivity"
+                )
+            except Exception as e:
+                raise ConnectionError(f"Connection test failed: {e}")
 
             # Test if we can create a basic query service
-            LineageQueryService(self.snow_cli)
+            try:
+                catalog_dir = Path("./data_catalogue")
+                cache_root = Path("./lineage")
+                self._lineage_service = LineageQueryService(
+                    catalog_dir=catalog_dir, cache_root=cache_root
+                )
+            except Exception as e:
+                raise ComponentVerificationError(
+                    f"LineageQueryService initialization failed: {e}"
+                )
 
             return True
-        except Exception as e:
+        except (ConfigurationError, ConnectionError, ComponentVerificationError) as e:
             print(f"Component verification failed: {e}")
+            return False
+        except Exception as e:
+            print(f"Unexpected error during component verification: {e}")
             return False
 
     async def run(self):
@@ -285,122 +398,6 @@ class SnowflakeMCPServer:
                         },
                     },
                 ),
-                # Advanced Lineage Tools
-                types.Tool(
-                    name="extract_column_lineage",
-                    description="Extract column-level lineage from SQL query",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "sql": {
-                                "type": "string",
-                                "description": "SQL query to analyze",
-                            },
-                            "target_table": {
-                                "type": "string",
-                                "description": "Target table name (optional)",
-                            },
-                            "database": {
-                                "type": "string",
-                                "description": "Default database context",
-                            },
-                            "schema": {
-                                "type": "string",
-                                "description": "Default schema context",
-                            },
-                        },
-                        "required": ["sql"],
-                    },
-                ),
-                types.Tool(
-                    name="analyze_impact",
-                    description="Analyze impact of changes to database objects",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "object_name": {
-                                "type": "string",
-                                "description": "Object to analyze",
-                            },
-                            "change_type": {
-                                "type": "string",
-                                "description": "Type of change (DROP, ALTER_SCHEMA, etc.)",
-                                "enum": ["DROP", "ALTER_SCHEMA", "ALTER_DATA_TYPE", "DROP_COLUMN", "RENAME", "MODIFY_LOGIC"],
-                            },
-                            "max_depth": {
-                                "type": "integer",
-                                "description": "Maximum traversal depth",
-                                "default": 5,
-                            },
-                            "catalog_dir": {
-                                "type": "string",
-                                "description": "Catalog directory",
-                                "default": "./data_catalogue",
-                            },
-                        },
-                        "required": ["object_name", "change_type"],
-                    },
-                ),
-                types.Tool(
-                    name="map_external_sources",
-                    description="Map external data sources (S3, Azure, GCS)",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "catalog_dir": {
-                                "type": "string",
-                                "description": "Catalog directory",
-                                "default": "./data_catalogue",
-                            },
-                            "include_stages": {
-                                "type": "boolean",
-                                "description": "Include stage configurations",
-                                "default": True,
-                            },
-                            "include_external_tables": {
-                                "type": "boolean",
-                                "description": "Include external table mappings",
-                                "default": True,
-                            },
-                        },
-                    },
-                ),
-                types.Tool(
-                    name="track_lineage_history",
-                    description="Track lineage evolution over time",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "action": {
-                                "type": "string",
-                                "description": "Action to perform",
-                                "enum": ["snapshot", "compare", "list", "rollback"],
-                            },
-                            "catalog_dir": {
-                                "type": "string",
-                                "description": "Catalog directory for snapshot",
-                                "default": "./data_catalogue",
-                            },
-                            "tag": {
-                                "type": "string",
-                                "description": "Snapshot tag",
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "Snapshot description",
-                            },
-                            "from_tag": {
-                                "type": "string",
-                                "description": "From snapshot for comparison",
-                            },
-                            "to_tag": {
-                                "type": "string",
-                                "description": "To snapshot for comparison",
-                            },
-                        },
-                        "required": ["action"],
-                    },
-                ),
             ]
 
         @self.server.call_tool()
@@ -429,41 +426,34 @@ class SnowflakeMCPServer:
                 elif name == "get_catalog_summary":
                     result = self._get_catalog_summary(**arguments)
                     return [types.TextContent(type="text", text=result)]
-                # Advanced Lineage Tools
-                elif name == "extract_column_lineage":
-                    result = self._extract_column_lineage(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "analyze_impact":
-                    result = self._analyze_impact(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "map_external_sources":
-                    result = self._map_external_sources(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "track_lineage_history":
-                    result = self._track_lineage_history(**arguments)
-                    return [types.TextContent(type="text", text=result)]
                 else:
                     raise Exception(f"Unknown tool: {name}")
             except Exception as e:
                 raise Exception(f"Error calling tool {name}: {str(e)}")
 
-        # Verify components before starting server
-        if not await self._verify_components():
-            raise RuntimeError(
-                "Component verification failed - check configuration and dependencies"
-            )
+        try:
+            # Verify components before starting server
+            if not await self._verify_components():
+                raise RuntimeError(
+                    "Component verification failed - check configuration and dependencies"
+                )
 
-        # Run the server
-        async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-            await self.server.run(
-                read_stream,
-                write_stream,
-                InitializationOptions(
-                    server_name="snowflake-cli-tools",
-                    server_version="1.0.0",
-                    capabilities=self._get_server_capabilities(),
-                ),
-            )
+            # Mark server as initializing
+            self._initialized_components.add("server")
+
+            # Run the server
+            async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+                await self.server.run(
+                    read_stream,
+                    write_stream,
+                    InitializationOptions(
+                        server_name="snowflake-cli-tools",
+                        server_version="1.0.0",
+                        capabilities=self._get_server_capabilities(),
+                    ),
+                )
+        finally:
+            await self._cleanup_resources()
 
     def _execute_query(
         self,
@@ -552,7 +542,7 @@ class SnowflakeMCPServer:
     ) -> str:
         """Query lineage data."""
         try:
-            service = LineageQueryService(catalog_dir, cache_dir)
+            service = LineageQueryService(catalog_dir=catalog_dir, cache_root=cache_dir)
 
             # Try to find the object
             default_db = self.config.snowflake.database
@@ -662,197 +652,6 @@ Objects found:
                 return f"No catalog summary found in {catalog_dir}. Run build_catalog first."
         except Exception as e:
             raise Exception(f"Failed to read catalog summary: {e}")
-
-    # Advanced Lineage Feature Methods
-    def _extract_column_lineage(
-        self,
-        sql: str,
-        target_table: Optional[str] = None,
-        database: Optional[str] = None,
-        schema: Optional[str] = None,
-    ) -> str:
-        """Extract column-level lineage from SQL."""
-        try:
-            extractor = ColumnLineageExtractor(
-                default_database=database, default_schema=schema
-            )
-            lineage = extractor.extract_column_lineage(sql, target_table=target_table)
-
-            result = {
-                "success": True,
-                "transformations": [t.to_dict() for t in lineage.transformations],
-                "column_dependencies": {
-                    k: list(v) for k, v in lineage.column_dependencies.items()
-                },
-                "issues": lineage.issues,
-            }
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            raise Exception(f"Column lineage extraction failed: {e}")
-
-    def _analyze_impact(
-        self,
-        object_name: str,
-        change_type: str,
-        max_depth: int = 5,
-        catalog_dir: str = "./data_catalogue",
-    ) -> str:
-        """Analyze impact of changes."""
-        try:
-            from pathlib import Path
-            from .lineage.builder import LineageBuilder
-
-            # Build lineage from catalog
-            builder = LineageBuilder(Path(catalog_dir))
-            lineage_result = builder.build()
-
-            # Convert change_type string to enum
-            change_type_enum = ChangeType[change_type.upper()]
-
-            # Create impact analyzer
-            analyzer = ImpactAnalyzer(lineage_result.graph)
-            report = analyzer.analyze_impact(object_name, change_type_enum, max_depth)
-
-            # Format report for output
-            result = {
-                "object": report.source_object,
-                "change_type": report.change_type.value,
-                "total_impacted": report.total_impacted_objects,
-                "risk_score": report.risk_score,
-                "critical_paths": [
-                    {
-                        "path": [p.object_name for p in path.path],
-                        "impact_score": path.total_impact_score
-                    }
-                    for path in report.critical_paths
-                ],
-                "recommendations": report.recommendations,
-                "impact_summary": report.impact_summary,
-                "notification_list": report.notification_list,
-            }
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            raise Exception(f"Impact analysis failed: {e}")
-
-    def _map_external_sources(
-        self,
-        catalog_dir: str = "./data_catalogue",
-        include_stages: bool = True,
-        include_external_tables: bool = True,
-    ) -> str:
-        """Map external data sources."""
-        try:
-            from pathlib import Path
-
-            mapper = ExternalSourceMapper(Path(catalog_dir))
-            external_lineage = mapper.map_external_sources(
-                include_stages=include_stages,
-                include_external_tables=include_external_tables,
-            )
-
-            result = {
-                "success": True,
-                "external_sources": [s.to_dict() for s in external_lineage.sources],
-                "external_tables": {
-                    k: v.to_dict() for k, v in external_lineage.external_tables.items()
-                },
-                "stages": {k: v.to_dict() for k, v in external_lineage.stages.items()},
-                "summary": external_lineage.summary,
-            }
-            return json.dumps(result, indent=2, default=str)
-        except Exception as e:
-            raise Exception(f"External source mapping failed: {e}")
-
-    def _track_lineage_history(
-        self,
-        action: str,
-        catalog_dir: str = "./data_catalogue",
-        tag: Optional[str] = None,
-        description: Optional[str] = None,
-        from_tag: Optional[str] = None,
-        to_tag: Optional[str] = None,
-    ) -> str:
-        """Track lineage history with snapshots."""
-        try:
-            from pathlib import Path
-            from datetime import datetime
-
-            history_manager = LineageHistoryManager(Path("./lineage_history"))
-
-            if action == "snapshot":
-                if not tag:
-                    tag = f"snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                snapshot = history_manager.capture_snapshot(
-                    Path(catalog_dir), tag=tag, description=description
-                )
-                result = {
-                    "success": True,
-                    "action": "snapshot",
-                    "snapshot": {
-                        "tag": snapshot.tag,
-                        "timestamp": snapshot.timestamp.isoformat(),
-                        "description": snapshot.description,
-                        "metadata": snapshot.metadata,
-                    },
-                }
-
-            elif action == "compare":
-                if not from_tag or not to_tag:
-                    raise ValueError("Both from_tag and to_tag required for comparison")
-                diff = history_manager.compare_lineage(from_tag, to_tag)
-                if diff:
-                    result = {
-                        "success": True,
-                        "action": "compare",
-                        "diff": {
-                            "from_tag": diff.from_tag,
-                            "to_tag": diff.to_tag,
-                            "added_nodes": diff.added_nodes,
-                            "removed_nodes": diff.removed_nodes,
-                            "added_edges": diff.added_edges,
-                            "removed_edges": diff.removed_edges,
-                            "summary": diff.summary,
-                        },
-                    }
-                else:
-                    result = {
-                        "success": False,
-                        "message": f"Could not compare {from_tag} to {to_tag}",
-                    }
-
-            elif action == "list":
-                snapshots = history_manager.list_snapshots()
-                result = {
-                    "success": True,
-                    "action": "list",
-                    "snapshots": [
-                        {
-                            "tag": s.tag,
-                            "timestamp": s.timestamp.isoformat(),
-                            "description": s.description,
-                        }
-                        for s in snapshots
-                    ],
-                }
-
-            elif action == "rollback":
-                if not tag:
-                    raise ValueError("Tag required for rollback")
-                rollback_path = Path(f"./lineage_rollback_{tag}.json")
-                history_manager.rollback_to_snapshot(tag, rollback_path)
-                result = {
-                    "success": True,
-                    "action": "rollback",
-                    "tag": tag,
-                    "output_path": str(rollback_path),
-                }
-
-            else:
-                raise ValueError(f"Unknown action: {action}")
-
-            return json.dumps(result, indent=2, default=str)
-        except Exception as e:
-            raise Exception(f"Lineage history tracking failed: {e}")
 
 
 async def main():

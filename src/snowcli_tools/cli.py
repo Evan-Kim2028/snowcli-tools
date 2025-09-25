@@ -1217,9 +1217,28 @@ def mcp():
         console.print("\n[yellow]⚠[/yellow] MCP server stopped by user")
     except Exception as e:
         import os
+        import re
         import traceback
 
-        console.print(f"[red]✗[/red] MCP server failed: {e}")
+        def sanitize_error_message(msg: str) -> str:
+            """Sanitize error messages to prevent credential disclosure."""
+            # Remove potential passwords, tokens, and connection strings
+            patterns = [
+                (r"password=[^;,\s]+", "password=***"),
+                (r"token=[^;,\s]+", "token=***"),
+                (r"authenticator=[^;,\s]+", "authenticator=***"),
+                (r"private_key=[^;,\s]+", "private_key=***"),
+                (r"://[^:@]+:[^@]+@", "://***:***@"),  # URLs with credentials
+                (r"Connection string.*", "Connection string: [SANITIZED]"),
+            ]
+            sanitized = str(msg)
+            for pattern, replacement in patterns:
+                sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
+            return sanitized
+
+        console.print(
+            f"[red]✗[/red] MCP server failed: {sanitize_error_message(str(e))}"
+        )
 
         # Show detailed traceback in debug mode or when DEBUG env var is set
         if "--debug" in sys.argv or os.getenv("DEBUG", "").lower() in (
@@ -1228,13 +1247,19 @@ def mcp():
             "yes",
         ):
             console.print("[yellow]Debug traceback:[/yellow]")
-            console.print(traceback.format_exc())
+            # Sanitize the full traceback as well
+            sanitized_traceback = sanitize_error_message(traceback.format_exc())
+            console.print(sanitized_traceback)
 
-            # Additional debugging for TaskGroup exceptions
+            # Additional debugging for TaskGroup exceptions (sanitized)
             if hasattr(e, "__cause__") and e.__cause__:
-                console.print(f"[yellow]Root cause:[/yellow] {e.__cause__}")
+                sanitized_cause = sanitize_error_message(str(e.__cause__))
+                console.print(f"[yellow]Root cause:[/yellow] {sanitized_cause}")
             if hasattr(e, "__context__") and e.__context__:
-                console.print(f"[yellow]Exception context:[/yellow] {e.__context__}")
+                sanitized_context = sanitize_error_message(str(e.__context__))
+                console.print(
+                    f"[yellow]Exception context:[/yellow] {sanitized_context}"
+                )
         else:
             console.print(
                 "[dim]💡 Run with --debug for detailed error information[/dim]"
