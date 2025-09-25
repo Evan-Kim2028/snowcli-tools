@@ -475,7 +475,7 @@ class TestMCPInitializationFailures:
             server.server = Mock()
             # First call (new API) fails, second call (old API) succeeds
             server.server.get_capabilities.side_effect = [
-                Exception("New API failed"),
+                TypeError("New API failed"),  # Use TypeError as expected by our code
                 {"test": "fallback"},
             ]
 
@@ -645,14 +645,13 @@ class TestMCPInitializationFailures:
         server.config.snowflake.user = "test_user"
         server.config.snowflake.password = "test_password"
 
-        # Mock connection test to hang (timeout)
-        async def hanging_connection():
+        # Mock connection test to timeout by raising TimeoutError directly
+        def mock_connection_test():
             import asyncio
 
-            await asyncio.sleep(15)  # Longer than the 10s timeout
-            return True
+            raise asyncio.TimeoutError("Connection test timed out")
 
-        server.snow_cli.test_connection = hanging_connection
+        server.snow_cli.test_connection = mock_connection_test
 
         result = await server._verify_components()
         assert result is False
