@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from snowcli_tools.config import Config, SnowflakeConfig
 from snowcli_tools.mcp_server import SnowflakeMCPServer
 
 
@@ -23,6 +24,7 @@ class TestSnowflakeMCPServer:
             raw_stdout='[\n  {\n    "col1": "value1",\n    "col2": "value2"\n  }\n]',
             returncode=0,
         )
+        mock_cli.list_connections.return_value = [{"name": "test-profile"}]
         return mock_cli
 
     @pytest.fixture
@@ -105,6 +107,23 @@ class TestSnowflakeMCPServer:
 
         result = server._test_connection()
         assert result == "Connection failed!"
+
+    @pytest.mark.asyncio
+    async def test_verify_components_with_real_config(self, mock_snow_cli):
+        """Ensure verification works with real Config dataclass."""
+        real_config = Config(snowflake=SnowflakeConfig(profile="test-profile"))
+
+        with (
+            patch("snowcli_tools.mcp_server.SnowCLI", return_value=mock_snow_cli),
+            patch("snowcli_tools.mcp_server.get_config", return_value=real_config),
+        ):
+            server = SnowflakeMCPServer()
+
+        with patch("snowcli_tools.mcp_server.LineageQueryService") as mock_service:
+            mock_service.return_value = Mock()
+            result = await server._verify_components()
+
+        assert result is True
 
     @patch("snowcli_tools.mcp_server.build_catalog")
     def test_build_catalog_success(self, mock_build_catalog, server):
@@ -222,6 +241,7 @@ class TestMCPServerIntegration:
             raw_stdout='[{"col1": "value1", "col2": "value2"}]',
             returncode=0,
         )
+        mock_snow_cli.list_connections.return_value = [{"name": "test-profile"}]
 
         mock_config = Mock()
         mock_config.snowflake.profile = "test-profile"
@@ -285,8 +305,16 @@ class TestMCPServerErrorHandling:
     @pytest.fixture
     def server(self):
         """Create server for error tests."""
-        server = SnowflakeMCPServer()
-        server.snow_cli = Mock()
+        mock_cli = Mock()
+        mock_cli.list_connections.return_value = [{"name": "test-profile"}]
+        with (
+            patch("snowcli_tools.mcp_server.SnowCLI", return_value=mock_cli),
+            patch("snowcli_tools.mcp_server.get_config") as mock_get_config,
+        ):
+            mock_get_config.return_value = Mock()
+            server = SnowflakeMCPServer()
+
+        server.snow_cli = mock_cli
         server.config = Mock()
         return server
 
@@ -323,8 +351,14 @@ class TestMCPServerToolSchemas:
     @pytest.fixture
     def server(self):
         """Create server for schema testing."""
-        server = SnowflakeMCPServer()
-        return server
+        mock_cli = Mock()
+        mock_cli.list_connections.return_value = [{"name": "test-profile"}]
+        with (
+            patch("snowcli_tools.mcp_server.SnowCLI", return_value=mock_cli),
+            patch("snowcli_tools.mcp_server.get_config") as mock_get_config,
+        ):
+            mock_get_config.return_value = Mock()
+            return SnowflakeMCPServer()
 
     def test_server_has_all_expected_methods(self, server):
         """Test that server has all expected private methods."""
@@ -356,6 +390,7 @@ class TestMCPServerAuthentication:
         with patch("snowcli_tools.mcp_server.get_config", return_value=mock_config):
             with patch("snowcli_tools.mcp_server.SnowCLI") as mock_cli_class:
                 mock_cli = Mock()
+                mock_cli.list_connections.return_value = [{"name": "test-profile"}]
                 mock_cli_class.return_value = mock_cli
 
                 server = SnowflakeMCPServer()
@@ -365,21 +400,22 @@ class TestMCPServerAuthentication:
                 mock_cli_class.assert_called_once_with()
                 assert server.config == mock_config
 
-    def test_server_handles_missing_profile_gracefully(self):
-        """Test that server handles missing profile gracefully."""
+    @pytest.mark.asyncio
+    async def test_verify_components_missing_profile(self):
+        """Test that verification fails when profile is missing."""
         mock_config = Mock()
         mock_config.snowflake.profile = None  # Missing profile
 
         with patch("snowcli_tools.mcp_server.get_config", return_value=mock_config):
             with patch("snowcli_tools.mcp_server.SnowCLI") as mock_cli_class:
                 mock_cli = Mock()
+                mock_cli.list_connections.return_value = []
                 mock_cli_class.return_value = mock_cli
 
-                # Should not raise an exception, just use None
                 server = SnowflakeMCPServer()
+                result = await server._verify_components()
 
-                mock_cli_class.assert_called_once_with()
-                assert server.config == mock_config
+                assert result is False
 
     def test_server_passes_context_overrides_correctly(self):
         """Test that context overrides are passed correctly to SnowCLI."""
@@ -389,6 +425,7 @@ class TestMCPServerAuthentication:
         with patch("snowcli_tools.mcp_server.get_config", return_value=mock_config):
             with patch("snowcli_tools.mcp_server.SnowCLI") as mock_cli_class:
                 mock_cli = Mock()
+                mock_cli.list_connections.return_value = [{"name": "test-profile"}]
                 mock_cli_class.return_value = mock_cli
 
                 server = SnowflakeMCPServer()
@@ -411,10 +448,21 @@ class TestMCPInitializationFailures:
     @pytest.fixture
     def server(self):
         """Create server for initialization tests."""
-        with patch("snowcli_tools.mcp_server.get_config", return_value=None):
+        mock_cli = Mock()
+        mock_cli.test_connection.return_value = True
+        mock_cli.list_connections.return_value = [{"name": "test-profile"}]
+
+        with (
+            patch("snowcli_tools.mcp_server.SnowCLI", return_value=mock_cli),
+            patch("snowcli_tools.mcp_server.get_config", return_value=None),
+        ):
             server = SnowflakeMCPServer()
-            server.snow_cli = Mock()
-            return server
+
+        server.snow_cli = mock_cli
+        server.config = Mock()
+        server.config.snowflake = Mock()
+        server.config.snowflake.profile = "test-profile"
+        return server
 
     @pytest.mark.asyncio
     async def test_verify_components_no_config(self, server):
@@ -426,8 +474,6 @@ class TestMCPInitializationFailures:
     @pytest.mark.asyncio
     async def test_verify_components_lineage_service_error(self, server):
         """Test component verification fails when LineageQueryService fails."""
-        server.config = Mock()
-
         with patch(
             "snowcli_tools.mcp_server.LineageQueryService",
             side_effect=Exception("Service init failed"),
@@ -438,8 +484,6 @@ class TestMCPInitializationFailures:
     @pytest.mark.asyncio
     async def test_verify_components_success(self, server):
         """Test component verification succeeds with valid config."""
-        server.config = Mock()
-
         with patch("snowcli_tools.mcp_server.LineageQueryService") as mock_service:
             mock_service.return_value = Mock()
             result = await server._verify_components()
@@ -493,8 +537,6 @@ class TestMCPInitializationFailures:
     @pytest.mark.asyncio
     async def test_run_with_mcp_server_failure(self, server):
         """Test that run() handles MCP server startup failures."""
-        server.config = Mock()
-
         with patch("snowcli_tools.mcp_server.LineageQueryService"):
             with patch("mcp.server.stdio.stdio_server") as mock_stdio:
                 mock_stdio.side_effect = Exception("MCP server startup failed")
@@ -517,8 +559,6 @@ class TestMCPInitializationFailures:
     async def test_verify_components_partial_config(self, server):
         """Test component verification with partial configuration."""
         # Create a mock config that has snowflake section but missing fields
-        server.config = Mock()
-        server.config.snowflake = Mock()
         server.config.snowflake.profile = None
 
         with patch(
@@ -531,9 +571,6 @@ class TestMCPInitializationFailures:
     @pytest.mark.asyncio
     async def test_verify_components_network_timeout(self, server):
         """Test component verification with network timeout."""
-        server.config = Mock()
-        server.config.snowflake = Mock()
-
         # Mock connection timeout
         server.snow_cli.test_connection.side_effect = TimeoutError("Network timeout")
 
@@ -569,9 +606,6 @@ class TestMCPInitializationFailures:
         """Test race conditions in concurrent server initialization."""
         import asyncio
 
-        server.config = Mock()
-        server.config.snowflake = Mock()
-
         # Mock successful verification
         with patch("snowcli_tools.mcp_server.LineageQueryService") as mock_service:
             mock_service.return_value = Mock()
@@ -606,9 +640,6 @@ class TestMCPInitializationFailures:
     @pytest.mark.asyncio
     async def test_resource_cleanup_on_failure(self, server):
         """Test that resources are cleaned up when server initialization fails."""
-        server.config = Mock()
-        server.config.snowflake = Mock()
-
         # Mock a failure during server startup
         with patch("snowcli_tools.mcp_server.LineageQueryService"):
             with patch(
@@ -623,14 +654,10 @@ class TestMCPInitializationFailures:
                     mock_cleanup.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_validate_configuration_schema_missing_auth(self, server):
-        """Test configuration validation with missing authentication."""
-        # Create config with required fields but no auth method
-        server.config = Mock()
-        server.config.snowflake = Mock()
-        server.config.snowflake.account = "test_account"
-        server.config.snowflake.user = "test_user"
-        # No authentication method set
+    async def test_verify_components_profile_not_found(self, server):
+        """Test component verification fails when profile is unknown."""
+        server.config.snowflake.profile = "missing-profile"
+        server.snow_cli.list_connections.return_value = [{"name": "other-profile"}]
 
         result = await server._verify_components()
         assert result is False
@@ -638,11 +665,7 @@ class TestMCPInitializationFailures:
     @pytest.mark.asyncio
     async def test_connection_timeout_handling(self, server):
         """Test that connection timeouts are handled properly."""
-        server.config = Mock()
-        server.config.snowflake = Mock()
-        server.config.snowflake.account = "test_account"
-        server.config.snowflake.user = "test_user"
-        server.config.snowflake.password = "test_password"
+        server.config.snowflake.profile = "test-profile"
 
         # Mock connection test to timeout by raising TimeoutError directly
         def mock_connection_test():

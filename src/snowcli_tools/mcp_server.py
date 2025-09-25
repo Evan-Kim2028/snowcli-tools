@@ -115,34 +115,35 @@ class SnowflakeMCPServer:
                 "No configuration found - check your Snowflake CLI setup"
             )
 
-        # Validate configuration has required fields
-        if not hasattr(self.config, "snowflake"):
+        snowflake_config = getattr(self.config, "snowflake", None)
+        if snowflake_config is None:
             raise ConfigurationError(
                 "Invalid configuration structure - missing snowflake section"
             )
 
-        # Validate snowflake section has required fields
-        required_fields = ["account", "user"]  # Basic required fields
-        snowflake_config = self.config.snowflake
-
-        for field in required_fields:
-            if not hasattr(snowflake_config, field) or not getattr(
-                snowflake_config, field
-            ):
-                raise ConfigurationError(
-                    f"Missing required configuration field: snowflake.{field}"
-                )
-
-        # Validate authentication method is configured
-        auth_methods = ["password", "private_key", "authenticator"]
-        has_auth = any(
-            hasattr(snowflake_config, method) and getattr(snowflake_config, method)
-            for method in auth_methods
-        )
-
-        if not has_auth:
+        profile = getattr(snowflake_config, "profile", None)
+        if not profile:
             raise ConfigurationError(
-                "No authentication method configured. Ensure one of: password, private_key, or authenticator is set"
+                "No Snowflake CLI profile configured - set SNOWFLAKE_PROFILE or update config"
+            )
+
+        try:
+            connections = self.snow_cli.list_connections()
+        except SnowCLIError as exc:
+            raise ConfigurationError(
+                f"Unable to list Snowflake CLI connections: {exc}"
+            ) from exc
+
+        profile_names = {
+            conn.get("name")
+            for conn in connections
+            if isinstance(conn, dict) and conn.get("name")
+        }
+
+        if profile not in profile_names:
+            raise ConfigurationError(
+                f"Configured Snowflake CLI profile '{profile}' not found. "
+                "Run `snow connection list` to verify available profiles."
             )
 
     async def _verify_components(self) -> bool:
@@ -174,7 +175,7 @@ class SnowflakeMCPServer:
 
             # Test if we can create a basic query service
             try:
-                LineageQueryService(self.snow_cli)
+                LineageQueryService("./data_catalogue", "./lineage")
             except Exception as e:
                 raise ComponentVerificationError(
                     f"LineageQueryService initialization failed: {e}"
