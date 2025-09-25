@@ -874,13 +874,13 @@ class LineageHistoryManager:
 
         for snapshot in snapshots[:50]:
             html.append("<tr>")
-            html.append(f'<td>{snapshot.timestamp.strftime("%Y-%m-%d %H:%M:%S")}</td>')
+            html.append(f"<td>{snapshot.timestamp.strftime('%Y-%m-%d %H:%M:%S')}</td>")
             html.append(
-                f'<td>{f"<span class=\"tag\">{snapshot.tag}</span>" if snapshot.tag else "-"}</td>'
+                f"<td>{f'<span class="tag">{snapshot.tag}</span>' if snapshot.tag else '-'}</td>"
             )
             html.append(f"<td>{snapshot.node_count}</td>")
             html.append(f"<td>{snapshot.edge_count}</td>")
-            html.append(f'<td>{snapshot.description or "-"}</td>')
+            html.append(f"<td>{snapshot.description or '-'}</td>")
             html.append("</tr>")
 
         html.append("</table>")

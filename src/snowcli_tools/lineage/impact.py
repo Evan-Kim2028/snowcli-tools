@@ -805,7 +805,7 @@ class ImpactAnalyzer:
         for path in report.critical_paths[:5]:
             md.append(f"- **{path.source_object}** → **{path.target_object}**\n")
             md.append(f"  - Path length: {path.path_length}\n")
-            md.append(f'  - Critical nodes: {", ".join(path.critical_nodes[:3])}\n')
+            md.append(f"  - Critical nodes: {', '.join(path.critical_nodes[:3])}\n")
         md.append("\n")
 
         md.append("## Top Impacted Objects\n")
