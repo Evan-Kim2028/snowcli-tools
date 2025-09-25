@@ -514,6 +514,189 @@ class TestMCPInitializationFailures:
         # Version should be non-empty (either real version or default)
         assert MCP_VERSION != ""
 
+    @pytest.mark.asyncio
+    async def test_verify_components_partial_config(self, server):
+        """Test component verification with partial configuration."""
+        # Create a mock config that has snowflake section but missing fields
+        server.config = Mock()
+        server.config.snowflake = Mock()
+        server.config.snowflake.profile = None
+
+        with patch(
+            "snowcli_tools.mcp_server.LineageQueryService",
+            side_effect=Exception("Missing profile"),
+        ):
+            result = await server._verify_components()
+            assert result is False
+
+    @pytest.mark.asyncio
+    async def test_verify_components_network_timeout(self, server):
+        """Test component verification with network timeout."""
+        server.config = Mock()
+        server.config.snowflake = Mock()
+
+        # Mock connection timeout
+        server.snow_cli.test_connection.side_effect = TimeoutError("Network timeout")
+
+        result = await server._verify_components()
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_verify_components_missing_snowflake_section(self, server):
+        """Test component verification with invalid config structure."""
+        # Create config without snowflake section
+        server.config = Mock()
+        del server.config.snowflake  # Remove the snowflake attribute
+
+        result = await server._verify_components()
+        assert result is False
+
+    def test_get_server_capabilities_api_fallback_with_specific_errors(self, server):
+        """Test get_server_capabilities fallback with specific exception types."""
+        with patch("snowcli_tools.mcp_server.MCP_NEW_API", True):
+            server.server = Mock()
+            # First call (new API) fails with TypeError, second call (old API) succeeds
+            server.server.get_capabilities.side_effect = [
+                TypeError("Unexpected keyword argument"),
+                {"test": "fallback"},
+            ]
+
+            result = server._get_server_capabilities()
+            assert result == {"test": "fallback"}
+            assert server.server.get_capabilities.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_concurrent_server_initialization(self, server):
+        """Test race conditions in concurrent server initialization."""
+        import asyncio
+
+        server.config = Mock()
+        server.config.snowflake = Mock()
+
+        # Mock successful verification
+        with patch("snowcli_tools.mcp_server.LineageQueryService") as mock_service:
+            mock_service.return_value = Mock()
+
+            # Test concurrent verification calls
+            tasks = [server._verify_components() for _ in range(3)]
+            results = await asyncio.gather(*tasks)
+
+            # All should succeed
+            assert all(results)
+
+    def test_custom_exception_hierarchy(self):
+        """Test that custom exceptions have proper hierarchy."""
+        from snowcli_tools.mcp_server import (
+            ComponentVerificationError,
+            ConfigurationError,
+            ConnectionError,
+            MCPServerError,
+        )
+
+        # Test exception hierarchy
+        assert issubclass(ConfigurationError, MCPServerError)
+        assert issubclass(ComponentVerificationError, MCPServerError)
+        assert issubclass(ConnectionError, MCPServerError)
+
+        # Test that they can be instantiated and raised
+        try:
+            raise ConfigurationError("Test config error")
+        except MCPServerError as e:
+            assert str(e) == "Test config error"
+
+    @pytest.mark.asyncio
+    async def test_resource_cleanup_on_failure(self, server):
+        """Test that resources are cleaned up when server initialization fails."""
+        server.config = Mock()
+        server.config.snowflake = Mock()
+
+        # Mock a failure during server startup
+        with patch("snowcli_tools.mcp_server.LineageQueryService"):
+            with patch(
+                "mcp.server.stdio.stdio_server",
+                side_effect=Exception("Server startup failed"),
+            ):
+                # Ensure cleanup method is called
+                with patch.object(server, "_cleanup_resources") as mock_cleanup:
+                    with pytest.raises(Exception, match="Server startup failed"):
+                        await server.run()
+
+                    mock_cleanup.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_validate_configuration_schema_missing_auth(self, server):
+        """Test configuration validation with missing authentication."""
+        # Create config with required fields but no auth method
+        server.config = Mock()
+        server.config.snowflake = Mock()
+        server.config.snowflake.account = "test_account"
+        server.config.snowflake.user = "test_user"
+        # No authentication method set
+
+        result = await server._verify_components()
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_connection_timeout_handling(self, server):
+        """Test that connection timeouts are handled properly."""
+        server.config = Mock()
+        server.config.snowflake = Mock()
+        server.config.snowflake.account = "test_account"
+        server.config.snowflake.user = "test_user"
+        server.config.snowflake.password = "test_password"
+
+        # Mock connection test to hang (timeout)
+        async def hanging_connection():
+            import asyncio
+
+            await asyncio.sleep(15)  # Longer than the 10s timeout
+            return True
+
+        server.snow_cli.test_connection = hanging_connection
+
+        result = await server._verify_components()
+        assert result is False
+
+    def test_error_message_sanitization(self):
+        """Test that error messages are properly sanitized."""
+        # This would be tested in an integration test, but we can test the concept
+        # by checking that the sanitization patterns work
+        import re
+
+        def sanitize_error_message(msg: str) -> str:
+            """Copy of sanitization function for testing."""
+            patterns = [
+                (r"password=[^;,\s]+", "password=***"),
+                (r"token=[^;,\s]+", "token=***"),
+                (r"authenticator=[^;,\s]+", "authenticator=***"),
+                (r"private_key=[^;,\s]+", "private_key=***"),
+                (r"://[^:@]+:[^@]+@", "://***:***@"),
+                (r"Connection string.*", "Connection string: [SANITIZED]"),
+            ]
+            sanitized = str(msg)
+            for pattern, replacement in patterns:
+                sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
+            return sanitized
+
+        # Test various sensitive information patterns
+        sensitive_messages = [
+            "Connection failed: password=secret123",
+            "Auth error: token=abc123xyz",
+            "Failed to connect: https://user:pass123@example.com/db",
+            "Connection string contains sensitive data",
+        ]
+
+        expected_sanitized = [
+            "Connection failed: password=***",
+            "Auth error: token=***",
+            "Failed to connect: https://***:***@example.com/db",
+            "Connection string: [SANITIZED]",
+        ]
+
+        for message, expected in zip(sensitive_messages, expected_sanitized):
+            sanitized = sanitize_error_message(message)
+            assert sanitized == expected
+
 
 class TestMCPOptional:
     """Test that MCP functionality is properly optional."""

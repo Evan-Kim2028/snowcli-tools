@@ -17,15 +17,15 @@ from mcp.server.models import InitializationOptions
 
 # Version compatibility detection
 try:
-    # Check if the new get_capabilities API exists by testing the signature
+    # Check if the new get_capabilities API exists by inspecting class method signature
     import inspect
 
     from mcp.server import Server
 
-    test_server = Server("test")
-    sig = inspect.signature(test_server.get_capabilities)
-    # New API has parameters, old API doesn't
-    MCP_NEW_API = len(sig.parameters) > 0
+    # Inspect the class method directly without creating an instance
+    sig = inspect.signature(Server.get_capabilities)
+    # New API has parameters beyond 'self', old API doesn't
+    MCP_NEW_API = len(sig.parameters) > 1  # Account for 'self' parameter
 except Exception:
     MCP_NEW_API = False
 
@@ -44,6 +44,31 @@ from .lineage import LineageQueryService
 from .snow_cli import SnowCLI, SnowCLIError
 
 
+# Custom exceptions for MCP server
+class MCPServerError(Exception):
+    """Base exception for MCP server errors."""
+
+    pass
+
+
+class ConfigurationError(MCPServerError):
+    """Raised when configuration is invalid or missing."""
+
+    pass
+
+
+class ComponentVerificationError(MCPServerError):
+    """Raised when component verification fails."""
+
+    pass
+
+
+class ConnectionError(MCPServerError):
+    """Raised when connection to Snowflake fails."""
+
+    pass
+
+
 class SnowflakeMCPServer:
     """Simple MCP server for snowcli-tools."""
 
@@ -51,6 +76,20 @@ class SnowflakeMCPServer:
         self.server = Server("snowflake-cli-tools")
         self.snow_cli = SnowCLI()
         self.config = get_config()
+        self._initialized_components = set()  # Track initialized components for cleanup
+
+    async def _cleanup_resources(self):
+        """Clean up any resources that were initialized during server startup."""
+        try:
+            # Close any open connections
+            if hasattr(self.snow_cli, "_connection") and self.snow_cli._connection:
+                self.snow_cli._connection.close()
+
+            # Clear initialized components tracking
+            self._initialized_components.clear()
+
+        except Exception as e:
+            print(f"Warning: Error during resource cleanup: {e}")
 
     def _get_server_capabilities(self):
         """Get server capabilities with version compatibility."""
@@ -61,27 +100,92 @@ class SnowflakeMCPServer:
                     notification_options=None,  # Use None or {} for basic setup
                     experimental_capabilities={},
                 )
-            except Exception:
-                # Fallback to old API if new API fails
+            except (TypeError, AttributeError) as e:
+                # Fallback to old API if signature mismatch occurs
+                print(f"Warning: New API failed ({e}), falling back to old API")
                 return self.server.get_capabilities()
         else:
             # Use old API for older MCP versions
             return self.server.get_capabilities()
 
+    def _validate_configuration_schema(self) -> None:
+        """Validate configuration schema and required fields."""
+        if not self.config:
+            raise ConfigurationError(
+                "No configuration found - check your Snowflake CLI setup"
+            )
+
+        # Validate configuration has required fields
+        if not hasattr(self.config, "snowflake"):
+            raise ConfigurationError(
+                "Invalid configuration structure - missing snowflake section"
+            )
+
+        # Validate snowflake section has required fields
+        required_fields = ["account", "user"]  # Basic required fields
+        snowflake_config = self.config.snowflake
+
+        for field in required_fields:
+            if not hasattr(snowflake_config, field) or not getattr(
+                snowflake_config, field
+            ):
+                raise ConfigurationError(
+                    f"Missing required configuration field: snowflake.{field}"
+                )
+
+        # Validate authentication method is configured
+        auth_methods = ["password", "private_key", "authenticator"]
+        has_auth = any(
+            hasattr(snowflake_config, method) and getattr(snowflake_config, method)
+            for method in auth_methods
+        )
+
+        if not has_auth:
+            raise ConfigurationError(
+                "No authentication method configured. Ensure one of: password, private_key, or authenticator is set"
+            )
+
     async def _verify_components(self) -> bool:
         """Verify that all required components are available and functional."""
         try:
-            # Test Snowflake connection
-            if not self.config:
-                print("Warning: No configuration found")
-                return False
+            # Validate configuration schema
+            self._validate_configuration_schema()
+
+            # Test connection with timeout
+            try:
+                import asyncio
+
+                # Run connection test with timeout to prevent hanging
+                connection_test = asyncio.create_task(
+                    asyncio.to_thread(self.snow_cli.test_connection)
+                )
+                result = await asyncio.wait_for(connection_test, timeout=10.0)
+
+                if not result:
+                    raise ConnectionError(
+                        "Failed to connect to Snowflake - check credentials and network"
+                    )
+            except asyncio.TimeoutError:
+                raise ConnectionError(
+                    "Connection test timed out - check network connectivity"
+                )
+            except Exception as e:
+                raise ConnectionError(f"Connection test failed: {e}")
 
             # Test if we can create a basic query service
-            LineageQueryService(self.snow_cli)
+            try:
+                LineageQueryService(self.snow_cli)
+            except Exception as e:
+                raise ComponentVerificationError(
+                    f"LineageQueryService initialization failed: {e}"
+                )
 
             return True
-        except Exception as e:
+        except (ConfigurationError, ConnectionError, ComponentVerificationError) as e:
             print(f"Component verification failed: {e}")
+            return False
+        except Exception as e:
+            print(f"Unexpected error during component verification: {e}")
             return False
 
     async def run(self):
@@ -310,23 +414,32 @@ class SnowflakeMCPServer:
             except Exception as e:
                 raise Exception(f"Error calling tool {name}: {str(e)}")
 
-        # Verify components before starting server
-        if not await self._verify_components():
-            raise RuntimeError(
-                "Component verification failed - check configuration and dependencies"
-            )
+        try:
+            # Verify components before starting server
+            if not await self._verify_components():
+                raise RuntimeError(
+                    "Component verification failed - check configuration and dependencies"
+                )
 
-        # Run the server
-        async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-            await self.server.run(
-                read_stream,
-                write_stream,
-                InitializationOptions(
-                    server_name="snowflake-cli-tools",
-                    server_version="1.0.0",
-                    capabilities=self._get_server_capabilities(),
-                ),
-            )
+            # Mark server as initializing
+            self._initialized_components.add("server")
+
+            # Run the server
+            async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+                await self.server.run(
+                    read_stream,
+                    write_stream,
+                    InitializationOptions(
+                        server_name="snowflake-cli-tools",
+                        server_version="1.0.0",
+                        capabilities=self._get_server_capabilities(),
+                    ),
+                )
+
+        except Exception as e:
+            # Clean up resources on any failure
+            await self._cleanup_resources()
+            raise e
 
     def _execute_query(
         self,
