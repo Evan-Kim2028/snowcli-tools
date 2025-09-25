@@ -26,8 +26,7 @@ class SnowCLIError(RuntimeError):
 def _ensure_snow_available() -> None:
     if shutil.which("snow") is None:
         raise SnowCLIError(
-            "`snow` CLI not found. Install with "
-            "`pip install snowflake-cli` and configure a profile.",
+            "`snow` CLI not found. Install with `pip install snowflake-cli` and configure a profile.",
         )
 
 

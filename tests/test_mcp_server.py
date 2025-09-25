@@ -311,7 +311,6 @@ class TestMCPServerErrorHandling:
         """Test catalog summary error handling."""
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", side_effect=Exception("File read error")):
-
                 with pytest.raises(
                     Exception, match="Failed to read catalog summary: File read error"
                 ):
@@ -404,6 +403,115 @@ class TestMCPServerAuthentication:
                     "warehouse": "WH1",
                     "database": "DB1",
                 }
+
+
+class TestMCPInitializationFailures:
+    """Test MCP server initialization failure scenarios."""
+
+    @pytest.fixture
+    def server(self):
+        """Create server for initialization tests."""
+        with patch("snowcli_tools.mcp_server.get_config", return_value=None):
+            server = SnowflakeMCPServer()
+            server.snow_cli = Mock()
+            return server
+
+    @pytest.mark.asyncio
+    async def test_verify_components_no_config(self, server):
+        """Test component verification fails with no config."""
+        server.config = None
+        result = await server._verify_components()
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_verify_components_lineage_service_error(self, server):
+        """Test component verification fails when LineageQueryService fails."""
+        server.config = Mock()
+
+        with patch(
+            "snowcli_tools.mcp_server.LineageQueryService",
+            side_effect=Exception("Service init failed"),
+        ):
+            result = await server._verify_components()
+            assert result is False
+
+    @pytest.mark.asyncio
+    async def test_verify_components_success(self, server):
+        """Test component verification succeeds with valid config."""
+        server.config = Mock()
+
+        with patch("snowcli_tools.mcp_server.LineageQueryService") as mock_service:
+            mock_service.return_value = Mock()
+            result = await server._verify_components()
+            assert result is True
+
+    def test_get_server_capabilities_old_api(self, server):
+        """Test get_server_capabilities with old MCP API."""
+        with patch("snowcli_tools.mcp_server.MCP_NEW_API", False):
+            server.server = Mock()
+            server.server.get_capabilities.return_value = {"test": "capability"}
+
+            result = server._get_server_capabilities()
+            assert result == {"test": "capability"}
+            server.server.get_capabilities.assert_called_once_with()
+
+    def test_get_server_capabilities_new_api_success(self, server):
+        """Test get_server_capabilities with new MCP API (success)."""
+        with patch("snowcli_tools.mcp_server.MCP_NEW_API", True):
+            server.server = Mock()
+            server.server.get_capabilities.return_value = {"test": "capability"}
+
+            result = server._get_server_capabilities()
+            assert result == {"test": "capability"}
+            # Should call with notification_options=None and experimental_capabilities={}
+            server.server.get_capabilities.assert_called_once_with(
+                notification_options=None, experimental_capabilities={}
+            )
+
+    def test_get_server_capabilities_new_api_fallback(self, server):
+        """Test get_server_capabilities fallback when new API fails."""
+        with patch("snowcli_tools.mcp_server.MCP_NEW_API", True):
+            server.server = Mock()
+            # First call (new API) fails, second call (old API) succeeds
+            server.server.get_capabilities.side_effect = [
+                Exception("New API failed"),
+                {"test": "fallback"},
+            ]
+
+            result = server._get_server_capabilities()
+            assert result == {"test": "fallback"}
+            assert server.server.get_capabilities.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_run_with_component_verification_failure(self, server):
+        """Test that run() raises RuntimeError when component verification fails."""
+        server.config = None  # This will cause verification to fail
+
+        with pytest.raises(RuntimeError, match="Component verification failed"):
+            await server.run()
+
+    @pytest.mark.asyncio
+    async def test_run_with_mcp_server_failure(self, server):
+        """Test that run() handles MCP server startup failures."""
+        server.config = Mock()
+
+        with patch("snowcli_tools.mcp_server.LineageQueryService"):
+            with patch("mcp.server.stdio.stdio_server") as mock_stdio:
+                mock_stdio.side_effect = Exception("MCP server startup failed")
+
+                with pytest.raises(Exception, match="MCP server startup failed"):
+                    await server.run()
+
+    def test_version_detection(self):
+        """Test MCP version detection and compatibility flags."""
+        # Test that version constants are properly set
+        from snowcli_tools.mcp_server import MCP_NEW_API, MCP_VERSION
+
+        assert isinstance(MCP_VERSION, str)
+        assert isinstance(MCP_NEW_API, bool)
+
+        # Version should be non-empty (either real version or default)
+        assert MCP_VERSION != ""
 
 
 class TestMCPOptional:

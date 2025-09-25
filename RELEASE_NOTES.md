@@ -73,6 +73,67 @@ Changes
 - depgraph: accept a directory for -o/--output and write default filename
   (dependencies.json or dependencies.dot) into the directory.
 
+# SNOWCLI-TOOLS v1.3.1 (MCP Server Integration)
+
+🚀 **Major Release**: Full Model Context Protocol (MCP) server integration for AI assistants!
+
+## Highlights
+- **MCP Server**: New `snowflake-cli mcp` command runs a full-featured MCP server
+- **AI Assistant Integration**: Compatible with VS Code, Cursor, Claude Code, and other MCP clients
+- **7 MCP Tools**: execute_query, preview_table, build_catalog, query_lineage, build_dependency_graph, test_connection, get_catalog_summary
+- **Optional Installation**: Use `pip install snowcli-tools[mcp]` for MCP dependencies
+- **Complete Documentation**: New `/docs/mcp/` directory with architecture guides and examples
+- **Real Sample Dataset**: DeFi trading pipeline examples with production DDL
+
+## New MCP Tools
+```bash
+# Run MCP server (stdio transport with JSON-RPC 2.0)
+uv run snowflake-cli mcp
+
+# Install with MCP support
+pip install snowcli-tools[mcp]
+```
+
+## Sample Dataset
+- **dex_trades_stable**: Real DeFi trading pipeline (224M+ records)
+- **Complete DDL**: Production table definitions with clustering and tags
+- **Setup Script**: `/examples/sample_data/setup_sample_data.py` for easy installation
+- **Documentation**: All examples now use real DeFi scenarios instead of generic data
+
+## Technical Architecture
+- **Protocol**: stdio transport with JSON-RPC 2.0 for AI assistant communication
+- **Integration**: Works with existing SnowCLI and LineageQueryService infrastructure
+- **Async**: Fully async MCP server implementation using `mcp.server.stdio`
+- **Security**: Maintains BYO-auth model through official `snow` CLI profiles
+
+## Repository Improvements
+- **Fixed**: Moved `mcp_config.json` to `/examples/` as template
+- **Fixed**: Added `lineage/` folder to `.gitignore` (generated outputs)
+- **Added**: Comprehensive `CHANGELOG.md` following Keep a Changelog format
+- **Enhanced**: All documentation updated with ASCII diagrams for GitHub compatibility
+
+## Usage Examples
+```json
+// MCP Client Configuration (VS Code, Cursor, etc.)
+{
+  "mcpServers": {
+    "snowflake-cli-tools": {
+      "command": "uv",
+      "args": ["run", "snowflake-cli", "mcp"],
+      "cwd": "/path/to/your/snowcli-tools/project"
+    }
+  }
+}
+```
+
+## Notes
+- MCP server provides all existing snowcli-tools functionality through AI assistant integration
+- Maintains full backward compatibility with CLI usage
+- Real production DeFi dataset replaces generic examples throughout documentation
+- Complete setup automation for sample data installation
+
+---
+
 # SNOWCLI-TOOLS v1.3.0 (Lineage search refinements)
 
 Highlights

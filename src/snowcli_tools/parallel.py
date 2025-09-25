@@ -163,14 +163,12 @@ class ParallelQueryExecutor:
 
                 if attempt < self.config.retry_attempts - 1:
                     logger.warning(
-                        f"⚠️  {object_name} failed ({error_msg}), "
-                        f"retrying in {self.config.retry_delay}s...",
+                        f"⚠️  {object_name} failed ({error_msg}), retrying in {self.config.retry_delay}s...",
                     )
                     time.sleep(self.config.retry_delay)
                 else:
                     logger.exception(
-                        f"❌ {object_name} failed after "
-                        f"{self.config.retry_attempts} attempts: {error_msg}",
+                        f"❌ {object_name} failed after {self.config.retry_attempts} attempts: {error_msg}",
                     )
                     return QueryResult(
                         object_name=object_name,

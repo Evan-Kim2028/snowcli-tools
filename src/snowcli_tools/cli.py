@@ -1216,7 +1216,30 @@ def mcp():
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠[/yellow] MCP server stopped by user")
     except Exception as e:
+        import os
+        import traceback
+
         console.print(f"[red]✗[/red] MCP server failed: {e}")
+
+        # Show detailed traceback in debug mode or when DEBUG env var is set
+        if "--debug" in sys.argv or os.getenv("DEBUG", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        ):
+            console.print("[yellow]Debug traceback:[/yellow]")
+            console.print(traceback.format_exc())
+
+            # Additional debugging for TaskGroup exceptions
+            if hasattr(e, "__cause__") and e.__cause__:
+                console.print(f"[yellow]Root cause:[/yellow] {e.__cause__}")
+            if hasattr(e, "__context__") and e.__context__:
+                console.print(f"[yellow]Exception context:[/yellow] {e.__context__}")
+        else:
+            console.print(
+                "[dim]💡 Run with --debug for detailed error information[/dim]"
+            )
+
         sys.exit(1)
 
 

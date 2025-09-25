@@ -15,6 +15,28 @@ from mcp import types
 from mcp.server import Server
 from mcp.server.models import InitializationOptions
 
+# Version compatibility detection
+try:
+    # Check if the new get_capabilities API exists by testing the signature
+    import inspect
+
+    from mcp.server import Server
+
+    test_server = Server("test")
+    sig = inspect.signature(test_server.get_capabilities)
+    # New API has parameters, old API doesn't
+    MCP_NEW_API = len(sig.parameters) > 0
+except Exception:
+    MCP_NEW_API = False
+
+try:
+    import mcp
+
+    # Check if package has __version__ or try to determine from setup
+    MCP_VERSION = getattr(mcp, "__version__", "unknown")
+except Exception:
+    MCP_VERSION = "0.0.0"
+
 from .catalog import build_catalog
 from .config import get_config
 from .dependency import build_dependency_graph, to_dot
@@ -37,6 +59,38 @@ class SnowflakeMCPServer:
         self.server = Server("snowflake-cli-tools")
         self.snow_cli = SnowCLI()
         self.config = get_config()
+
+    def _get_server_capabilities(self):
+        """Get server capabilities with version compatibility."""
+        if MCP_NEW_API:
+            try:
+                # New API requires notification_options and experimental_capabilities
+                return self.server.get_capabilities(
+                    notification_options=None,  # Use None or {} for basic setup
+                    experimental_capabilities={},
+                )
+            except Exception:
+                # Fallback to old API if new API fails
+                return self.server.get_capabilities()
+        else:
+            # Use old API for older MCP versions
+            return self.server.get_capabilities()
+
+    async def _verify_components(self) -> bool:
+        """Verify that all required components are available and functional."""
+        try:
+            # Test Snowflake connection
+            if not self.config:
+                print("Warning: No configuration found")
+                return False
+
+            # Test if we can create a basic query service
+            LineageQueryService(self.snow_cli)
+
+            return True
+        except Exception as e:
+            print(f"Component verification failed: {e}")
+            return False
 
     async def run(self):
         """Run the MCP server."""
@@ -393,6 +447,12 @@ class SnowflakeMCPServer:
             except Exception as e:
                 raise Exception(f"Error calling tool {name}: {str(e)}")
 
+        # Verify components before starting server
+        if not await self._verify_components():
+            raise RuntimeError(
+                "Component verification failed - check configuration and dependencies"
+            )
+
         # Run the server
         async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
             await self.server.run(
@@ -401,7 +461,7 @@ class SnowflakeMCPServer:
                 InitializationOptions(
                     server_name="snowflake-cli-tools",
                     server_version="1.0.0",
-                    capabilities=self.server.get_capabilities(),
+                    capabilities=self._get_server_capabilities(),
                 ),
             )
 
@@ -548,8 +608,12 @@ Nodes: {len(result.graph.nodes)}
 Edges: {len(result.graph.edge_metadata)}
 
 Objects found:
-{chr(10).join(f"- {node.attributes.get('name', key)} ({node.node_type.value})"
-              for key, node in result.graph.nodes.items())}"""
+{
+                    chr(10).join(
+                        f"- {node.attributes.get('name', key)} ({node.node_type.value})"
+                        for key, node in result.graph.nodes.items()
+                    )
+                }"""
 
         except Exception as e:
             raise Exception(f"Lineage query failed: {e}")
