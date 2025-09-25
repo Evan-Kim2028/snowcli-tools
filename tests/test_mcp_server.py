@@ -271,7 +271,9 @@ class TestMCPServerIntegration:
         assert "Lineage Analysis for TEST_DB.TEST_SCHEMA.MY_TABLE" in result
         assert "Direction: both" in result
         assert "Depth: 3" in result
-        mock_lineage_class.assert_called_once_with("./data_catalogue", "./lineage")
+        mock_lineage_class.assert_called_once_with(
+            catalog_dir="./data_catalogue", cache_root="./lineage"
+        )
 
     @patch("snowcli_tools.mcp_server.LineageQueryService")
     def test_query_lineage_json_format(
@@ -441,6 +443,13 @@ class TestMCPServerAuthentication:
                     "database": "DB1",
                 }
 
+    def test_snow_cli_exposes_test_connection(self):
+        """Ensure the SnowCLI wrapper defines test_connection()."""
+        from snowcli_tools.snow_cli import SnowCLI
+
+        test_method = getattr(SnowCLI, "test_connection", None)
+        assert callable(test_method)
+
 
 class TestMCPInitializationFailures:
     """Test MCP server initialization failure scenarios."""
@@ -488,6 +497,7 @@ class TestMCPInitializationFailures:
             mock_service.return_value = Mock()
             result = await server._verify_components()
             assert result is True
+            assert server._lineage_service is not None
 
     def test_get_server_capabilities_old_api(self, server):
         """Test get_server_capabilities with old MCP API."""
@@ -573,6 +583,19 @@ class TestMCPInitializationFailures:
         """Test component verification with network timeout."""
         # Mock connection timeout
         server.snow_cli.test_connection.side_effect = TimeoutError("Network timeout")
+
+        result = await server._verify_components()
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_verify_components_missing_test_connection(self, server):
+        """Ensure verification fails gracefully if SnowCLI lacks test_connection."""
+        from types import SimpleNamespace
+
+        server.config.snowflake.profile = "test-profile"
+        server.snow_cli = SimpleNamespace(
+            list_connections=lambda: [{"name": "test-profile"}]
+        )
 
         result = await server._verify_components()
         assert result is False

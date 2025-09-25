@@ -6,8 +6,10 @@ like VS Code, Cursor, and Claude Code.
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import mcp.server.stdio
@@ -17,11 +19,6 @@ from mcp.server.models import InitializationOptions
 
 # Version compatibility detection
 try:
-    # Check if the new get_capabilities API exists by inspecting class method signature
-    import inspect
-
-    from mcp.server import Server
-
     # Inspect the class method directly without creating an instance
     sig = inspect.signature(Server.get_capabilities)
     # New API has parameters beyond 'self', old API doesn't
@@ -76,6 +73,7 @@ class SnowflakeMCPServer:
         self.server = Server("snowflake-cli-tools")
         self.snow_cli = SnowCLI()
         self.config = get_config()
+        self._lineage_service: Optional[LineageQueryService] = None
         self._initialized_components = set()  # Track initialized components for cleanup
 
     async def _cleanup_resources(self):
@@ -83,7 +81,13 @@ class SnowflakeMCPServer:
         try:
             # Close any open connections
             if hasattr(self.snow_cli, "_connection") and self.snow_cli._connection:
-                self.snow_cli._connection.close()
+                close_method = getattr(self.snow_cli._connection, "close", None)
+                if callable(close_method):
+                    maybe_awaitable = close_method()
+                    if inspect.isawaitable(maybe_awaitable):
+                        await maybe_awaitable
+
+            self._lineage_service = None
 
             # Clear initialized components tracking
             self._initialized_components.clear()
@@ -156,6 +160,13 @@ class SnowflakeMCPServer:
             try:
                 import asyncio
 
+                if not hasattr(self.snow_cli, "test_connection") or not callable(
+                    self.snow_cli.test_connection
+                ):
+                    raise ComponentVerificationError(
+                        "SnowCLI implementation missing test_connection() method"
+                    )
+
                 # Run connection test with timeout to prevent hanging
                 connection_test = asyncio.create_task(
                     asyncio.to_thread(self.snow_cli.test_connection)
@@ -167,6 +178,7 @@ class SnowflakeMCPServer:
                         "Failed to connect to Snowflake - check credentials and network"
                     )
             except asyncio.TimeoutError:
+                connection_test.cancel()
                 raise ConnectionError(
                     "Connection test timed out - check network connectivity"
                 )
@@ -175,7 +187,11 @@ class SnowflakeMCPServer:
 
             # Test if we can create a basic query service
             try:
-                LineageQueryService("./data_catalogue", "./lineage")
+                catalog_dir = Path("./data_catalogue")
+                cache_root = Path("./lineage")
+                self._lineage_service = LineageQueryService(
+                    catalog_dir=catalog_dir, cache_root=cache_root
+                )
             except Exception as e:
                 raise ComponentVerificationError(
                     f"LineageQueryService initialization failed: {e}"
@@ -436,11 +452,8 @@ class SnowflakeMCPServer:
                         capabilities=self._get_server_capabilities(),
                     ),
                 )
-
-        except Exception as e:
-            # Clean up resources on any failure
+        finally:
             await self._cleanup_resources()
-            raise e
 
     def _execute_query(
         self,
@@ -529,7 +542,7 @@ class SnowflakeMCPServer:
     ) -> str:
         """Query lineage data."""
         try:
-            service = LineageQueryService(catalog_dir, cache_dir)
+            service = LineageQueryService(catalog_dir=catalog_dir, cache_root=cache_dir)
 
             # Try to find the object
             default_db = self.config.snowflake.database
