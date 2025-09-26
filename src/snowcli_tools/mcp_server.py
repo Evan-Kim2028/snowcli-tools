@@ -1,512 +1,303 @@
-"""MCP Server for Snowflake CLI Tools.
+"""FastMCP-powered MCP server that layers snowcli-tools features on top of
+Snowflake's official MCP service implementation.
 
-A simple MCP server that exposes snowcli-tools functionality to AI assistants
-like VS Code, Cursor, and Claude Code.
+This module boots a FastMCP server, reusing the upstream Snowflake MCP runtime
+(`snowflake-labs-mcp`) for authentication, connection management, middleware,
+transport wiring, and its suite of Cortex/object/query tools. On top of that
+foundation we register the snowcli-tools catalog, lineage, and dependency
+workflows so agents can access both sets of capabilities via a single MCP
+endpoint.
 """
 
 from __future__ import annotations
 
-import inspect
+import argparse
 import json
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-import mcp.server.stdio
-from mcp import types
-from mcp.server import Server
-from mcp.server.models import InitializationOptions
+import anyio
+from pydantic import Field
+from typing_extensions import Annotated
 
-# Version compatibility detection
-try:
-    # Inspect the class method directly without creating an instance
-    sig = inspect.signature(Server.get_capabilities)
-    # New API has parameters beyond 'self', old API doesn't
-    MCP_NEW_API = len(sig.parameters) > 1  # Account for 'self' parameter
-except Exception:
-    MCP_NEW_API = False
+try:  # Prefer the standalone fastmcp package when available
+    from fastmcp import Context, FastMCP
+    from fastmcp.utilities.logging import configure_logging, get_logger
+except ImportError:  # Fall back to the implementation bundled with python-sdk
+    from mcp.server.fastmcp import Context, FastMCP
+    from mcp.server.fastmcp.utilities.logging import configure_logging, get_logger
 
-try:
-    import mcp
-
-    # Check if package has __version__ or try to determine from setup
-    MCP_VERSION = getattr(mcp, "__version__", "unknown")
-except Exception:
-    MCP_VERSION = "0.0.0"
+from mcp_server_snowflake.server import (
+    SnowflakeService,
+)
+from mcp_server_snowflake.server import (
+    create_lifespan as create_snowflake_lifespan,  # type: ignore[import-untyped]
+)
+from mcp_server_snowflake.utils import (  # type: ignore[import-untyped]
+    get_login_params,
+    warn_deprecated_params,
+)
 
 from .catalog import build_catalog
-from .config import get_config
+from .config import Config, get_config, set_config
 from .dependency import build_dependency_graph, to_dot
 from .lineage import LineageQueryService
+from .lineage.identifiers import parse_table_name
+from .session_utils import (
+    apply_session_context,
+    ensure_session_lock,
+    restore_session_context,
+    snapshot_session,
+)
 from .snow_cli import SnowCLI, SnowCLIError
 
-
-# Custom exceptions for MCP server
-class MCPServerError(Exception):
-    """Base exception for MCP server errors."""
-
-    pass
+logger = get_logger(__name__)
 
 
-class ConfigurationError(MCPServerError):
-    """Raised when configuration is invalid or missing."""
+def _json_compatible(payload: Any) -> Any:
+    """Convert non-JSON-serialisable objects to strings recursively."""
 
-    pass
-
-
-class ComponentVerificationError(MCPServerError):
-    """Raised when component verification fails."""
-
-    pass
+    return json.loads(json.dumps(payload, default=str))
 
 
-class ConnectionError(MCPServerError):
-    """Raised when connection to Snowflake fails."""
-
-    pass
-
-
-class SnowflakeMCPServer:
-    """Simple MCP server for snowcli-tools."""
-
-    def __init__(self):
-        self.server = Server("snowflake-cli-tools")
-        self.snow_cli = SnowCLI()
-        self.config = get_config()
-        self._lineage_service: Optional[LineageQueryService] = None
-        self._initialized_components = set()  # Track initialized components for cleanup
-
-    async def _cleanup_resources(self):
-        """Clean up any resources that were initialized during server startup."""
-        try:
-            # Close any open connections
-            if hasattr(self.snow_cli, "_connection") and self.snow_cli._connection:
-                close_method = getattr(self.snow_cli._connection, "close", None)
-                if callable(close_method):
-                    maybe_awaitable = close_method()
-                    if inspect.isawaitable(maybe_awaitable):
-                        await maybe_awaitable
-
-            self._lineage_service = None
-
-            # Clear initialized components tracking
-            self._initialized_components.clear()
-
-        except Exception as e:
-            print(f"Warning: Error during resource cleanup: {e}")
-
-    def _get_server_capabilities(self):
-        """Get server capabilities with version compatibility."""
-        if MCP_NEW_API:
+def _execute_query_sync(
+    snowflake_service: SnowflakeService,
+    statement: str,
+    overrides: Dict[str, str],
+) -> Dict[str, Any]:
+    lock = ensure_session_lock(snowflake_service)
+    with lock:
+        with snowflake_service.get_connection(
+            use_dict_cursor=True,
+            session_parameters=snowflake_service.get_query_tag_param(),
+        ) as (_, cursor):
+            original = snapshot_session(cursor)
             try:
-                # New API requires notification_options and experimental_capabilities
-                return self.server.get_capabilities(
-                    notification_options=None,  # Use None or {} for basic setup
-                    experimental_capabilities={},
-                )
-            except (TypeError, AttributeError) as e:
-                # Fallback to old API if signature mismatch occurs
-                print(f"Warning: New API failed ({e}), falling back to old API")
-                return self.server.get_capabilities()
-        else:
-            # Use old API for older MCP versions
-            return self.server.get_capabilities()
+                if overrides:
+                    apply_session_context(cursor, overrides)
+                cursor.execute(statement)
+                rows = cursor.fetchall()
+                return {
+                    "statement": statement,
+                    "rowcount": cursor.rowcount,
+                    "rows": _json_compatible(rows),
+                }
+            finally:
+                restore_session_context(cursor, original)
 
-    def _validate_configuration_schema(self) -> None:
-        """Validate configuration schema and required fields."""
-        if not self.config:
-            raise ConfigurationError(
-                "No configuration found - check your Snowflake CLI setup"
-            )
 
-        snowflake_config = getattr(self.config, "snowflake", None)
-        if snowflake_config is None:
-            raise ConfigurationError(
-                "Invalid configuration structure - missing snowflake section"
-            )
+def _test_connection_sync(snowflake_service: SnowflakeService) -> bool:
+    try:
+        with snowflake_service.get_connection(use_dict_cursor=True) as (_, cursor):
+            cursor.execute("SELECT 1")
+            row = cursor.fetchone()
+            if isinstance(row, dict):
+                return any(str(value).strip() == "1" for value in row.values())
+            if isinstance(row, (list, tuple)):
+                return any(str(value).strip() == "1" for value in row)
+            return bool(row)
+    except Exception as exc:  # pragma: no cover - connector errors surface upstream
+        logger.warning("Snowflake connection test failed: %s", exc)
+        return False
 
-        profile = getattr(snowflake_config, "profile", None)
-        if not profile:
-            raise ConfigurationError(
-                "No Snowflake CLI profile configured - set SNOWFLAKE_PROFILE or update config"
-            )
 
+def _query_lineage_sync(
+    object_name: str,
+    direction: str,
+    depth: int,
+    fmt: str,
+    catalog_dir: str,
+    cache_dir: str,
+    config: Config,
+) -> Dict[str, Any]:
+    service = LineageQueryService(
+        catalog_dir=Path(catalog_dir),
+        cache_root=Path(cache_dir),
+    )
+
+    default_db = config.snowflake.database
+    default_schema = config.snowflake.schema
+
+    qualified = parse_table_name(object_name).with_defaults(default_db, default_schema)
+    base_key = qualified.key()
+    candidates = [base_key]
+    if not base_key.endswith("::task"):
+        candidates.append(f"{base_key}::task")
+
+    lineage_result = None
+    resolved_key: Optional[str] = None
+    for candidate in candidates:
         try:
-            connections = self.snow_cli.list_connections()
-        except SnowCLIError as exc:
-            raise ConfigurationError(
-                f"Unable to list Snowflake CLI connections: {exc}"
-            ) from exc
+            result = service.object_subgraph(
+                candidate, direction=direction, depth=depth
+            )
+        except KeyError:
+            continue
+        lineage_result = result
+        resolved_key = candidate
+        break
 
-        profile_names = {
-            (conn.get("name") or conn.get("connection_name"))
-            for conn in connections
-            if isinstance(conn, dict) and (conn.get("name") or conn.get("connection_name"))
+    if lineage_result is None or resolved_key is None:
+        return {
+            "success": False,
+            "message": (
+                "Object not found in lineage graph. Run build_catalog first or verify the name."
+            ),
         }
 
-        if profile not in profile_names:
-            raise ConfigurationError(
-                f"Configured Snowflake CLI profile '{profile}' not found. "
-                "Run `snow connection list` to verify available profiles."
-            )
+    nodes = len(lineage_result.graph.nodes)
+    edges = len(lineage_result.graph.edge_metadata)
 
-    async def _verify_components(self) -> bool:
-        """Verify that all required components are available and functional."""
-        try:
-            # Validate configuration schema
-            self._validate_configuration_schema()
+    payload: Dict[str, Any] = {
+        "success": True,
+        "object": resolved_key,
+        "direction": direction,
+        "depth": depth,
+        "node_count": nodes,
+        "edge_count": edges,
+    }
 
-            # Test connection with timeout
-            try:
-                import asyncio
+    if fmt == "json":
+        graph = getattr(lineage_result.graph, "to_dict", None)
+        payload["graph"] = (
+            graph() if callable(graph) else _json_compatible(lineage_result.graph)
+        )
+    else:
+        summary = [
+            f"- {node.attributes.get('name', key)} ({node.node_type.value})"
+            for key, node in lineage_result.graph.nodes.items()
+        ]
+        payload["summary"] = "\n".join(summary)
+    return payload
 
-                if not hasattr(self.snow_cli, "test_connection") or not callable(
-                    self.snow_cli.test_connection
-                ):
-                    raise ComponentVerificationError(
-                        "SnowCLI implementation missing test_connection() method"
-                    )
 
-                # Run connection test with timeout to prevent hanging
-                connection_test = asyncio.create_task(
-                    asyncio.to_thread(self.snow_cli.test_connection)
-                )
-                result = await asyncio.wait_for(connection_test, timeout=10.0)
+def _get_catalog_summary_sync(catalog_dir: str) -> Dict[str, Any]:
+    path = Path(catalog_dir) / "catalog_summary.json"
+    if not path.exists():
+        return {
+            "success": False,
+            "message": f"No catalog summary found in {catalog_dir}. Run build_catalog first.",
+        }
+    try:
+        return {
+            "success": True,
+            "catalog_dir": catalog_dir,
+            "summary": json.loads(path.read_text()),
+        }
+    except json.JSONDecodeError:
+        return {
+            "success": False,
+            "message": f"Failed to parse catalog summary at {path}",
+        }
 
-                if not result:
-                    raise ConnectionError(
-                        "Failed to connect to Snowflake - check credentials and network"
-                    )
-            except asyncio.TimeoutError:
-                connection_test.cancel()
-                raise ConnectionError(
-                    "Connection test timed out - check network connectivity"
-                )
-            except Exception as e:
-                raise ConnectionError(f"Connection test failed: {e}")
 
-            # Test if we can create a basic query service
-            try:
-                catalog_dir = Path("./data_catalogue")
-                cache_root = Path("./lineage")
-                self._lineage_service = LineageQueryService(
-                    catalog_dir=catalog_dir, cache_root=cache_root
-                )
-            except Exception as e:
-                raise ComponentVerificationError(
-                    f"LineageQueryService initialization failed: {e}"
-                )
+def register_snowcli_tools(
+    server: FastMCP,
+    snowflake_service: SnowflakeService,
+    *,
+    enable_cli_bridge: bool = False,
+) -> None:
+    """Register snowcli-tools MCP endpoints on top of the official service."""
 
-            return True
-        except (ConfigurationError, ConnectionError, ComponentVerificationError) as e:
-            print(f"Component verification failed: {e}")
-            return False
-        except Exception as e:
-            print(f"Unexpected error during component verification: {e}")
-            return False
+    if getattr(server, "_snowcli_tools_registered", False):  # pragma: no cover - safety
+        return
 
-    async def run(self):
-        """Run the MCP server."""
+    config = get_config()
+    snow_cli: SnowCLI | None = SnowCLI() if enable_cli_bridge else None
 
-        # Set up handlers
-        @self.server.list_tools()
-        async def handle_list_tools() -> List[types.Tool]:
-            return [
-                types.Tool(
-                    name="execute_query",
-                    description="Execute a SQL query against Snowflake",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "SQL query to execute",
-                            },
-                            "warehouse": {
-                                "type": "string",
-                                "description": "Warehouse to use (optional)",
-                            },
-                            "database": {
-                                "type": "string",
-                                "description": "Database to use (optional)",
-                            },
-                            "schema": {
-                                "type": "string",
-                                "description": "Schema to use (optional)",
-                            },
-                            "role": {
-                                "type": "string",
-                                "description": "Role to use (optional)",
-                            },
-                        },
-                        "required": ["query"],
-                    },
-                ),
-                types.Tool(
-                    name="preview_table",
-                    description="Preview the contents of a Snowflake table",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "table_name": {
-                                "type": "string",
-                                "description": "Name of table to preview",
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "description": "Number of rows to preview",
-                                "default": 100,
-                            },
-                            "warehouse": {
-                                "type": "string",
-                                "description": "Warehouse to use (optional)",
-                            },
-                            "database": {
-                                "type": "string",
-                                "description": "Database to use (optional)",
-                            },
-                            "schema": {
-                                "type": "string",
-                                "description": "Schema to use (optional)",
-                            },
-                            "role": {
-                                "type": "string",
-                                "description": "Role to use (optional)",
-                            },
-                        },
-                        "required": ["table_name"],
-                    },
-                ),
-                types.Tool(
-                    name="build_catalog",
-                    description="Build a data catalog from Snowflake metadata",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "output_dir": {
-                                "type": "string",
-                                "description": "Output directory",
-                                "default": "./data_catalogue",
-                            },
-                            "database": {
-                                "type": "string",
-                                "description": "Specific database (optional)",
-                            },
-                            "account": {
-                                "type": "boolean",
-                                "description": "Include entire account",
-                                "default": False,
-                            },
-                            "format": {
-                                "type": "string",
-                                "description": "Output format (json/jsonl)",
-                                "default": "json",
-                            },
-                            "include_ddl": {
-                                "type": "boolean",
-                                "description": "Include DDL in output",
-                                "default": True,
-                            },
-                        },
-                    },
-                ),
-                types.Tool(
-                    name="query_lineage",
-                    description="Query data lineage for a Snowflake object",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "object_name": {
-                                "type": "string",
-                                "description": "Name of object to analyze",
-                            },
-                            "direction": {
-                                "type": "string",
-                                "description": "Direction (upstream/downstream/both)",
-                                "default": "both",
-                            },
-                            "depth": {
-                                "type": "integer",
-                                "description": "Traversal depth",
-                                "default": 3,
-                            },
-                            "format": {
-                                "type": "string",
-                                "description": "Output format (text/json/html)",
-                                "default": "text",
-                            },
-                            "catalog_dir": {
-                                "type": "string",
-                                "description": "Catalog directory",
-                                "default": "./data_catalogue",
-                            },
-                            "cache_dir": {
-                                "type": "string",
-                                "description": "Cache directory",
-                                "default": "./lineage",
-                            },
-                        },
-                        "required": ["object_name"],
-                    },
-                ),
-                types.Tool(
-                    name="build_dependency_graph",
-                    description="Build dependency graph for Snowflake objects",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "database": {
-                                "type": "string",
-                                "description": "Specific database (optional)",
-                            },
-                            "schema": {
-                                "type": "string",
-                                "description": "Specific schema (optional)",
-                            },
-                            "account": {
-                                "type": "boolean",
-                                "description": "Include entire account",
-                                "default": False,
-                            },
-                            "format": {
-                                "type": "string",
-                                "description": "Output format (json/dot)",
-                                "default": "json",
-                            },
-                        },
-                    },
-                ),
-                types.Tool(
-                    name="test_connection",
-                    description="Test the Snowflake connection",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {},
-                    },
-                ),
-                types.Tool(
-                    name="get_catalog_summary",
-                    description="Get summary of existing catalog data",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "catalog_dir": {
-                                "type": "string",
-                                "description": "Catalog directory",
-                                "default": "./data_catalogue",
-                            },
-                        },
-                    },
-                ),
-            ]
-
-        @self.server.call_tool()
-        async def handle_call_tool(
-            name: str, arguments: Dict[str, Any]
-        ) -> List[types.TextContent]:
-            try:
-                if name == "execute_query":
-                    result = self._execute_query(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "preview_table":
-                    result = self._preview_table(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "build_catalog":
-                    result = self._build_catalog(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "query_lineage":
-                    result = self._query_lineage(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "build_dependency_graph":
-                    result = self._build_dependency_graph(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "test_connection":
-                    result = self._test_connection()
-                    return [types.TextContent(type="text", text=result)]
-                elif name == "get_catalog_summary":
-                    result = self._get_catalog_summary(**arguments)
-                    return [types.TextContent(type="text", text=result)]
-                else:
-                    raise Exception(f"Unknown tool: {name}")
-            except Exception as e:
-                raise Exception(f"Error calling tool {name}: {str(e)}")
-
-        try:
-            # Verify components before starting server
-            if not await self._verify_components():
-                raise RuntimeError(
-                    "Component verification failed - check configuration and dependencies"
-                )
-
-            # Mark server as initializing
-            self._initialized_components.add("server")
-
-            # Run the server
-            async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-                await self.server.run(
-                    read_stream,
-                    write_stream,
-                    InitializationOptions(
-                        server_name="snowflake-cli-tools",
-                        server_version="1.0.0",
-                        capabilities=self._get_server_capabilities(),
-                    ),
-                )
-        finally:
-            await self._cleanup_resources()
-
-    def _execute_query(
-        self,
-        query: str,
-        warehouse: Optional[str] = None,
-        database: Optional[str] = None,
-        schema: Optional[str] = None,
-        role: Optional[str] = None,
-    ) -> str:
-        """Execute a SQL query."""
-        ctx = {
+    @server.tool(
+        name="execute_query", description="Execute a SQL query against Snowflake"
+    )
+    async def execute_query_tool(
+        statement: Annotated[str, Field(description="SQL statement to execute")],
+        warehouse: Annotated[
+            Optional[str], Field(description="Warehouse override", default=None)
+        ] = None,
+        database: Annotated[
+            Optional[str], Field(description="Database override", default=None)
+        ] = None,
+        schema: Annotated[
+            Optional[str], Field(description="Schema override", default=None)
+        ] = None,
+        role: Annotated[
+            Optional[str], Field(description="Role override", default=None)
+        ] = None,
+        ctx: Context | None = None,
+    ) -> Dict[str, Any]:
+        overrides = {
             "warehouse": warehouse,
             "database": database,
             "schema": schema,
             "role": role,
         }
-        ctx = {k: v for k, v in ctx.items() if v is not None}
-
-        try:
-            result = self.snow_cli.run_query(
-                query, output_format="json", ctx_overrides=ctx
+        packed = {k: v for k, v in overrides.items() if v}
+        result = await anyio.to_thread.run_sync(
+            _execute_query_sync,
+            snowflake_service,
+            statement,
+            packed,
+        )
+        if ctx is not None:
+            await ctx.debug(
+                f"Executed query with {len(result['rows'])} rows (rowcount={result['rowcount']})."
             )
-            if result.rows:
-                return json.dumps(result.rows, indent=2, default=str)
-            else:
-                return result.raw_stdout
-        except SnowCLIError as e:
-            # Use standard exception for now - McpError needs ErrorData object
-            raise Exception(f"Query execution failed: {e}")
+        return result
 
-    def _preview_table(
-        self,
-        table_name: str,
-        limit: int = 100,
-        warehouse: Optional[str] = None,
-        database: Optional[str] = None,
-        schema: Optional[str] = None,
-        role: Optional[str] = None,
-    ) -> str:
-        """Preview table contents."""
-        query = f"SELECT * FROM {table_name} LIMIT {limit}"
-        return self._execute_query(query, warehouse, database, schema, role)
+    @server.tool(name="preview_table", description="Preview table contents")
+    async def preview_table_tool(
+        table_name: Annotated[str, Field(description="Fully qualified table name")],
+        limit: Annotated[int, Field(description="Row limit", ge=1, default=100)] = 100,
+        warehouse: Annotated[
+            Optional[str], Field(description="Warehouse override", default=None)
+        ] = None,
+        database: Annotated[
+            Optional[str], Field(description="Database override", default=None)
+        ] = None,
+        schema: Annotated[
+            Optional[str], Field(description="Schema override", default=None)
+        ] = None,
+        role: Annotated[
+            Optional[str], Field(description="Role override", default=None)
+        ] = None,
+    ) -> Dict[str, Any]:
+        statement = f"SELECT * FROM {table_name} LIMIT {limit}"
+        overrides = {
+            "warehouse": warehouse,
+            "database": database,
+            "schema": schema,
+            "role": role,
+        }
+        packed = {k: v for k, v in overrides.items() if v}
+        return await anyio.to_thread.run_sync(
+            _execute_query_sync,
+            snowflake_service,
+            statement,
+            packed,
+        )
 
-    def _build_catalog(
-        self,
-        output_dir: str = "./data_catalogue",
-        database: Optional[str] = None,
-        account: bool = False,
-        format: str = "json",
-        include_ddl: bool = True,
-    ) -> str:
-        """Build data catalog."""
-        try:
+    @server.tool(name="build_catalog", description="Build Snowflake catalog metadata")
+    async def build_catalog_tool(
+        output_dir: Annotated[
+            str,
+            Field(description="Catalog output directory", default="./data_catalogue"),
+        ] = "./data_catalogue",
+        database: Annotated[
+            Optional[str],
+            Field(description="Specific database to introspect", default=None),
+        ] = None,
+        account: Annotated[
+            bool, Field(description="Include entire account", default=False)
+        ] = False,
+        format: Annotated[
+            str, Field(description="Output format (json/jsonl)", default="json")
+        ] = "json",
+        include_ddl: Annotated[
+            bool, Field(description="Include object DDL", default=True)
+        ] = True,
+    ) -> Dict[str, Any]:
+        def run_catalog() -> Dict[str, Any]:
             totals = build_catalog(
                 output_dir,
                 database=database,
@@ -518,149 +309,324 @@ class SnowflakeMCPServer:
                 catalog_concurrency=16,
                 export_sql=False,
             )
+            return {
+                "success": True,
+                "output_dir": output_dir,
+                "totals": totals,
+            }
 
-            return json.dumps(
-                {
-                    "success": True,
-                    "message": f"Catalog built successfully in {output_dir}",
-                    "totals": totals,
-                },
-                indent=2,
-            )
-
-        except Exception as e:
-            raise Exception(f"Catalog build failed: {e}")
-
-    def _query_lineage(
-        self,
-        object_name: str,
-        direction: str = "both",
-        depth: int = 3,
-        format: str = "text",
-        catalog_dir: str = "./data_catalogue",
-        cache_dir: str = "./lineage",
-    ) -> str:
-        """Query lineage data."""
         try:
-            service = LineageQueryService(catalog_dir=catalog_dir, cache_root=cache_dir)
+            return await anyio.to_thread.run_sync(run_catalog)
+        except Exception as exc:
+            raise RuntimeError(f"Catalog build failed: {exc}") from exc
 
-            # Try to find the object
-            default_db = self.config.snowflake.database
-            default_schema = self.config.snowflake.schema
+    @server.tool(name="query_lineage", description="Query cached lineage graph")
+    async def query_lineage_tool(
+        object_name: Annotated[str, Field(description="Object name to analyze")],
+        direction: Annotated[
+            str,
+            Field(
+                description="Traversal direction (upstream/downstream/both)",
+                default="both",
+            ),
+        ] = "both",
+        depth: Annotated[
+            int, Field(description="Traversal depth", ge=1, le=10, default=3)
+        ] = 3,
+        format: Annotated[
+            str, Field(description="Output format (text/json)", default="text")
+        ] = "text",
+        catalog_dir: Annotated[
+            str,
+            Field(description="Catalog directory", default="./data_catalogue"),
+        ] = "./data_catalogue",
+        cache_dir: Annotated[
+            str,
+            Field(description="Lineage cache directory", default="./lineage"),
+        ] = "./lineage",
+    ) -> Dict[str, Any]:
+        return await anyio.to_thread.run_sync(
+            _query_lineage_sync,
+            object_name,
+            direction,
+            depth,
+            format,
+            catalog_dir,
+            cache_dir,
+            config,
+        )
 
-            from .lineage.identifiers import parse_table_name
-
-            qn = parse_table_name(object_name).with_defaults(default_db, default_schema)
-            base_object_key = qn.key()
-            candidate_keys = [base_object_key]
-            if not base_object_key.endswith("::task"):
-                candidate_keys.append(f"{base_object_key}::task")
-
-            result = None
-            resolved_key = None
-
-            for candidate in candidate_keys:
-                try:
-                    result = service.object_subgraph(
-                        candidate, direction=direction, depth=depth
-                    )
-                    resolved_key = candidate
-                    break
-                except KeyError:
-                    continue
-
-            if result is None:
-                return f"Object '{object_name}' not found in lineage graph. Try running catalog build first."
-
-            if format == "json":
-                return json.dumps(
-                    {
-                        "object": resolved_key,
-                        "direction": direction,
-                        "depth": depth,
-                        "nodes": len(result.graph.nodes),
-                        "edges": len(result.graph.edge_metadata),
-                        "graph": (
-                            result.graph.to_dict()
-                            if hasattr(result.graph, "to_dict")
-                            else str(result.graph)
-                        ),
-                    },
-                    indent=2,
-                    default=str,
-                )
-            else:
-                # Text format - return summary
-                return f"""Lineage Analysis for {resolved_key}:
-Direction: {direction}
-Depth: {depth}
-Nodes: {len(result.graph.nodes)}
-Edges: {len(result.graph.edge_metadata)}
-
-Objects found:
-{
-                    chr(10).join(
-                        f"- {node.attributes.get('name', key)} ({node.node_type.value})"
-                        for key, node in result.graph.nodes.items()
-                    )
-                }"""
-
-        except Exception as e:
-            raise Exception(f"Lineage query failed: {e}")
-
-    def _build_dependency_graph(
-        self,
-        database: Optional[str] = None,
-        schema: Optional[str] = None,
-        account: bool = False,
-        format: str = "json",
-    ) -> str:
-        """Build dependency graph."""
-        try:
+    @server.tool(
+        name="build_dependency_graph", description="Build object dependency graph"
+    )
+    async def build_dependency_graph_tool(
+        database: Annotated[
+            Optional[str], Field(description="Specific database", default=None)
+        ] = None,
+        schema: Annotated[
+            Optional[str], Field(description="Specific schema", default=None)
+        ] = None,
+        account: Annotated[
+            bool, Field(description="Include account-level metadata", default=False)
+        ] = False,
+        format: Annotated[
+            str, Field(description="Output format (json/dot)", default="json")
+        ] = "json",
+    ) -> Dict[str, Any]:
+        def run_graph() -> Dict[str, Any]:
             graph = build_dependency_graph(
-                database=database, schema=schema, account_scope=account
+                database=database,
+                schema=schema,
+                account_scope=account,
             )
-
             if format == "dot":
-                return to_dot(graph)
-            else:
-                return json.dumps(graph, indent=2, default=str)
+                return {"format": "dot", "graph": to_dot(graph)}
+            return {"format": "json", "graph": graph}
 
-        except Exception as e:
-            raise Exception(f"Dependency graph build failed: {e}")
+        return await anyio.to_thread.run_sync(run_graph)
 
-    def _test_connection(self) -> str:
-        """Test connection."""
-        try:
-            success = self.snow_cli.test_connection()
-            if success:
-                return "Connection successful!"
-            else:
-                return "Connection failed!"
-        except Exception as e:
-            raise Exception(f"Connection test failed: {e}")
+    @server.tool(name="test_connection", description="Validate Snowflake connectivity")
+    async def test_connection_tool() -> Dict[str, Any]:
+        ok = await anyio.to_thread.run_sync(_test_connection_sync, snowflake_service)
+        return {"success": ok}
 
-    def _get_catalog_summary(self, catalog_dir: str = "./data_catalogue") -> str:
-        """Get catalog summary."""
-        try:
-            summary_file = os.path.join(catalog_dir, "catalog_summary.json")
-            if os.path.exists(summary_file):
-                with open(summary_file, "r") as f:
-                    summary = json.load(f)
-                return json.dumps(summary, indent=2)
-            else:
-                return f"No catalog summary found in {catalog_dir}. Run build_catalog first."
-        except Exception as e:
-            raise Exception(f"Failed to read catalog summary: {e}")
+    @server.tool(name="get_catalog_summary", description="Read catalog summary JSON")
+    async def get_catalog_summary_tool(
+        catalog_dir: Annotated[
+            str,
+            Field(description="Catalog directory", default="./data_catalogue"),
+        ] = "./data_catalogue",
+    ) -> Dict[str, Any]:
+        return await anyio.to_thread.run_sync(_get_catalog_summary_sync, catalog_dir)
+
+    if enable_cli_bridge and snow_cli is not None:
+
+        @server.tool(
+            name="run_cli_query",
+            description="Execute a query via the Snowflake CLI bridge",
+        )
+        async def run_cli_query_tool(
+            statement: Annotated[
+                str, Field(description="SQL query to execute using snow CLI")
+            ],
+            warehouse: Annotated[
+                Optional[str], Field(description="Warehouse override", default=None)
+            ] = None,
+            database: Annotated[
+                Optional[str], Field(description="Database override", default=None)
+            ] = None,
+            schema: Annotated[
+                Optional[str], Field(description="Schema override", default=None)
+            ] = None,
+            role: Annotated[
+                Optional[str], Field(description="Role override", default=None)
+            ] = None,
+        ) -> Dict[str, Any]:
+            overrides = {
+                "warehouse": warehouse,
+                "database": database,
+                "schema": schema,
+                "role": role,
+            }
+            packed = {k: v for k, v in overrides.items() if v}
+            try:
+                result = await anyio.to_thread.run_sync(
+                    snow_cli.run_query,
+                    statement,
+                    output_format="json",
+                    ctx_overrides=packed,
+                )
+            except SnowCLIError as exc:
+                raise RuntimeError(f"Snow CLI query failed: {exc}") from exc
+
+            rows = result.rows or []
+            return {
+                "statement": statement,
+                "rows": rows,
+                "stdout": result.raw_stdout,
+                "stderr": result.raw_stderr,
+            }
+
+    setattr(server, "_snowcli_tools_registered", True)
 
 
-async def main():
-    """Main entry point for MCP server."""
-    server = SnowflakeMCPServer()
-    await server.run()
+def _apply_config_overrides(args: argparse.Namespace) -> None:
+    if args.snowcli_config:
+        cfg = Config.from_yaml(args.snowcli_config)
+    else:
+        cfg = get_config()
+
+    if args.profile:
+        cfg.snowflake.profile = args.profile
+
+    # Propagate CLI context overrides from args if present
+    for attr in ("warehouse", "database", "schema", "role"):
+        value = getattr(args, attr, None)
+        if value:
+            setattr(cfg.snowflake, attr, value)
+
+    set_config(cfg)
+
+    if cfg.snowflake.profile:
+        os.environ.setdefault("SNOWFLAKE_PROFILE", cfg.snowflake.profile)
+        # Also set it immediately for the snowflake-labs-mcp package
+        os.environ["SNOWFLAKE_PROFILE"] = cfg.snowflake.profile
+
+
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Snowflake MCP server with snowcli-tools extensions",
+    )
+
+    login_params = get_login_params()
+    for value in login_params.values():
+        if len(value) < 2:
+            # Malformed entry; ignore to avoid argparse blow-ups
+            continue
+
+        help_text = value[-1]
+        if len(value) >= 3:
+            flags = value[:-2]
+            default_value = value[-2]
+        else:
+            flags = value[:-1]
+            default_value = None
+
+        # Guard against implementations that only provide flags + help text
+        if default_value == help_text:
+            default_value = None
+
+        parser.add_argument(
+            *flags,
+            required=False,
+            default=default_value,
+            help=help_text,
+        )
+
+    parser.add_argument(
+        "--service-config-file",
+        required=False,
+        help="Path to Snowflake MCP service configuration YAML",
+    )
+    parser.add_argument(
+        "--transport",
+        required=False,
+        choices=["stdio", "http", "sse", "streamable-http"],
+        default=os.environ.get("SNOWCLI_MCP_TRANSPORT", "stdio"),
+        help="Transport to use for FastMCP (default: stdio)",
+    )
+    parser.add_argument(
+        "--endpoint",
+        required=False,
+        default=os.environ.get("SNOWCLI_MCP_ENDPOINT", "/mcp"),
+        help="Endpoint path when running HTTP-based transports",
+    )
+    parser.add_argument(
+        "--mount-path",
+        required=False,
+        default=None,
+        help="Optional mount path override for SSE transport",
+    )
+    parser.add_argument(
+        "--snowcli-config",
+        required=False,
+        help="Optional path to snowcli-tools YAML config (defaults to env)",
+    )
+    parser.add_argument(
+        "--profile",
+        required=False,
+        help="Override Snowflake CLI profile for snowcli-tools operations",
+    )
+    parser.add_argument(
+        "--enable-cli-bridge",
+        action="store_true",
+        help="Expose the legacy Snowflake CLI bridge tool (disabled by default)",
+    )
+    parser.add_argument(
+        "--log-level",
+        required=False,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default=os.environ.get("SNOWCLI_MCP_LOG_LEVEL", "INFO"),
+        help="Log level for FastMCP runtime",
+    )
+    parser.add_argument(
+        "--name",
+        required=False,
+        default="snowcli-tools MCP Server",
+        help="Display name for the FastMCP server",
+    )
+    parser.add_argument(
+        "--instructions",
+        required=False,
+        default="Snowcli-tools MCP server combining Snowflake official tools with catalog/lineage helpers.",
+        help="Instructions string surfaced to MCP clients",
+    )
+
+    args = parser.parse_args()
+
+    # Mirror CLI behaviour for env overrides
+    if not getattr(args, "service_config_file", None):
+        args.service_config_file = os.environ.get("SERVICE_CONFIG_FILE")
+
+    return args
+
+
+def create_combined_lifespan(args: argparse.Namespace):
+    snowflake_lifespan = create_snowflake_lifespan(args)
+
+    @asynccontextmanager
+    async def lifespan(server: FastMCP):
+        async with snowflake_lifespan(server) as snowflake_service:
+            register_snowcli_tools(
+                server,
+                snowflake_service,
+                enable_cli_bridge=args.enable_cli_bridge,
+            )
+            yield snowflake_service
+
+    return lifespan
+
+
+def main() -> None:
+    args = parse_arguments()
+
+    warn_deprecated_params()
+    configure_logging(level=args.log_level)
+    _apply_config_overrides(args)
+
+    # Ensure SNOWFLAKE_PROFILE is set in environment for snowflake-labs-mcp
+    cfg = get_config()
+    if cfg.snowflake.profile:
+        os.environ["SNOWFLAKE_PROFILE"] = cfg.snowflake.profile
+        # Also try setting the default connection name
+        os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = cfg.snowflake.profile
+    else:
+        # Default to mystenlabs-keypair if no profile is set
+        os.environ["SNOWFLAKE_PROFILE"] = "mystenlabs-keypair"
+        os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = "mystenlabs-keypair"
+
+    server = FastMCP(
+        args.name,
+        instructions=args.instructions,
+        lifespan=create_combined_lifespan(args),
+    )
+
+    try:
+        logger.info("Starting FastMCP server using transport=%s", args.transport)
+        if args.transport in {"http", "sse", "streamable-http"}:
+            endpoint = os.environ.get("SNOWFLAKE_MCP_ENDPOINT", args.endpoint)
+            server.run(
+                transport=args.transport,
+                host="0.0.0.0",
+                port=9000,
+                path=endpoint,
+            )
+        else:
+            server.run(transport=args.transport)
+    except Exception as exc:  # pragma: no cover - run loop issues bubble up
+        logger.error("MCP server terminated with error: %s", exc)
+        raise
 
 
 if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
+    main()

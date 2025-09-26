@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2025-09-26
+
+### Added
+- Session management helpers that snapshot and restore Snowflake context so MCP
+  overrides stay scoped to a single tool call.
+- `--enable-cli-bridge` flag to optionally expose the legacy `snow` CLI bridge
+  tool; the FastMCP server defaults to the in-process connector tools.
+- `local_sf_test/` smoke harness that fetches the latest rows from
+  `object_parquet2` for visual verification.
+
+### Changed
+- MCP argument parsing now treats missing defaults as `None`, preventing
+  help-string values from becoming accidental overrides.
+- Snowcli MCP tools reuse the official `SnowflakeService` connection under a
+  scoped lock rather than opening ad-hoc sessions.
+- Documentation updated with the new flag, session model, and smoke-test
+  instructions.
+
 ## [1.3.0] - 2024-09-24
 
 ### Added
