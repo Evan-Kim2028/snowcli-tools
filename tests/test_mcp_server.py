@@ -701,6 +701,29 @@ class TestMCPInitializationFailures:
         result = await server._verify_components()
         assert result is False
 
+    @pytest.mark.asyncio
+    async def test_verify_components_with_connection_name_field(self, server):
+        """Test component verification works with connection_name field instead of name."""
+        server.config.snowflake.profile = "test-profile"
+        # Use connection_name field instead of name field
+        server.snow_cli.list_connections.return_value = [{"connection_name": "test-profile"}]
+
+        result = await server._verify_components()
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_verify_components_mixed_connection_fields(self, server):
+        """Test component verification with mixed name/connection_name fields."""
+        server.config.snowflake.profile = "test-profile"
+        server.snow_cli.list_connections.return_value = [
+            {"name": "other-profile"},
+            {"connection_name": "test-profile"},
+            {"name": "another-profile"}
+        ]
+
+        result = await server._verify_components()
+        assert result is True
+
     def test_error_message_sanitization(self):
         """Test that error messages are properly sanitized."""
         # This would be tested in an integration test, but we can test the concept
