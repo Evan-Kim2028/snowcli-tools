@@ -359,8 +359,20 @@ Snowcli-tools includes an MCP (Model Context Protocol) server that provides AI a
 # Start the MCP server (recommended)
 uv run snowflake-cli mcp
 
+# If you rely on a different default profile, set
+#   export SNOWCLI_DEFAULT_PROFILE=<profile-name>
+# or pass --profile/--enable-cli-bridge as needed.
+
 # Or run the example directly
 uv run python examples/run_mcp_server.py
+```
+
+To expose the legacy Snowflake CLI bridge tool (which shells out to the `snow`
+binary), pass `--enable-cli-bridge`. The FastMCP server defaults to the safer
+in-process connector tools, so the bridge is opt-in for cases where you need parity with older scripts:
+
+```bash
+uv run snowflake-cli mcp --enable-cli-bridge
 ```
 
 ### MCP Client Configuration
@@ -406,6 +418,8 @@ The MCP server exposes these tools to AI assistants:
 - **build_dependency_graph**: Create dependency graphs showing object relationships
 - **test_connection**: Verify your Snowflake connection is working
 - **get_catalog_summary**: Get summaries of existing catalog data
+- **run_cli_query** *(optional)*: Execute SQL using the Snowflake CLI bridge
+  when `--enable-cli-bridge` is supplied
 
 ### Usage Examples
 
@@ -418,6 +432,11 @@ Once configured, AI assistants can:
 - "Generate a dependency graph for my data warehouse"
 
 The MCP server maintains context and provides structured responses, making it much more reliable than shell command parsing.
+
+> **Note:** Snowcli-tools keeps Snowflake connection state isolated per tool
+> invocation by snapshotting the shared FastMCP session (role, warehouse,
+> database, schema) and restoring it after each call. This ensures overrides
+> never leak into Snowflake's official toolset.
 
 ## CLI Commands
 

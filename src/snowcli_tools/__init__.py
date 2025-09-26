@@ -5,7 +5,7 @@ from .config import Config, get_config, set_config
 from .parallel import ParallelQueryConfig, ParallelQueryExecutor, query_multiple_objects
 from .snow_cli import SnowCLI
 
-__version__ = "1.4.2"
+__version__ = "1.4.3"
 __all__ = [
     "SnowCLI",
     "ParallelQueryConfig",

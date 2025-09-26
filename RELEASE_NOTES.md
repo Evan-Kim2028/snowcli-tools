@@ -1,3 +1,38 @@
+# SNOWCLI-TOOLS v1.4.3 (FastMCP hardening)
+
+Highlights
+- **Session-safe overrides**: MCP tools now snapshot and restore the shared
+  Snowflake session (role, warehouse, database, schema) so overrides stay scoped
+  to each call and never leak into Snowflake’s official toolset.
+- **Optional CLI bridge**: `snowflake-cli mcp --enable-cli-bridge` exposes the
+  legacy `run_cli_query` tool for transitional workflows. By default the server
+  uses the in-process connector to inherit upstream governance.
+- **Local smoke harness**: `local_sf_test/test_smoke.py` runs
+  `SELECT * FROM object_parquet2 ORDER BY timestamp_ms DESC LIMIT 2` and prints
+  the most recent rows for quick visual verification after authentication.
+
+Changes
+- Argument parsing now treats missing defaults as `None`, preventing help-text
+  strings from becoming accidental context overrides.
+- Shared-session utilities live in `src/snowcli_tools/session_utils.py` so
+  future pooling or metrics can build on a single helper module.
+- Documentation, changelog, and version metadata bumped to **v1.4.3** and
+  updated with the new flag, session model, and manual verification guidance.
+- Introduced the `SNOWCLI_DEFAULT_PROFILE` environment variable to supply a
+  local fallback profile instead of hard-coding values in the server.
+
+Usage
+```bash
+# Start FastMCP (stdio) with connector-backed tools
+uv run snowflake-cli mcp
+
+# Include the legacy CLI bridge (optional)
+uv run snowflake-cli mcp --enable-cli-bridge
+
+```
+
+---
+
 # SNOWCLI-TOOLS v0.1.0 (Initial public positioning)
 
 Highlights

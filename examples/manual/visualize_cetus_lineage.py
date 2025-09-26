@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
+# ruff: noqa
 """
 Visualize CETUS_GENERALIZED_LP_LIVE_DT lineage in a terminal-friendly format
 """
 
-import json
 import sys
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
-sys.path.insert(0, "/Users/evandekim/Documents/snowflake_connector_py_advanced_lineage/src")
+sys.path.insert(
+    0, "/Users/evandekim/Documents/snowflake_connector_py_advanced_lineage/src"
+)
 
 from snowcli_tools.lineage.builder import LineageBuilder
 
 CATALOG_PATH = Path("/Users/evandekim/Documents/snowflake_connector_py/data_catalogue")
+
 
 def shorten_name(full_name: str, max_len: int = 40) -> str:
     """Shorten long table names for display."""
@@ -24,11 +27,13 @@ def shorten_name(full_name: str, max_len: int = 40) -> str:
         short = parts[-1] if parts else full_name
 
     if len(short) > max_len:
-        return short[:max_len-3] + "..."
+        return short[: max_len - 3] + "..."
     return short
 
 
-def create_tree_view(node_name: str, graph, direction: str = "both", max_depth: int = 3, visited=None):
+def create_tree_view(
+    node_name: str, graph, direction: str = "both", max_depth: int = 3, visited=None
+):
     """Create a tree view of dependencies."""
     if visited is None:
         visited = set()
@@ -38,7 +43,9 @@ def create_tree_view(node_name: str, graph, direction: str = "both", max_depth: 
     def add_node(name: str, prefix: str = "", is_last: bool = True, depth: int = 0):
         if depth > max_depth or name in visited:
             if name in visited and depth > 0:
-                tree_lines.append(f"{prefix}{'└── ' if is_last else '├── '}[circular ref: {shorten_name(name)}]")
+                tree_lines.append(
+                    f"{prefix}{'└── ' if is_last else '├── '}[circular ref: {shorten_name(name)}]"
+                )
             return
 
         visited.add(name)
@@ -67,7 +74,9 @@ def create_tree_view(node_name: str, graph, direction: str = "both", max_depth: 
                 tree_lines.append("├─📥 UPSTREAM (data sources)")
 
             for i, up_node in enumerate(upstream):
-                is_last_up = (i == len(upstream) - 1) and not (downstream and direction == "both")
+                is_last_up = (i == len(upstream) - 1) and not (
+                    downstream and direction == "both"
+                )
                 new_prefix = prefix + ("│   " if not is_last else "    ")
                 if depth == 0:
                     new_prefix = "│   "
@@ -80,7 +89,7 @@ def create_tree_view(node_name: str, graph, direction: str = "both", max_depth: 
                 tree_lines.append("└─📤 DOWNSTREAM (dependent objects)")
 
             for i, down_node in enumerate(downstream):
-                is_last_down = (i == len(downstream) - 1)
+                is_last_down = i == len(downstream) - 1
                 new_prefix = prefix + ("    " if is_last else "    ")
                 if depth == 0:
                     new_prefix = "    "
@@ -129,7 +138,7 @@ def create_box_flow_diagram(center_node: str, graph):
         lines.append("")
 
     # Center node
-    center_short = shorten_name(center_node, max_width-4)
+    center_short = shorten_name(center_node, max_width - 4)
     box_width = len(center_short) + 4
     lines.append("    ┌" + "─" * box_width + "┐")
     lines.append(f"    │ 🎯 {center_short} │")
@@ -154,7 +163,7 @@ def create_box_flow_diagram(center_node: str, graph):
     lines.append("=" * 80)
 
     # Statistics
-    lines.append(f"📊 Statistics:")
+    lines.append("📊 Statistics:")
     lines.append(f"   • Total upstream dependencies: {len(upstream)}")
     lines.append(f"   • Total downstream dependencies: {len(downstream)}")
     lines.append(f"   • Total connections: {len(upstream) + len(downstream)}")
@@ -264,9 +273,9 @@ def main():
     print(f"✅ Found: {cetus_node}\n")
 
     # Generate different visualizations
-    print("\n" + "🌳 " + "="*76 + " 🌳")
+    print("\n" + "🌳 " + "=" * 76 + " 🌳")
     print("  TREE VIEW - CETUS_GENERALIZED_LP_LIVE_DT")
-    print("🌳 " + "="*76 + " 🌳\n")
+    print("🌳 " + "=" * 76 + " 🌳\n")
 
     tree = create_tree_view(cetus_node, result.graph, direction="both", max_depth=2)
     for line in tree:
@@ -288,9 +297,9 @@ def main():
 
     # Also show DEX_TRADES_STABLE if found
     if dex_trades_node:
-        print("\n\n" + "🌊 " + "="*76 + " 🌊")
+        print("\n\n" + "🌊 " + "=" * 76 + " 🌊")
         print("  BONUS: DEX_TRADES_STABLE LINEAGE")
-        print("🌊 " + "="*76 + " 🌊\n")
+        print("🌊 " + "=" * 76 + " 🌊\n")
 
         # Show simplified view for dex_trades
         upstream = []
@@ -309,7 +318,7 @@ def main():
             if len(upstream) > 8:
                 print(f"   ... and {len(upstream)-8} more sources")
 
-        print(f"\n🎯 DEX_TRADES_STABLE")
+        print("\n🎯 DEX_TRADES_STABLE")
 
         if downstream:
             print("\n📤 FEEDS INTO:")
