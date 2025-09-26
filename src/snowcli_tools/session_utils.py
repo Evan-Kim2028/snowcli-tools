@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import re
 import threading
 from typing import Any, Dict, Optional
 
 _LOCK_ATTR = "_snowcli_session_lock"
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
-_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 
 def ensure_session_lock(service: Any) -> threading.Lock:
@@ -21,29 +18,7 @@ def ensure_session_lock(service: Any) -> threading.Lock:
 
 
 def quote_identifier(value: str) -> str:
-    """Safely quote a Snowflake identifier.
-
-    Validates the identifier to ensure it does not contain control characters or
-    other potentially dangerous input. When quoting is required we escape embedded
-    double quotes per Snowflake identifier rules.
-    """
-    if value is None:
-        raise ValueError("Identifier cannot be None")
-
-    if _CONTROL_RE.search(value):
-        raise ValueError("Identifier contains control characters")
-
-    value = value.strip()
-    if not value:
-        raise ValueError("Identifier cannot be empty or whitespace")
-
-    if _IDENTIFIER_RE.match(value):
-        # Safe, unquoted identifier
-        return value
-
-    # Escape embedded quotes for quoted identifiers
-    escaped = value.replace('"', '""')
-    return f'"{escaped}"'
+    return '"' + value.replace('"', '""') + '"'
 
 
 def snapshot_session(cursor: Any) -> Dict[str, Optional[str]]:
