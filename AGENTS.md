@@ -53,5 +53,7 @@
 ## Security & Configuration
 - Auth/config comes from `snow` profiles; never commit credentials.
 - Respect env overrides: `SNOWFLAKE_PROFILE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_ROLE`.
+- Optional: set `SNOWCLI_DEFAULT_PROFILE` to provide a fallback profile for
+  local FastMCP development without hard-coding values in code.
 - Quick start: `uv run snowflake-cli init_config ./examples/config.yaml` then run with `--config` or `--profile`.
 - Default Snowflake CLI profile for this repo: `readonly-keypair`. Use this for all local Snowflake testing unless a different profile is explicitly provided. Equivalent env: `export SNOWFLAKE_PROFILE=readonly-keypair`.

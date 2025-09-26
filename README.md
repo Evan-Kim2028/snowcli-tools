@@ -359,6 +359,10 @@ Snowcli-tools includes an MCP (Model Context Protocol) server that provides AI a
 # Start the MCP server (recommended)
 uv run snowflake-cli mcp
 
+# If you rely on a different default profile, set
+#   export SNOWCLI_DEFAULT_PROFILE=<profile-name>
+# or pass --profile/--enable-cli-bridge as needed.
+
 # Or run the example directly
 uv run python examples/run_mcp_server.py
 ```

@@ -18,6 +18,8 @@ Changes
   future pooling or metrics can build on a single helper module.
 - Documentation, changelog, and version metadata bumped to **v1.4.3** and
   updated with the new flag, session model, and smoke-test instructions.
+- Introduced the `SNOWCLI_DEFAULT_PROFILE` environment variable to supply a
+  local fallback profile instead of hard-coding values in the server.
 
 Usage
 ```bash

@@ -85,7 +85,15 @@ def _execute_query_sync(
                     "rows": _json_compatible(rows),
                 }
             finally:
-                restore_session_context(cursor, original)
+                try:
+                    restore_session_context(cursor, original)
+                except (
+                    Exception
+                ) as restore_error:  # pragma: no cover - catastrophic restore failure
+                    logger.error(
+                        "Failed to restore Snowflake session context: %s", restore_error
+                    )
+                    raise
 
 
 def _test_connection_sync(snowflake_service: SnowflakeService) -> bool:
@@ -596,14 +604,17 @@ def main() -> None:
 
     # Ensure SNOWFLAKE_PROFILE is set in environment for snowflake-labs-mcp
     cfg = get_config()
-    if cfg.snowflake.profile:
-        os.environ["SNOWFLAKE_PROFILE"] = cfg.snowflake.profile
-        # Also try setting the default connection name
-        os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = cfg.snowflake.profile
+    configured_profile = cfg.snowflake.profile or os.environ.get("SNOWFLAKE_PROFILE")
+    default_profile = configured_profile or os.environ.get("SNOWCLI_DEFAULT_PROFILE")
+
+    if default_profile:
+        os.environ["SNOWFLAKE_PROFILE"] = default_profile
+        os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = default_profile
     else:
-        # Default to mystenlabs-keypair if no profile is set
-        os.environ["SNOWFLAKE_PROFILE"] = "mystenlabs-keypair"
-        os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = "mystenlabs-keypair"
+        logger.warning(
+            "No Snowflake profile configured. Set SNOWFLAKE_PROFILE, "
+            "SNOWCLI_DEFAULT_PROFILE, or pass --profile when starting the MCP server."
+        )
 
     server = FastMCP(
         args.name,
