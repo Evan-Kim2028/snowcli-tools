@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
+# ruff: noqa
 """
 API Compatibility Verification Script
 Ensures 100% backward compatibility with existing code
 """
 
 import sys
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
+
 
 def verify_imports():
     """Verify all imports work correctly."""
@@ -14,6 +17,7 @@ def verify_imports():
     # Test existing API imports
     try:
         from snowcli_tools.lineage import LineageBuilder, LineageGraph
+
         print("✓ Core imports (LineageBuilder, LineageGraph) work")
     except ImportError as e:
         print(f"✗ Core import failed: {e}")
@@ -22,14 +26,15 @@ def verify_imports():
     # Test new advanced features
     try:
         from snowcli_tools.lineage import (
+            ChangeType,
             ColumnLineageExtractor,
-            TransformationTracker,
             CrossDatabaseLineageBuilder,
             ExternalSourceMapper,
             ImpactAnalyzer,
             LineageHistoryManager,
-            ChangeType
+            TransformationTracker,
         )
+
         print("✓ Advanced feature imports work")
     except ImportError as e:
         print(f"✗ Advanced import failed: {e}")
@@ -37,14 +42,21 @@ def verify_imports():
 
     # Test module-level imports (for existing code compatibility)
     try:
-        from snowcli_tools.lineage.graph import LineageNode, LineageEdge, EdgeType, NodeType
         from snowcli_tools.lineage.builder import LineageBuilder as DirectBuilder
+        from snowcli_tools.lineage.graph import (
+            EdgeType,
+            LineageEdge,
+            LineageNode,
+            NodeType,
+        )
+
         print("✓ Module-level imports work")
     except ImportError as e:
         print(f"✗ Module import failed: {e}")
         return False
 
     return True
+
 
 def verify_lineage_edge_compatibility():
     """Verify LineageEdge has both old and new properties."""
@@ -57,7 +69,7 @@ def verify_lineage_edge_compatibility():
         src="table1",
         dst="table2",
         edge_type="downstream",
-        evidence={"sql": "SELECT * FROM table1"}
+        evidence={"sql": "SELECT * FROM table1"},
     )
 
     # Test original properties
@@ -80,20 +92,19 @@ def verify_lineage_edge_compatibility():
 
     return True
 
+
 def verify_lineage_graph_compatibility():
     """Verify LineageGraph maintains all existing methods."""
     print("\nTesting LineageGraph compatibility...")
 
-    from snowcli_tools.lineage.graph import LineageGraph, LineageNode, LineageEdge
+    from snowcli_tools.lineage.graph import LineageEdge, LineageGraph, LineageNode
 
     graph = LineageGraph()
 
     # Test add_node (original method)
     try:
         node = LineageNode(
-            key="test_table",
-            node_type="table",
-            attributes={"database": "TEST_DB"}
+            key="test_table", node_type="table", attributes={"database": "TEST_DB"}
         )
         graph.add_node(node)
         print("✓ add_node() method works")
@@ -104,10 +115,7 @@ def verify_lineage_graph_compatibility():
     # Test add_edge (original method)
     try:
         edge = LineageEdge(
-            src="table1",
-            dst="table2",
-            edge_type="downstream",
-            evidence={}
+            src="table1", dst="table2", edge_type="downstream", evidence={}
         )
         graph.add_edge(edge)
         print("✓ add_edge() method works")
@@ -143,11 +151,13 @@ def verify_lineage_graph_compatibility():
 
     return True
 
+
 def verify_builder_compatibility():
     """Verify LineageBuilder maintains existing interface."""
     print("\nTesting LineageBuilder compatibility...")
 
     from pathlib import Path
+
     from snowcli_tools.lineage import LineageBuilder
 
     try:
@@ -162,6 +172,7 @@ def verify_builder_compatibility():
         # The build() method would require actual catalog data
         # but we can verify it exists and has correct signature
         import inspect
+
         sig = inspect.signature(builder.build)
         print(f"✓ build() method signature: {sig}")
 
@@ -170,6 +181,7 @@ def verify_builder_compatibility():
         return False
 
     return True
+
 
 def main():
     """Run all compatibility checks."""
@@ -196,6 +208,7 @@ def main():
     print("=" * 60)
 
     return 0 if all_passed else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

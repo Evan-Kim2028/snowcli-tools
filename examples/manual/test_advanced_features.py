@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa
 """
 Test advanced lineage features on dex_trades_stable and CETUS_GENERALIZED_LP_LIVE_DT
 """
@@ -6,19 +7,18 @@ Test advanced lineage features on dex_trades_stable and CETUS_GENERALIZED_LP_LIV
 import json
 import sys
 from pathlib import Path
-from datetime import datetime
 
 # Add the src directory to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from snowcli_tools.lineage import (
-    LineageBuilder,
+    ChangeType,
     ColumnLineageExtractor,
-    TransformationTracker,
     CrossDatabaseLineageBuilder,
     ImpactAnalyzer,
+    LineageBuilder,
     LineageHistoryManager,
-    ChangeType,
+    TransformationTracker,
 )
 
 # Path to the data catalogue
@@ -30,35 +30,35 @@ def load_table_sql(table_name: str) -> str:
     # Check dynamic tables first
     dt_file = CATALOG_PATH / "dynamic_tables.jsonl"
     if dt_file.exists():
-        with open(dt_file, 'r') as f:
+        with open(dt_file, "r") as f:
             for line in f:
                 obj = json.loads(line)
-                if obj.get('name') == table_name:
-                    return obj.get('text', '')
+                if obj.get("name") == table_name:
+                    return obj.get("text", "")
 
     # Check views
     views_file = CATALOG_PATH / "views.jsonl"
     if views_file.exists():
-        with open(views_file, 'r') as f:
+        with open(views_file, "r") as f:
             for line in f:
                 obj = json.loads(line)
-                if obj.get('name') == table_name:
-                    return obj.get('text', '')
+                if obj.get("name") == table_name:
+                    return obj.get("text", "")
 
     return ""
 
 
 def test_basic_lineage():
     """Test basic lineage building from catalogue."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("1. Testing Basic Lineage Building")
-    print("="*60)
+    print("=" * 60)
 
     try:
         builder = LineageBuilder(CATALOG_PATH)
         result = builder.build()
 
-        print(f"✅ Built lineage graph:")
+        print("✅ Built lineage graph:")
         print(f"   - Nodes: {len(result.graph.nodes)}")
         print(f"   - Edges: {len(result.graph.edges)}")
 
@@ -84,15 +84,16 @@ def test_basic_lineage():
     except Exception as e:
         print(f"❌ Error building lineage: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
 
 def test_column_level_lineage():
     """Test column-level lineage extraction."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("2. Testing Column-Level Lineage")
-    print("="*60)
+    print("=" * 60)
 
     # Get SQL for CETUS_GENERALIZED_LP_LIVE_DT
     cetus_sql = load_table_sql("CETUS_GENERALIZED_LP_LIVE_DT")
@@ -105,19 +106,17 @@ def test_column_level_lineage():
 
     try:
         extractor = ColumnLineageExtractor(
-            default_database="ETHEREUM",
-            default_schema="DEFI"
+            default_database="ETHEREUM", default_schema="DEFI"
         )
 
         # Extract first 1000 chars of SQL for testing (full SQL might be very long)
         test_sql = cetus_sql[:2000] if len(cetus_sql) > 2000 else cetus_sql
 
         lineage = extractor.extract_column_lineage(
-            test_sql,
-            target_table="CETUS_GENERALIZED_LP_LIVE_DT"
+            test_sql, target_table="CETUS_GENERALIZED_LP_LIVE_DT"
         )
 
-        print(f"✅ Extracted column lineage:")
+        print("✅ Extracted column lineage:")
         print(f"   - Transformations found: {len(lineage.transformations)}")
         print(f"   - Column dependencies: {len(lineage.column_dependencies)}")
 
@@ -138,15 +137,16 @@ def test_column_level_lineage():
     except Exception as e:
         print(f"❌ Error extracting column lineage: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
 
 def test_transformation_tracking():
     """Test transformation tracking capabilities."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("3. Testing Transformation Tracking")
-    print("="*60)
+    print("=" * 60)
 
     try:
         tracker = TransformationTracker(storage_path=Path("/tmp/transformations"))
@@ -155,13 +155,12 @@ def test_transformation_tracking():
         cetus_sql = load_table_sql("CETUS_GENERALIZED_LP_LIVE_DT")
         if cetus_sql:
             extractor = ColumnLineageExtractor(
-                default_database="ETHEREUM",
-                default_schema="DEFI"
+                default_database="ETHEREUM", default_schema="DEFI"
             )
 
             lineage = extractor.extract_column_lineage(
                 cetus_sql[:1000],  # Use partial SQL for testing
-                target_table="CETUS_GENERALIZED_LP_LIVE_DT"
+                target_table="CETUS_GENERALIZED_LP_LIVE_DT",
             )
 
             # Track transformations
@@ -171,7 +170,7 @@ def test_transformation_tracking():
                     trans,
                     source_object="SOURCE_TABLE",
                     target_object="CETUS_GENERALIZED_LP_LIVE_DT",
-                    business_logic="CETUS LP data processing"
+                    business_logic="CETUS LP data processing",
                 )
                 tracked.append(metadata)
 
@@ -186,7 +185,7 @@ def test_transformation_tracking():
 
             # Get summary
             summary = tracker.get_transformation_summary()
-            print(f"\n   Summary:")
+            print("\n   Summary:")
             print(f"     - Total transformations: {summary['total_transformations']}")
             print(f"     - Types: {summary['transformation_types']}")
 
@@ -195,15 +194,16 @@ def test_transformation_tracking():
     except Exception as e:
         print(f"❌ Error tracking transformations: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
 
 def test_impact_analysis(lineage_graph):
     """Test impact analysis on dex_trades_stable."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("4. Testing Impact Analysis")
-    print("="*60)
+    print("=" * 60)
 
     if not lineage_graph:
         print("❌ No lineage graph available")
@@ -229,28 +229,27 @@ def test_impact_analysis(lineage_graph):
         if target_node:
             # Analyze DROP impact
             report = analyzer.analyze_impact(
-                object_name=target_node,
-                change_type=ChangeType.DROP,
-                max_depth=3
+                object_name=target_node, change_type=ChangeType.DROP, max_depth=3
             )
 
             print(f"✅ Impact analysis for DROP of {target_node}:")
             print(f"   - Risk Score: {report.risk_score:.2f}")
             print(f"   - Total Impacted Objects: {report.total_impacted_objects}")
-            print(f"   - Impact by severity: {report.impact_summary.get('by_severity', {})}")
+            print(
+                f"   - Impact by severity: {report.impact_summary.get('by_severity', {})}"
+            )
 
             # Show top impacted objects
-            print(f"\n   Top impacted objects:")
+            print("\n   Top impacted objects:")
             for obj in report.impacted_objects[:5]:
                 print(f"     • {obj.object_name} ({obj.severity.value})")
 
             # Calculate blast radius
             blast_radius = analyzer.calculate_blast_radius(
-                object_name=target_node,
-                max_depth=2
+                object_name=target_node, max_depth=2
             )
 
-            print(f"\n   Blast Radius:")
+            print("\n   Blast Radius:")
             print(f"     - Downstream: {blast_radius['total_downstream']} objects")
             print(f"     - Upstream: {blast_radius['total_upstream']} objects")
 
@@ -258,34 +257,39 @@ def test_impact_analysis(lineage_graph):
             spofs = analyzer.find_single_points_of_failure(min_dependent_count=2)
             print(f"\n   Single Points of Failure: {len(spofs)} found")
             for spof in spofs[:3]:
-                print(f"     • {spof['object']} ({spof['downstream_count']} dependencies)")
+                print(
+                    f"     • {spof['object']} ({spof['downstream_count']} dependencies)"
+                )
 
             return report
 
     except Exception as e:
         print(f"❌ Error in impact analysis: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
 
 def test_time_travel_lineage():
     """Test time-travel lineage capabilities."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("5. Testing Time-Travel Lineage")
-    print("="*60)
+    print("=" * 60)
 
     try:
-        history_manager = LineageHistoryManager(storage_path=Path("/tmp/lineage_history"))
+        history_manager = LineageHistoryManager(
+            storage_path=Path("/tmp/lineage_history")
+        )
 
         # Capture initial snapshot
         snapshot1 = history_manager.capture_snapshot(
             catalog_path=CATALOG_PATH,
             tag="test_v1",
-            description="Initial test snapshot"
+            description="Initial test snapshot",
         )
 
-        print(f"✅ Captured snapshot:")
+        print("✅ Captured snapshot:")
         print(f"   - ID: {snapshot1.snapshot_id}")
         print(f"   - Tag: {snapshot1.tag}")
         print(f"   - Nodes: {snapshot1.node_count}")
@@ -293,16 +297,14 @@ def test_time_travel_lineage():
 
         # Capture another snapshot (simulating changes)
         snapshot2 = history_manager.capture_snapshot(
-            catalog_path=CATALOG_PATH,
-            tag="test_v2",
-            description="Second test snapshot"
+            catalog_path=CATALOG_PATH, tag="test_v2", description="Second test snapshot"
         )
 
         # Compare snapshots
         diff = history_manager.compare_lineage("test_v1", "test_v2")
 
         if diff:
-            print(f"\n   Snapshot comparison (v1 -> v2):")
+            print("\n   Snapshot comparison (v1 -> v2):")
             print(f"     - Total changes: {diff.summary['total_changes']}")
             print(f"     - Nodes added: {len(diff.added_nodes)}")
             print(f"     - Nodes removed: {len(diff.removed_nodes)}")
@@ -316,15 +318,16 @@ def test_time_travel_lineage():
     except Exception as e:
         print(f"❌ Error in time-travel lineage: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
 
 def test_cross_database_lineage():
     """Test cross-database lineage if multiple databases exist."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("6. Testing Cross-Database Lineage")
-    print("="*60)
+    print("=" * 60)
 
     try:
         # For now, we'll use the same catalog path
@@ -332,11 +335,10 @@ def test_cross_database_lineage():
         builder = CrossDatabaseLineageBuilder([CATALOG_PATH])
 
         unified = builder.build_cross_db_lineage(
-            include_shares=True,
-            resolve_external_refs=True
+            include_shares=True, resolve_external_refs=True
         )
 
-        print(f"✅ Built unified lineage:")
+        print("✅ Built unified lineage:")
         print(f"   - Databases: {list(unified.databases)}")
         print(f"   - Total nodes: {len(unified.nodes)}")
         print(f"   - Cross-DB references: {len(unified.cross_db_references)}")
@@ -346,23 +348,26 @@ def test_cross_database_lineage():
         for db_name, analysis in boundary_analysis.items():
             print(f"\n   Database: {db_name}")
             print(f"     - Internal objects: {analysis['internal_objects']}")
-            print(f"     - External dependencies: {len(analysis['external_dependencies'])}")
+            print(
+                f"     - External dependencies: {len(analysis['external_dependencies'])}"
+            )
 
         return unified
 
     except Exception as e:
         print(f"❌ Error in cross-database lineage: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
 
 def main():
     """Run all tests."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TESTING ADVANCED LINEAGE FEATURES")
     print("Target tables: dex_trades_stable, CETUS_GENERALIZED_LP_LIVE_DT")
-    print("="*60)
+    print("=" * 60)
 
     # Test 1: Basic lineage
     lineage_graph = test_basic_lineage()
@@ -383,9 +388,9 @@ def main():
     # Test 6: Cross-database lineage
     cross_db = test_cross_database_lineage()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST SUMMARY")
-    print("="*60)
+    print("=" * 60)
     print("✅ Basic Lineage:", "Success" if lineage_graph else "Failed")
     print("✅ Column-Level Lineage:", "Success" if column_lineage else "Failed")
     print("✅ Transformation Tracking:", "Success" if tracker else "Failed")

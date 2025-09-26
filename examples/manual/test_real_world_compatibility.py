@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
+# ruff: noqa
 """
 Real-world API compatibility test simulating existing code patterns.
 This ensures that code written for the original API continues to work.
 """
 
 import sys
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
+
 
 def test_legacy_code_pattern():
     """Test that legacy code patterns still work."""
     print("Testing legacy code patterns...")
 
     # This is how existing code would use the lineage API
-    from snowcli_tools.lineage.graph import LineageGraph, LineageNode, LineageEdge, NodeType, EdgeType
-    from snowcli_tools.lineage.builder import LineageBuilder
+    from snowcli_tools.lineage.graph import (
+        LineageEdge,
+        LineageGraph,
+        LineageNode,
+    )
 
     # Create a graph the old way
     graph = LineageGraph()
@@ -22,12 +28,12 @@ def test_legacy_code_pattern():
     node1 = LineageNode(
         key="DB.SCHEMA.TABLE1",
         node_type="table",  # Using string as that's what the builder uses
-        attributes={"database": "DB", "schema": "SCHEMA", "name": "TABLE1"}
+        attributes={"database": "DB", "schema": "SCHEMA", "name": "TABLE1"},
     )
     node2 = LineageNode(
         key="DB.SCHEMA.VIEW1",
         node_type="view",  # Using string as that's what the builder uses
-        attributes={"database": "DB", "schema": "SCHEMA", "name": "VIEW1"}
+        attributes={"database": "DB", "schema": "SCHEMA", "name": "VIEW1"},
     )
 
     graph.add_node(node1)
@@ -38,7 +44,7 @@ def test_legacy_code_pattern():
         src="DB.SCHEMA.TABLE1",
         dst="DB.SCHEMA.VIEW1",
         edge_type="downstream",  # Using string for compatibility
-        evidence={"sql": "CREATE VIEW VIEW1 AS SELECT * FROM TABLE1"}
+        evidence={"sql": "CREATE VIEW VIEW1 AS SELECT * FROM TABLE1"},
     )
     graph.add_edge(edge)
 
@@ -64,7 +70,7 @@ def test_mixed_usage():
     print("\nTesting mixed old/new API usage...")
 
     # Import both old and new
-    from snowcli_tools.lineage import LineageGraph, ColumnLineageExtractor
+    from snowcli_tools.lineage import ColumnLineageExtractor, LineageGraph
 
     # Use old API to create graph
     graph = LineageGraph()
@@ -74,10 +80,9 @@ def test_mixed_usage():
 
     # Old API method
     from snowcli_tools.lineage.graph import LineageNode
+
     node = LineageNode(
-        key="TEST_TABLE",
-        node_type="table",  # Can use string now
-        attributes={}
+        key="TEST_TABLE", node_type="table", attributes={}  # Can use string now
     )
     graph.add_node(node)
 
@@ -95,10 +100,7 @@ def test_edge_property_compatibility():
     from snowcli_tools.lineage.graph import LineageEdge
 
     edge = LineageEdge(
-        src="TABLE_A",
-        dst="TABLE_B",
-        edge_type="downstream",
-        evidence={}
+        src="TABLE_A", dst="TABLE_B", edge_type="downstream", evidence={}
     )
 
     # Test that both old and new accessors work
@@ -119,7 +121,13 @@ def test_string_enum_compatibility():
     """Test that both string and enum types work for node_type and edge_type."""
     print("\nTesting string/enum compatibility...")
 
-    from snowcli_tools.lineage.graph import LineageGraph, LineageNode, LineageEdge, NodeType, EdgeType
+    from snowcli_tools.lineage.graph import (
+        EdgeType,
+        LineageEdge,
+        LineageGraph,
+        LineageNode,
+        NodeType,
+    )
 
     graph = LineageGraph()
 
@@ -132,7 +140,9 @@ def test_string_enum_compatibility():
     graph.add_node(node2)
 
     # Add edge with enum type
-    edge1 = LineageEdge(src="NODE1", dst="NODE2", edge_type=EdgeType.DERIVES_FROM, evidence={})
+    edge1 = LineageEdge(
+        src="NODE1", dst="NODE2", edge_type=EdgeType.DERIVES_FROM, evidence={}
+    )
     graph.add_edge(edge1)
 
     # Add edge with string type
@@ -155,12 +165,11 @@ def test_import_patterns():
     print("\nTesting various import patterns...")
 
     # Pattern 1: Direct module imports
-    from snowcli_tools.lineage.graph import LineageGraph
-    from snowcli_tools.lineage.builder import LineageBuilder
-
     # Pattern 2: Package-level imports
-    from snowcli_tools.lineage import LineageGraph as LG
     from snowcli_tools.lineage import LineageBuilder as LB
+    from snowcli_tools.lineage import LineageGraph as LG
+    from snowcli_tools.lineage.builder import LineageBuilder
+    from snowcli_tools.lineage.graph import LineageGraph
 
     # All should reference the same classes
     assert LineageGraph == LG, "Different LineageGraph classes"
@@ -168,9 +177,10 @@ def test_import_patterns():
 
     # Pattern 3: Test that __all__ exports are available
     import snowcli_tools.lineage as lineage
-    assert hasattr(lineage, 'LineageGraph'), "LineageGraph not in exports"
-    assert hasattr(lineage, 'LineageBuilder'), "LineageBuilder not in exports"
-    assert hasattr(lineage, 'ColumnLineageExtractor'), "New features not in exports"
+
+    assert hasattr(lineage, "LineageGraph"), "LineageGraph not in exports"
+    assert hasattr(lineage, "LineageBuilder"), "LineageBuilder not in exports"
+    assert hasattr(lineage, "ColumnLineageExtractor"), "New features not in exports"
 
     print("✓ All import patterns work")
     return True
@@ -193,6 +203,7 @@ def main():
     except Exception as e:
         print(f"\n✗ Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         all_passed = False
 
