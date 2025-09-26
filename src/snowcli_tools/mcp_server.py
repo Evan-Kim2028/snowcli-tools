@@ -139,9 +139,9 @@ class SnowflakeMCPServer:
             ) from exc
 
         profile_names = {
-            conn.get("name")
+            (conn.get("name") or conn.get("connection_name"))
             for conn in connections
-            if isinstance(conn, dict) and conn.get("name")
+            if isinstance(conn, dict) and (conn.get("name") or conn.get("connection_name"))
         }
 
         if profile not in profile_names:
