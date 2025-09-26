@@ -17,7 +17,7 @@ Changes
 - Shared-session utilities live in `src/snowcli_tools/session_utils.py` so
   future pooling or metrics can build on a single helper module.
 - Documentation, changelog, and version metadata bumped to **v1.4.3** and
-  updated with the new flag, session model, and smoke-test instructions.
+  updated with the new flag, session model, and manual verification guidance.
 - Introduced the `SNOWCLI_DEFAULT_PROFILE` environment variable to supply a
   local fallback profile instead of hard-coding values in the server.
 
@@ -29,8 +29,6 @@ uv run snowflake-cli mcp
 # Include the legacy CLI bridge (optional)
 uv run snowflake-cli mcp --enable-cli-bridge
 
-# Run the smoke test against your profile
-uv run python local_sf_test/test_smoke.py --transport stdio
 ```
 
 ---
