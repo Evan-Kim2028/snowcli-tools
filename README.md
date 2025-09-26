@@ -369,7 +369,7 @@ uv run python examples/run_mcp_server.py
 
 To expose the legacy Snowflake CLI bridge tool (which shells out to the `snow`
 binary), pass `--enable-cli-bridge`. The FastMCP server defaults to the safer
-in-process connector tools:
+in-process connector tools, so the bridge is opt-in for cases where you need parity with older scripts:
 
 ```bash
 uv run snowflake-cli mcp --enable-cli-bridge
