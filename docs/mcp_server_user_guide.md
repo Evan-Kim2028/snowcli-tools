@@ -96,11 +96,16 @@ Create or update your MCP configuration file (usually `~/.vscode/mcp.json`):
     "snowflake-cli-tools": {
       "command": "uv",
       "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/your/snowflake_connector_py"
+      "cwd": "/path/to/your/snowcli-tools/project",
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
     }
   }
 }
 ```
+
+For additional configuration examples, see `examples/mcp_config_example.json` and `examples/mcp_config_alternatives.json` in this repository.
 
 ### Claude Code Configuration
 
@@ -108,11 +113,14 @@ Add to your Claude Code MCP settings:
 
 ```json
 {
-  "mcp": {
+  "mcpServers": {
     "snowflake-cli-tools": {
       "command": "uv",
       "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/your/snowflake_connector_py"
+      "cwd": "/path/to/your/snowcli-tools/project",
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
     }
   }
 }

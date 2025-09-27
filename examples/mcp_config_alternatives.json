@@ -1,0 +1,35 @@
+{
+  "_comment": "Alternative MCP Server configurations for snowcli-tools",
+
+  "mcpServers": {
+    "snowflake-cli-tools-uv": {
+      "_comment": "Using uv run (recommended for development)",
+      "command": "uv",
+      "args": ["run", "snowflake-cli", "mcp"],
+      "cwd": "/path/to/your/snowcli-tools/project",
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
+    },
+
+    "snowflake-cli-tools-pip": {
+      "_comment": "Using pip-installed snowflake-cli (recommended for production)",
+      "command": "snowflake-cli",
+      "args": ["mcp"],
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
+    },
+
+    "snowflake-cli-tools-python": {
+      "_comment": "Using python -m directly",
+      "command": "python",
+      "args": ["-m", "snowcli_tools.mcp_server"],
+      "cwd": "/path/to/your/snowcli-tools/project",
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name",
+        "PYTHONPATH": "/path/to/your/snowcli-tools/project/src"
+      }
+    }
+  }
+}

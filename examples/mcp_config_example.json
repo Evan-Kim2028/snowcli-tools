@@ -3,7 +3,10 @@
     "snowflake-cli-tools": {
       "command": "uv",
       "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/your/snowcli-tools/project"
+      "cwd": "/path/to/your/snowcli-tools/project",
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
     }
   }
 }
