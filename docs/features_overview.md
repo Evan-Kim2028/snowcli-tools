@@ -110,52 +110,120 @@ snowflake-cli dependency-graph --output deps.json
 
 ---
 
-### 5. Configuration Management
-**Description**: Flexible configuration system supporting multiple profiles and environments.
+### 5. Configuration Management & Profile Validation (Enhanced v1.4.4+)
+**Description**: Robust configuration system with advanced profile validation and health monitoring.
 
-**Capabilities**:
+**Core Capabilities**:
 - YAML-based configuration files
 - Environment variable overrides
 - Multiple Snowflake profile support
 - Default value cascading
 - Configuration validation
 
+**Enhanced Profile Validation (v1.4.4+)**:
+- **Startup validation**: Profile issues detected before server becomes available
+- **Clear error messages**: No more confusing timeout errors
+- **MCP-compliant error responses**: Structured error format with specific error codes
+- **Real-time diagnostics**: Health monitoring tools for ongoing validation
+- **Actionable guidance**: Specific next steps for fixing configuration issues
+- **Profile health caching**: Efficient validation with TTL-based caching
+
 **CLI Usage**:
 ```bash
+# Traditional configuration
 snowflake-cli config show
 snowflake-cli config set snowflake.warehouse COMPUTE_WH
+
+# Enhanced profile validation (v1.4.4+)
+snowflake-cli mcp  # Shows validation success/failure immediately
+export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 ```
 
-**Testing Coverage**: ✅ **WELL COVERED**
+**MCP Tools (v1.4.4+)**:
+- `health_check`: Comprehensive server health status
+- `check_profile_config`: Profile validation and diagnostics
+- `get_resource_status`: Resource availability checking
+- `check_resource_dependencies`: Dependency validation
+
+**Error Handling Improvements**:
+- **Before v1.4.4**: Generic timeout errors after 30+ seconds
+- **After v1.4.4**: Immediate, specific error messages with context
+
+**Example Enhanced Error Response**:
+```json
+{
+  "error": {
+    "code": -32004,
+    "message": "Snowflake profile validation failed",
+    "data": {
+      "profile_name": "default",
+      "available_profiles": ["dev", "prod"],
+      "suggestion": "Set SNOWFLAKE_PROFILE environment variable"
+    }
+  }
+}
+```
+
+**Testing Coverage**: ✅ **EXCELLENT COVERAGE**
 - Configuration loading and validation (`test_config.py`)
 - Environment variable handling
 - YAML serialization/deserialization
 - Profile management
+- **New in v1.4.4+**: Health monitoring tests (`test_mcp_health.py`)
+- **New in v1.4.4+**: Profile validation tests
+- **New in v1.4.4+**: MCP error response testing
 
 ---
 
-### 6. MCP Server Integration
-**Description**: Model Context Protocol server for AI assistant integration.
+### 6. MCP Server Integration (Enhanced v1.4.4+)
+**Description**: Model Context Protocol server for AI assistant integration with advanced health monitoring and reliability.
 
-**Capabilities**:
+**Core Capabilities**:
 - JSON-RPC 2.0 protocol implementation
 - Tool-based interface for AI assistants
 - Async operation support
 - VS Code, Cursor, Claude Code compatibility
 - Secure authentication through existing Snowflake CLI profiles
 
+**Enhanced Reliability Features (v1.4.4+)**:
+- **Proactive validation**: Profile validation during server startup lifecycle
+- **Circuit breaker pattern**: Fault-tolerant Snowflake operations
+- **Health monitoring**: Real-time component health tracking
+- **Structured error responses**: MCP-compliant error codes and context
+- **Resource management**: Dependency tracking and availability monitoring
+- **Graceful degradation**: Partial functionality when components fail
+
 **CLI Usage**:
 ```bash
-snowflake-cli mcp  # Start MCP server
+# Enhanced startup with validation (v1.4.4+)
+snowflake-cli mcp  # Shows immediate validation feedback
+
+# Expected successful startup:
+# ✓ Snowflake profile validation successful: dev
+# ✓ Profile health check passed for: dev
+# ✓ Snowflake connection health check passed
+# Starting FastMCP server using transport=stdio
 ```
 
-**MCP Tools**: All tools available through MCP interface
+**MCP Tools**:
+- **Core tools**: All existing tools (execute_query, build_catalog, etc.)
+- **New diagnostic tools (v1.4.4+)**: health_check, check_profile_config, get_resource_status, check_resource_dependencies
 
-**Testing Coverage**: ✅ **WELL COVERED**
+**Reliability Infrastructure (v1.4.4+)**:
+- **MCPHealthMonitor**: Comprehensive health status tracking
+- **MCPResourceManager**: Resource dependency management
+- **Error categorization**: Connection, Permission, Timeout, Configuration errors
+- **Performance optimization**: Caching with TTL for health checks
+
+**Testing Coverage**: ✅ **EXCELLENT COVERAGE**
 - MCP server functionality (`test_mcp_server.py`)
 - Tool registration and execution
 - Error handling and response formatting
 - Mock-based testing for external dependencies
+- **New in v1.4.4+**: Health monitoring system tests
+- **New in v1.4.4+**: Circuit breaker pattern tests
+- **New in v1.4.4+**: Resource management tests
+- **New in v1.4.4+**: Profile validation integration tests
 
 ---
 

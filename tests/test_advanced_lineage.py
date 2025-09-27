@@ -371,7 +371,7 @@ class TestExternalSourceSecurity(TestCase):
         source = ExternalSource(
             source_type=ExternalSourceType.S3,
             location="s3://bucket/path",
-            credentials={"aws_key": "secret", "aws_secret": "very_secret"},
+            credentials_ref="env:AWS_CREDENTIALS",
             encryption={"type": "AES256"},
         )
 

@@ -8,21 +8,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.4] - 2025-09-27
 
 ### Added
-- Circuit breaker pattern for fault-tolerant Snowflake operations
-- Comprehensive error handling with categorization (Connection, Permission, Timeout)
-- Robust service layer with health monitoring and safe execution patterns
-- Enhanced MCP server configuration examples with multiple setup options
-- Extensive test coverage for new reliability infrastructure (~43 new tests)
+- **🎯 Enhanced Profile Validation System**: Revolutionary improvement to user experience
+  - Startup profile validation that catches configuration issues immediately
+  - Clear, actionable error messages instead of confusing timeout errors
+  - Modern Python 3.12+ implementation with performance caching
+  - Structured error responses following MCP JSON-RPC 2.0 standards
+- **🏥 Comprehensive Health Monitoring**: New diagnostic tools for MCP server
+  - `health_check`: Real-time server health status with component details
+  - `check_profile_config`: Profile validation and configuration recommendations
+  - `get_resource_status`: Resource availability and dependency checking
+  - `check_resource_dependencies`: Specific resource dependency validation
+- **🔧 Advanced Error Handling Infrastructure**:
+  - Circuit breaker pattern for fault-tolerant Snowflake operations
+  - Comprehensive error categorization (Connection, Permission, Timeout, Configuration)
+  - `ProfileConfigurationError` with rich context and available profiles
+  - MCP-compliant error codes (-32001 to -32005) with structured data
+- **📚 Comprehensive Documentation Suite**:
+  - Profile Troubleshooting Guide with before/after comparisons
+  - Profile Validation Quick-Start Guide with step-by-step setup
+  - MCP Diagnostic Tools Reference with API documentation
+  - Enhanced user guides with v1.4.4+ features and examples
+- **🔬 Extensive Testing Infrastructure**:
+  - Robust service layer with health monitoring and safe execution patterns
+  - Enhanced MCP server configuration examples with multiple setup options
+  - Extensive test coverage for new reliability infrastructure (~80 new tests)
 
 ### Changed
-- Improved MCP documentation with correct project paths and profile configuration
-- Updated user guides with examples for uv, pip, and direct Python execution methods
-- Enhanced code quality with comprehensive linting and type checking fixes
+- **🚀 User Experience Transformation**:
+  - Profile validation errors now provide immediate, clear feedback
+  - MCP server startup includes proactive profile validation
+  - Error messages include specific available profiles and next steps
+  - Documentation updated with practical troubleshooting examples
+- **⚡ Performance Optimizations**:
+  - Profile validation caching with `@functools.lru_cache`
+  - mtime-based configuration file caching for efficiency
+  - Modern Python 3.12+ patterns (match statements, union types)
+- **📖 Documentation Enhancements**:
+  - Updated README.md with comprehensive profile management section
+  - Enhanced MCP server user guide with health monitoring capabilities
+  - Features overview updated with v1.4.4+ improvements
+  - Added cross-references between related documentation
 
 ### Fixed
-- Type annotation errors in circuit breaker and error handling modules
-- Code formatting consistency across all Python files
-- MCP configuration format and environment variable documentation
+- **🐛 Critical UX Issues**:
+  - Eliminated misleading timeout errors for profile configuration problems
+  - Fixed silent fallback to non-existent "default" profile
+  - Resolved late error detection that confused users
+  - Improved error messaging accessibility and clarity
+- **🔧 Technical Improvements**:
+  - Type annotation errors in circuit breaker and error handling modules
+  - Code formatting consistency across all Python files
+  - MCP configuration format and environment variable documentation
+  - Import optimization and unused code removal
 
 ## [1.4.3] - 2025-09-26
 
