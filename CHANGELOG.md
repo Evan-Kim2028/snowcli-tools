@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2025-09-27
+
+### Added
+- Circuit breaker pattern for fault-tolerant Snowflake operations
+- Comprehensive error handling with categorization (Connection, Permission, Timeout)
+- Robust service layer with health monitoring and safe execution patterns
+- Enhanced MCP server configuration examples with multiple setup options
+- Extensive test coverage for new reliability infrastructure (~43 new tests)
+
+### Changed
+- Improved MCP documentation with correct project paths and profile configuration
+- Updated user guides with examples for uv, pip, and direct Python execution methods
+- Enhanced code quality with comprehensive linting and type checking fixes
+
+### Fixed
+- Type annotation errors in circuit breaker and error handling modules
+- Code formatting consistency across all Python files
+- MCP configuration format and environment variable documentation
+
 ## [1.4.3] - 2025-09-26
 
 ### Added
