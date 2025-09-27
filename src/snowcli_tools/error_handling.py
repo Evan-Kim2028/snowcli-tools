@@ -43,6 +43,44 @@ class SnowflakeTimeoutError(Exception):
     pass
 
 
+class SnowflakeError(Exception):
+    """Base class for all Snowflake-related errors."""
+
+    pass
+
+
+class ProfileConfigurationError(SnowflakeError):
+    """Raised when there are profile configuration issues."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        profile_name: str | None = None,
+        available_profiles: list[str] | None = None,
+        config_path: str | None = None,
+    ):
+        super().__init__(message)
+        self.profile_name = profile_name
+        self.available_profiles = available_profiles or []
+        self.config_path = config_path
+
+    def __str__(self) -> str:
+        base_msg = super().__str__()
+        context_parts = []
+
+        if self.profile_name:
+            context_parts.append(f"Profile: {self.profile_name}")
+        if self.config_path:
+            context_parts.append(f"Config: {self.config_path}")
+        if self.available_profiles:
+            context_parts.append(f"Available: {', '.join(self.available_profiles)}")
+
+        if context_parts:
+            return f"{base_msg} ({'; '.join(context_parts)})"
+        return base_msg
+
+
 def categorize_snowflake_error(error: SnowCLIError, context: ErrorContext) -> Exception:
     """Categorize a SnowCLIError into more specific error types."""
     error_msg = str(error).lower()
