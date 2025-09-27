@@ -126,13 +126,125 @@ snow connection add \
   --default
 ```
 
-Profile selection precedence:
+## Profile Configuration
 
-- CLI flag `--profile/-p`
-- `SNOWFLAKE_PROFILE` env var
-- Default connection in your `snow` config
+### Profile Selection Precedence
 
-Optional helper in this repo:
+Snowcli-tools uses the following precedence for profile selection:
+
+1. CLI flag `--profile/-p` (highest priority)
+2. `SNOWFLAKE_PROFILE` environment variable
+3. Default connection in your `snow` config
+4. First available profile (with validation)
+
+### Profile Validation (Enhanced v1.4.4+)
+
+Starting with v1.4.4, snowcli-tools includes robust profile validation that transforms the user experience:
+
+- ✅ **Validates profiles at startup** - Catches configuration issues immediately
+- ✅ **Provides clear error messages** - No more confusing timeout errors
+- ✅ **Suggests specific fixes** - Actionable guidance for resolving issues
+- ✅ **Real-time diagnostics** - New MCP tools for ongoing health monitoring
+- ✅ **Structured error responses** - MCP-compliant error format with specific codes
+
+#### Before vs After (v1.4.4+)
+
+**Before v1.4.4 (Confusing Experience):**
+```bash
+$ snowflake-cli mcp
+Starting MCP server...
+# Server appears to start successfully, but first tool call fails with:
+Connection timeout error after 30 seconds
+```
+
+**After v1.4.4 (Clear Feedback):**
+```bash
+$ snowflake-cli mcp
+❌ Snowflake profile validation failed
+Error: Snowflake profile 'default' not found
+Available profiles: evan-oauth, mystenlabs-keypair
+To fix this issue:
+1. Set SNOWFLAKE_PROFILE environment variable to one of the available profiles
+2. Or pass --profile <profile_name> when starting the server
+3. Or run 'snow connection add' to create a new profile
+```
+
+#### New Diagnostic Capabilities
+
+**Health monitoring through AI assistants:**
+```
+AI: "Check the MCP server health"
+AI: "Validate my Snowflake profile configuration"
+AI: "Are all MCP resources available?"
+```
+
+**Structured error responses with context:**
+```json
+{
+  "error": {
+    "code": -32004,
+    "message": "Snowflake profile validation failed",
+    "data": {
+      "profile_name": "default",
+      "available_profiles": ["evan-oauth", "mystenlabs-keypair"],
+      "suggestion": "Set SNOWFLAKE_PROFILE environment variable"
+    }
+  }
+}
+```
+
+### Profile Management Commands
+
+Check your current profile configuration:
+```bash
+# List all available profiles
+snow connection list
+
+# Test a specific profile connection
+snow connection test --connection-name my-profile
+
+# Set a default profile
+snow connection set-default my-profile
+
+# Check profile status with snowcli-tools
+snowflake-cli config status
+```
+
+### Troubleshooting Profile Issues
+
+**No profiles found?**
+```bash
+# Create your first profile
+snow connection add --connection-name my-profile
+```
+
+**Profile validation failed?**
+```bash
+# Check available profiles
+snow connection list
+
+# Set the correct profile
+export SNOWFLAKE_PROFILE=your-profile-name
+# Or pass it directly
+snowflake-cli --profile your-profile-name <command>
+```
+
+**Connection test failing?**
+```bash
+# Test your profile connection
+snow connection test --connection-name your-profile-name
+```
+
+### 📚 Additional Documentation
+
+For comprehensive troubleshooting and configuration guidance, see:
+
+- **[Profile Troubleshooting Guide](docs/profile_troubleshooting_guide.md)** - Detailed troubleshooting for all profile-related issues
+- **[Profile Validation Quick-Start](docs/profile_validation_quickstart.md)** - Step-by-step setup guide with practical examples
+- **[MCP Diagnostic Tools Reference](docs/mcp_diagnostic_tools.md)** - Complete reference for health monitoring tools
+- **[MCP Server User Guide](docs/mcp_server_user_guide.md)** - Enhanced user guide with v1.4.4+ features
+
+### Optional Helper
 
 ```bash
 # Convenience only: creates a key‑pair profile via `snow connection add`
@@ -411,15 +523,24 @@ Add to your Claude Code MCP settings:
 
 The MCP server exposes these tools to AI assistants:
 
+#### Core Data Tools
 - **execute_query**: Run SQL queries against your Snowflake database
 - **preview_table**: Preview table contents with optional filtering
 - **build_catalog**: Generate comprehensive data catalogs from your Snowflake metadata
 - **query_lineage**: Analyze data lineage and dependencies for any object
 - **build_dependency_graph**: Create dependency graphs showing object relationships
-- **test_connection**: Verify your Snowflake connection is working
 - **get_catalog_summary**: Get summaries of existing catalog data
+- **test_connection**: Verify your Snowflake connection is working
 - **run_cli_query** *(optional)*: Execute SQL using the Snowflake CLI bridge
   when `--enable-cli-bridge` is supplied
+
+#### Diagnostic & Health Monitoring Tools (v1.4.4+)
+- **health_check**: Comprehensive server health status with component details
+- **check_profile_config**: Validate profile configuration and get recommendations
+- **get_resource_status**: Check availability of all MCP resources and dependencies
+- **check_resource_dependencies**: Validate dependencies for specific resources
+
+These diagnostic tools provide real-time insights into server health, profile configuration, and resource availability, making troubleshooting much more efficient.
 
 ### Usage Examples
 

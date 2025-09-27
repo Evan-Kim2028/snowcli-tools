@@ -193,178 +193,84 @@ def build_catalog(
     - database: specific database to introspect; if None, uses current database
     - account_scope: if True, spans all databases (requires privileges)
     """
-    cli = SnowCLI()
+    from .catalog_service import CatalogBuilder, CatalogConfig
+    from .error_handling import ErrorAggregator, handle_snowflake_errors
+
     out_path = Path(output_dir)
     _ensure_dir(out_path)
 
-    totals = {
-        "databases": 0,
-        "schemas": 0,
-        "tables": 0,
-        "columns": 0,
-        "views": 0,
-        "materialized_views": 0,
-        "routines": 0,
-        "tasks": 0,
-        "dynamic_tables": 0,
-    }
+    # Create configuration and builder
+    config = CatalogConfig(
+        database=database,
+        account_scope=account_scope,
+        incremental=incremental,
+        output_format=output_format,
+        include_ddl=include_ddl,
+        max_ddl_concurrency=max_ddl_concurrency,
+        catalog_concurrency=catalog_concurrency,
+        export_sql=export_sql,
+    )
 
-    databases = _list_databases(cli, account_scope, database)
-    totals["databases"] = len(databases)
-
-    all_schemata: List[Dict] = []
-    all_tables: List[Dict] = []
-    all_columns: List[Dict] = []
-    all_views: List[Dict] = []
-    all_mviews: List[Dict] = []
-    all_routines: List[Dict] = []
-    all_tasks: List[Dict] = []
-    all_dynamic: List[Dict] = []
-    all_functions: List[Dict] = []
-    all_procedures: List[Dict] = []
-
-    # Sampling disabled: no sample queries or indices
+    builder = CatalogBuilder()
+    error_aggregator = ErrorAggregator()
 
     # Build schema worklist
-    schema_pairs: List[Tuple[str, str]] = []
-    for db in databases:
-        for sch in _list_schemas(cli, db):
-            schema_pairs.append((db, sch))
+    schema_pairs = builder.build_schema_worklist(config)
 
-    def process_schema(db: str, sch: str) -> Dict[str, List[Dict]]:
-        local: Dict[str, List[Dict]] = {
-            "schemata": [],
-            "tables": [],
-            "columns": [],
-            "views": [],
-            "mviews": [],
-            "routines": [],
-            "tasks": [],
-            "dynamic": [],
-            "functions": [],
-            "procedures": [],
+    # Collect metadata in parallel with error handling
+    @handle_snowflake_errors("collect_metadata", reraise=False, fallback_value=None)
+    def safe_collect_metadata():
+        return builder.collect_metadata_parallel(schema_pairs, catalog_concurrency)
+
+    all_data = safe_collect_metadata()
+    if all_data is None:
+        error_aggregator.add_error(
+            "metadata_collection", Exception("Failed to collect metadata")
+        )
+        # Return empty totals on failure
+        return {
+            k: 0
+            for k in [
+                "databases",
+                "schemas",
+                "tables",
+                "columns",
+                "views",
+                "materialized_views",
+                "routines",
+                "tasks",
+                "dynamic_tables",
+            ]
         }
-        # Schemas
-        rows = _run_json_safe(
-            cli,
-            f"SELECT * FROM {db}.INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{sch}'",
-        )
-        for r in rows:
-            r.setdefault("DATABASE_NAME", db)
-        local["schemata"].extend(rows)
 
-        # Tables and Columns
-        tables = _run_json_safe(
-            cli,
-            f"SELECT * FROM {db}.INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{sch}'",
-        )
-        for r in tables:
-            r.setdefault("DATABASE_NAME", db)
-        local["tables"].extend(tables)
+    # Calculate totals
+    databases = builder.discovery_service.list_databases(account_scope, database)
+    totals_obj = builder.calculate_totals(all_data, len(databases))
 
-        cols = _run_json_safe(
-            cli,
-            f"SELECT * FROM {db}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{sch}'",
-        )
-        for r in cols:
-            r.setdefault("DATABASE_NAME", db)
-        local["columns"].extend(cols)
+    # Convert to dict for backward compatibility
+    totals = {
+        "databases": totals_obj.databases,
+        "schemas": totals_obj.schemas,
+        "tables": totals_obj.tables,
+        "columns": totals_obj.columns,
+        "views": totals_obj.views,
+        "materialized_views": totals_obj.materialized_views,
+        "routines": totals_obj.routines,
+        "tasks": totals_obj.tasks,
+        "dynamic_tables": totals_obj.dynamic_tables,
+    }
 
-        # Views
-        views = _run_json_safe(
-            cli,
-            f"SELECT * FROM {db}.INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = '{sch}'",
-        )
-        for r in views:
-            r.setdefault("DATABASE_NAME", db)
-        local["views"].extend(views)
-
-        # Materialized Views
-        mviews = _run_json_safe(cli, f"SHOW MATERIALIZED VIEWS IN SCHEMA {db}.{sch}")
-        for r in mviews:
-            r.setdefault("DATABASE_NAME", db)
-            r.setdefault("SCHEMA_NAME", sch)
-        local["mviews"].extend(mviews)
-
-        # Routines
-        routines = _run_json_safe(
-            cli,
-            f"SELECT * FROM {db}.INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA = '{sch}'",
-        )
-        for r in routines:
-            r.setdefault("DATABASE_NAME", db)
-        local["routines"].extend(routines)
-
-        # Tasks
-        try:
-            tasks = _run_json(cli, f"SHOW TASKS IN SCHEMA {db}.{sch}")
-            for r in tasks:
-                r.setdefault("DATABASE_NAME", db)
-                r.setdefault("SCHEMA_NAME", sch)
-            local["tasks"].extend(tasks)
-        except SnowCLIError:
-            pass
-
-        # Dynamic tables
-        try:
-            dyn = _run_json(cli, f"SHOW DYNAMIC TABLES IN SCHEMA {db}.{sch}")
-            for r in dyn:
-                r.setdefault("DATABASE_NAME", db)
-                r.setdefault("SCHEMA_NAME", sch)
-            local["dynamic"].extend(dyn)
-        except SnowCLIError:
-            pass
-
-        # Functions
-        try:
-            funcs = _run_json(cli, f"SHOW USER FUNCTIONS IN SCHEMA {db}.{sch}")
-            for r in funcs:
-                r.setdefault("DATABASE_NAME", db)
-                r.setdefault("SCHEMA_NAME", sch)
-            local["functions"].extend(funcs)
-        except SnowCLIError:
-            pass
-
-        # Procedures
-        try:
-            procs = _run_json(cli, f"SHOW PROCEDURES IN SCHEMA {db}.{sch}")
-            for r in procs:
-                r.setdefault("DATABASE_NAME", db)
-                r.setdefault("SCHEMA_NAME", sch)
-            local["procedures"].extend(procs)
-        except SnowCLIError:
-            pass
-
-        # Sampling removed
-
-        return local
-
-    # Run schema processing in parallel
-    with ThreadPoolExecutor(max_workers=max(1, int(catalog_concurrency))) as ex:
-        futures = [ex.submit(process_schema, db, sch) for db, sch in schema_pairs]
-        for fut in as_completed(futures):
-            res = fut.result()
-            all_schemata.extend(res["schemata"])
-            all_tables.extend(res["tables"])
-            all_columns.extend(res["columns"])
-            all_views.extend(res["views"])
-            all_mviews.extend(res["mviews"])
-            all_routines.extend(res["routines"])
-            all_tasks.extend(res["tasks"])
-            all_dynamic.extend(res["dynamic"])
-            all_functions.extend(res["functions"])
-            all_procedures.extend(res["procedures"])
-
-    totals["schemas"] = len(all_schemata)
-    totals["tables"] = len(all_tables)
-    totals["columns"] = len(all_columns)
-    totals["views"] = len(all_views)
-    totals["materialized_views"] = len(all_mviews)
-    totals["routines"] = len(all_routines)
-    totals["tasks"] = len(all_tasks)
-    totals["dynamic_tables"] = len(all_dynamic)
-    totals["functions"] = len(all_functions)
-    totals["procedures"] = len(all_procedures)
+    # Use the collected data instead of individual lists
+    all_schemata = all_data.schemata
+    all_tables = all_data.tables
+    all_columns = all_data.columns
+    all_views = all_data.views
+    all_mviews = all_data.mviews
+    all_routines = all_data.routines
+    all_tasks = all_data.tasks
+    all_dynamic = all_data.dynamic
+    all_functions = all_data.functions
+    all_procedures = all_data.procedures
 
     # Incremental state support
     state_path = out_path / "catalog_state.json"
@@ -456,6 +362,7 @@ def build_catalog(
 
     # Optionally include DDLs
     if include_ddl:
+        cli: SnowCLI = builder.cli
         # Prepare DDL fetch tasks (object_type, fq_name, record)
         ddl_jobs: List[Tuple[str, str, Dict, str, Optional[str]]] = []
 

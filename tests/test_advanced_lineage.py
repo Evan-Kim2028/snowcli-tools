@@ -1,32 +1,26 @@
 """Comprehensive tests for advanced lineage features, focusing on P0/P1 issues."""
 
-import json
 import sqlite3
 import tempfile
-from datetime import datetime, timedelta
 from pathlib import Path
 from unittest import TestCase, mock
 
 import pytest
 
 from snowcli_tools.lineage import (
+    ChangeType,
     ColumnLineageExtractor,
-    TransformationTracker,
-    CrossDatabaseLineageBuilder,
-    ExternalSourceMapper,
     ImpactAnalyzer,
     LineageHistoryManager,
-    ChangeType,
 )
-from snowcli_tools.lineage.column_parser import TransformationType, QualifiedColumn
+from snowcli_tools.lineage.column_parser import QualifiedColumn
 from snowcli_tools.lineage.utils import (
-    validate_object_name,
-    validate_path,
-    safe_file_write,
-    networkx_descendants_at_distance,
-    safe_sql_parse,
-    validate_sql_injection,
     cached_sql_parse,
+    networkx_descendants_at_distance,
+    safe_file_write,
+    safe_sql_parse,
+    validate_object_name,
+    validate_sql_injection,
 )
 
 
@@ -36,10 +30,6 @@ class TestP0CriticalIssues(TestCase):
     def test_missing_imports_resolved(self):
         """Ensure all imports are properly resolved."""
         # These should not raise ImportError
-        from snowcli_tools.lineage.column_parser import QualifiedColumn, TransformationType
-        from snowcli_tools.lineage.identifiers import QualifiedName
-        from snowcli_tools.lineage.graph import NodeType, EdgeType
-        from snowcli_tools.lineage.utils import networkx_descendants_at_distance
 
         # Verify they're usable
         col = QualifiedColumn(table="test", column="col")
@@ -58,7 +48,7 @@ class TestP0CriticalIssues(TestCase):
         for dangerous in dangerous_inputs:
             self.assertFalse(
                 validate_sql_injection(dangerous),
-                f"Failed to detect dangerous input: {dangerous}"
+                f"Failed to detect dangerous input: {dangerous}",
             )
 
         safe_inputs = [
@@ -69,8 +59,7 @@ class TestP0CriticalIssues(TestCase):
 
         for safe in safe_inputs:
             self.assertTrue(
-                validate_sql_injection(safe),
-                f"False positive on safe input: {safe}"
+                validate_sql_injection(safe), f"False positive on safe input: {safe}"
             )
 
     def test_file_system_operations_safety(self):
@@ -146,13 +135,15 @@ class TestP1HighPriorityIssues(TestCase):
 
         # Create test graph
         g = nx.DiGraph()
-        g.add_edges_from([
-            ("A", "B"),
-            ("B", "C"),
-            ("C", "D"),
-            ("B", "E"),
-            ("A", "F"),
-        ])
+        g.add_edges_from(
+            [
+                ("A", "B"),
+                ("B", "C"),
+                ("C", "D"),
+                ("B", "E"),
+                ("A", "F"),
+            ]
+        )
 
         # Test distance 1
         desc = networkx_descendants_at_distance(g, "A", 1)
@@ -183,10 +174,8 @@ class TestP1HighPriorityIssues(TestCase):
                 catalog_path.mkdir(exist_ok=True)
 
                 with mock.patch.object(manager, "_save_snapshot"):
-                    snapshot = manager.capture_snapshot(
-                        catalog_path,
-                        tag=f"v{i}",
-                        description=f"Snapshot {i}"
+                    manager.capture_snapshot(
+                        catalog_path, tag=f"v{i}", description=f"Snapshot {i}"
                     )
 
             # Test cleanup function
@@ -220,7 +209,7 @@ class TestP1HighPriorityIssues(TestCase):
         self.assertEqual(cached_sql_parse.cache_info().hits, 0)
         self.assertEqual(cached_sql_parse.cache_info().misses, 1)
 
-        result2 = cached_sql_parse(sql2)
+        cached_sql_parse(sql2)
         self.assertEqual(cached_sql_parse.cache_info().misses, 2)
 
         # Parse same SQL again - should hit cache
@@ -253,15 +242,12 @@ class TestP1HighPriorityIssues(TestCase):
         ]
 
         for name in valid_names:
-            self.assertTrue(
-                validate_object_name(name),
-                f"Valid name rejected: {name}"
-            )
+            self.assertTrue(validate_object_name(name), f"Valid name rejected: {name}")
 
         for name in invalid_names:
             self.assertFalse(
                 validate_object_name(name) if name else False,
-                f"Invalid name accepted: {name}"
+                f"Invalid name accepted: {name}",
             )
 
 
@@ -329,21 +315,19 @@ class TestImpactAnalysisRobustness(TestCase):
         graph = LineageGraph()
 
         # Add some test nodes
-        graph.add_node(LineageNode(
-            key="existing_node",
-            node_type=NodeType.DATASET,
-            attributes={"name": "test"}
-        ))
+        graph.add_node(
+            LineageNode(
+                key="existing_node",
+                node_type=NodeType.DATASET,
+                attributes={"name": "test"},
+            )
+        )
 
         analyzer = ImpactAnalyzer(graph)
 
         # Try to analyze impact on non-existent node
         with self.assertRaises(ValueError) as context:
-            analyzer.analyze_impact(
-                "non_existent_node",
-                ChangeType.DROP,
-                max_depth=5
-            )
+            analyzer.analyze_impact("non_existent_node", ChangeType.DROP, max_depth=5)
 
         self.assertIn("not found", str(context.exception).lower())
 
@@ -353,11 +337,13 @@ class TestImpactAnalysisRobustness(TestCase):
 
         # Create graph with cycle
         g = nx.DiGraph()
-        g.add_edges_from([
-            ("A", "B"),
-            ("B", "C"),
-            ("C", "A"),  # Creates cycle
-        ])
+        g.add_edges_from(
+            [
+                ("A", "B"),
+                ("B", "C"),
+                ("C", "A"),  # Creates cycle
+            ]
+        )
 
         # Mock LineageGraph
         mock_graph = mock.MagicMock()
@@ -385,8 +371,8 @@ class TestExternalSourceSecurity(TestCase):
         source = ExternalSource(
             source_type=ExternalSourceType.S3,
             location="s3://bucket/path",
-            credentials={"aws_key": "secret", "aws_secret": "very_secret"},
-            encryption={"type": "AES256"}
+            credentials_ref="env:AWS_CREDENTIALS",
+            encryption={"type": "AES256"},
         )
 
         # Convert to dict (as would be exported)
@@ -409,7 +395,9 @@ class TestTimeTravel(TestCase):
 
             # Mock the catalog and graph building but don't mock _save_snapshot
             # so that snapshots are actually saved to the database
-            with mock.patch("snowcli_tools.lineage.history.LineageBuilder") as mock_builder:
+            with mock.patch(
+                "snowcli_tools.lineage.history.LineageBuilder"
+            ) as mock_builder:
                 # Mock the builder to return a minimal graph
                 mock_result = mock.Mock()
                 mock_result.graph = mock.Mock()
@@ -420,17 +408,9 @@ class TestTimeTravel(TestCase):
                 mock_result.audit.entries = []  # Mock the audit entries
                 mock_builder.return_value.build.return_value = mock_result
 
-                snapshot1 = manager.capture_snapshot(
-                    Path(tmpdir),
-                    tag="v1",
-                    description="First"
-                )
+                manager.capture_snapshot(Path(tmpdir), tag="v1", description="First")
 
-                snapshot2 = manager.capture_snapshot(
-                    Path(tmpdir),
-                    tag="v2",
-                    description="Second"
-                )
+                manager.capture_snapshot(Path(tmpdir), tag="v2", description="Second")
 
             # Test snapshot listing
             snapshots = manager.list_snapshots()

@@ -79,6 +79,23 @@ The MCP server exposes the following tools to AI assistants:
   - Parameters: `database`, `schema`, `account`, `format`
   - Returns: Dependency graph in JSON or DOT format
 
+### Health Monitoring & Diagnostic Tools (v1.4.4+)
+- **`health_check`** - Comprehensive server health status
+  - Parameters: None
+  - Returns: Detailed health status including profile, connection, and resource availability
+
+- **`check_profile_config`** - Validate and diagnose profile configuration
+  - Parameters: None
+  - Returns: Profile validation status, available profiles, and configuration recommendations
+
+- **`get_resource_status`** - Check MCP resource availability
+  - Parameters: None
+  - Returns: Status of all MCP resources and their dependencies
+
+- **`check_resource_dependencies`** - Check specific resource dependencies
+  - Parameters: `resource_name` (optional)
+  - Returns: Dependency status and recommendations for specific resources
+
 ### Utility Tools
 - **`test_connection`** - Test Snowflake connection
   - Parameters: None
@@ -96,11 +113,16 @@ Create or update your MCP configuration file (usually `~/.vscode/mcp.json`):
     "snowflake-cli-tools": {
       "command": "uv",
       "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/your/snowflake_connector_py"
+      "cwd": "/path/to/your/snowcli-tools/project",
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
     }
   }
 }
 ```
+
+For additional configuration examples, see `examples/mcp_config_example.json` and `examples/mcp_config_alternatives.json` in this repository.
 
 ### Claude Code Configuration
 
@@ -108,11 +130,14 @@ Add to your Claude Code MCP settings:
 
 ```json
 {
-  "mcp": {
+  "mcpServers": {
     "snowflake-cli-tools": {
       "command": "uv",
       "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/your/snowflake_connector_py"
+      "cwd": "/path/to/your/snowcli-tools/project",
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
     }
   }
 }
@@ -128,9 +153,173 @@ The MCP server respects the following environment variables:
 - `SNOWFLAKE_SCHEMA` - Default schema
 - `SNOWFLAKE_ROLE` - Default role
 
+## Profile Configuration & Troubleshooting
+
+### Profile Validation (v1.4.4+)
+
+The MCP server now includes robust profile validation that catches configuration issues at startup:
+
+#### ✅ What Works Now
+- **Early validation**: Profile issues detected before server starts
+- **Clear error messages**: No more confusing timeout errors
+- **Actionable guidance**: Specific steps to fix configuration problems
+- **Real-time diagnostics**: New MCP tools for ongoing health monitoring
+- **MCP-compliant error responses**: Structured error format following JSON-RPC 2.0 standards
+
+#### Common Error Scenarios
+
+**Profile Not Found Error:**
+```bash
+❌ Snowflake profile validation failed
+Error: Snowflake profile 'default' not found
+Available profiles: evan-oauth, mystenlabs-keypair
+To fix this issue:
+1. Set SNOWFLAKE_PROFILE environment variable to one of the available profiles
+2. Or pass --profile <profile_name> when starting the server
+3. Or run 'snow connection add' to create a new profile
+```
+
+**No Profiles Configured:**
+```bash
+❌ Snowflake profile validation failed
+Error: No Snowflake profiles found. Please run 'snow connection add' to create a profile.
+Expected config file at: ~/Library/Application Support/snowflake/config.toml
+```
+
+### Profile Management
+
+**Check your current configuration:**
+```bash
+# List all available profiles
+snow connection list
+
+# Check MCP server profile status
+snowflake-cli mcp --help  # Shows current profile in use
+
+# Validate specific profile
+snow connection test --connection-name my-profile
+```
+
+**Create a new profile:**
+```bash
+# Interactive setup
+snow connection add
+
+# Non-interactive setup
+snow connection add \
+  --connection-name my-new-profile \
+  --account your-account \
+  --user your-username \
+  --authenticator SNOWFLAKE_JWT \
+  --private-key /path/to/rsa_key.p8 \
+  --warehouse your-warehouse \
+  --database your-database \
+  --schema your-schema \
+  --default
+```
+
+**Set environment profile:**
+```bash
+# Temporary (current session)
+export SNOWFLAKE_PROFILE=my-profile
+
+# Permanent (add to ~/.bashrc or ~/.zshrc)
+echo 'export SNOWFLAKE_PROFILE=my-profile' >> ~/.bashrc
+```
+
+### Troubleshooting Connection Issues
+
+**Server won't start:**
+1. Check available profiles: `snow connection list`
+2. Verify profile exists: `snow connection test --connection-name <profile>`
+3. Set correct profile: `export SNOWFLAKE_PROFILE=<existing-profile>`
+
+**Connection timeouts:**
+1. Test profile directly: `snow connection test --connection-name <profile>`
+2. Check network connectivity
+3. Verify credentials haven't expired
+
+**Permission errors:**
+1. Verify role has necessary permissions
+2. Check warehouse/database/schema access
+3. Test with different role if available
+
+### Health Monitoring & Diagnostics (v1.4.4+)
+
+The enhanced MCP server provides comprehensive health monitoring through new diagnostic tools:
+
+#### Real-Time Health Checks
+
+**Check overall server health:**
+```
+AI: "Check the health of the MCP server"
+```
+
+Response includes:
+- Profile validation status
+- Connection health
+- Resource availability
+- Component-specific diagnostics
+
+**Profile configuration diagnostics:**
+```
+AI: "Check my Snowflake profile configuration"
+```
+
+Response includes:
+- Current profile status
+- Available profiles list
+- Configuration recommendations
+- Troubleshooting guidance
+
+**Resource dependency checking:**
+```
+AI: "Check if all MCP resources are available"
+AI: "Check the dependencies for the catalog resource"
+```
+
+#### Health Check Response Format
+
+```json
+{
+  "status": "healthy",
+  "timestamp": 1673524800.0,
+  "server_uptime": 3600.5,
+  "components": {
+    "profile": {
+      "status": "healthy",
+      "profile_name": "dev",
+      "is_valid": true,
+      "available_profiles": ["dev", "prod"],
+      "last_validated": 1673524500.0
+    },
+    "connection": {
+      "status": "healthy",
+      "last_tested": 1673524700.0
+    },
+    "resources": {
+      "status": "healthy",
+      "available": {
+        "catalog": true,
+        "lineage": true,
+        "cortex_search": true
+      },
+      "dependencies_met": true
+    }
+  }
+}
+```
+
 ## Usage Examples
 
 Once configured, AI assistants can help you:
+
+### Health Monitoring & Diagnostics
+- "Check the MCP server health status"
+- "Validate my Snowflake profile configuration"
+- "Are all MCP resources available?"
+- "Diagnose any connection issues"
+- "What profiles are available on this system?"
 
 ### Data Exploration
 - "Show me the schema of the CUSTOMERS table"
