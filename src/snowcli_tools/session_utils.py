@@ -3,12 +3,25 @@
 from __future__ import annotations
 
 import threading
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Protocol, Union
 
 _LOCK_ATTR = "_snowcli_session_lock"
 
 
-def ensure_session_lock(service: Any) -> threading.Lock:
+class SnowflakeServiceProtocol(Protocol):
+    """Protocol for objects that can have session locks attached."""
+
+    pass
+
+
+class CursorProtocol(Protocol):
+    """Protocol for Snowflake cursor objects."""
+
+    def execute(self, query: str) -> None: ...
+    def fetchone(self) -> Union[Dict[str, Any], tuple, None]: ...
+
+
+def ensure_session_lock(service: SnowflakeServiceProtocol) -> threading.Lock:
     """Return a lock attached to the Snowflake service instance."""
     lock = getattr(service, _LOCK_ATTR, None)
     if lock is None:
@@ -21,7 +34,7 @@ def quote_identifier(value: str) -> str:
     return '"' + value.replace('"', '""') + '"'
 
 
-def snapshot_session(cursor: Any) -> Dict[str, Optional[str]]:
+def snapshot_session(cursor: CursorProtocol) -> Dict[str, Optional[str]]:
     cursor.execute(
         "SELECT CURRENT_ROLE() AS ROLE, CURRENT_WAREHOUSE() AS WAREHOUSE, "
         "CURRENT_DATABASE() AS DATABASE, CURRENT_SCHEMA() AS SCHEMA"
@@ -42,7 +55,7 @@ def snapshot_session(cursor: Any) -> Dict[str, Optional[str]]:
     }
 
 
-def apply_session_context(cursor: Any, overrides: Dict[str, str]) -> None:
+def apply_session_context(cursor: CursorProtocol, overrides: Dict[str, str]) -> None:
     if role := overrides.get("role"):
         cursor.execute(f"USE ROLE {quote_identifier(role)}")
     if warehouse := overrides.get("warehouse"):
@@ -53,7 +66,9 @@ def apply_session_context(cursor: Any, overrides: Dict[str, str]) -> None:
         cursor.execute(f"USE SCHEMA {quote_identifier(schema)}")
 
 
-def restore_session_context(cursor: Any, session: Dict[str, Optional[str]]) -> None:
+def restore_session_context(
+    cursor: CursorProtocol, session: Dict[str, Optional[str]]
+) -> None:
     role = session.get("role")
     warehouse = session.get("warehouse")
     database = session.get("database")

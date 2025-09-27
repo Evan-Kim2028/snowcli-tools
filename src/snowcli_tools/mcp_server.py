@@ -398,6 +398,48 @@ def register_snowcli_tools(
         ok = await anyio.to_thread.run_sync(_test_connection_sync, snowflake_service)
         return {"success": ok}
 
+    @server.tool(name="health_check", description="Get comprehensive health status")
+    async def health_check_tool() -> Dict[str, Any]:
+        """Get health status including connection state and system info."""
+        from .services import RobustSnowflakeService
+
+        try:
+            # Test basic connection
+            connection_ok = await anyio.to_thread.run_sync(
+                _test_connection_sync, snowflake_service
+            )
+
+            # Get more detailed health from service layer
+            robust_service = RobustSnowflakeService(config.snowflake.profile)
+            health_status = await anyio.to_thread.run_sync(
+                robust_service.get_health_status
+            )
+
+            return {
+                "status": (
+                    "healthy"
+                    if connection_ok and health_status.healthy
+                    else "unhealthy"
+                ),
+                "snowflake_connection": connection_ok,
+                "detailed_health": {
+                    "healthy": health_status.healthy,
+                    "snowflake_connection": health_status.snowflake_connection,
+                    "last_error": health_status.last_error,
+                    "circuit_breaker_state": health_status.circuit_breaker_state,
+                },
+                "version": getattr(
+                    __import__("snowcli_tools"), "__version__", "unknown"
+                ),
+                "timestamp": anyio.current_time(),
+            }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": anyio.current_time(),
+            }
+
     @server.tool(name="get_catalog_summary", description="Read catalog summary JSON")
     async def get_catalog_summary_tool(
         catalog_dir: Annotated[
