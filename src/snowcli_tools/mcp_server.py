@@ -45,6 +45,18 @@ from .config import Config, get_config, set_config
 from .dependency import build_dependency_graph, to_dot
 from .lineage import LineageQueryService
 from .lineage.identifiers import parse_table_name
+from .mcp_health import (
+    MCPHealthMonitor,
+    create_configuration_error_response,
+    create_profile_validation_error_response,
+)
+from .mcp_resources import MCPResourceManager
+from .profile_utils import (
+    ProfileSummary,
+    ProfileValidationError,
+    get_profile_summary,
+    validate_and_resolve_profile,
+)
 from .session_utils import (
     apply_session_context,
     ensure_session_lock,
@@ -54,6 +66,10 @@ from .session_utils import (
 from .snow_cli import SnowCLI, SnowCLIError
 
 logger = get_logger(__name__)
+
+# Global health monitor and resource manager instances
+_health_monitor: Optional[MCPHealthMonitor] = None
+_resource_manager: Optional[MCPResourceManager] = None
 
 
 def _json_compatible(payload: Any) -> Any:
@@ -201,6 +217,50 @@ def _get_catalog_summary_sync(catalog_dir: str) -> Dict[str, Any]:
         }
 
 
+def _get_profile_recommendations(
+    summary: ProfileSummary, current_profile: str | None
+) -> list[str]:
+    """Generate actionable recommendations for profile configuration."""
+    recommendations = []
+
+    if not summary.config_exists:
+        recommendations.append(
+            "Snowflake CLI configuration file not found. Run 'snow connection add' to create a profile."
+        )
+        return recommendations
+
+    if summary.profile_count == 0:
+        recommendations.append(
+            "No profiles configured. Run 'snow connection add <profile_name>' to create your first profile."
+        )
+        return recommendations
+
+    if not current_profile and not summary.default_profile:
+        recommendations.append(
+            f"Set SNOWFLAKE_PROFILE environment variable to one of: {', '.join(summary.available_profiles)}"
+        )
+        recommendations.append(
+            "Or set a default profile by running 'snow connection set-default <profile_name>'"
+        )
+
+    if current_profile and current_profile not in summary.available_profiles:
+        recommendations.append(
+            f"Current profile '{current_profile}' not found. "
+            f"Available profiles: {', '.join(summary.available_profiles)}"
+        )
+
+    if summary.profile_count == 1 and not summary.default_profile:
+        profile_name = summary.available_profiles[0]
+        recommendations.append(
+            f"Consider setting '{profile_name}' as default: 'snow connection set-default {profile_name}'"
+        )
+
+    if not recommendations:
+        recommendations.append("Profile configuration looks good!")
+
+    return recommendations
+
+
 def register_snowcli_tools(
     server: FastMCP,
     snowflake_service: SnowflakeService,
@@ -234,24 +294,81 @@ def register_snowcli_tools(
         ] = None,
         ctx: Context | None = None,
     ) -> Dict[str, Any]:
-        overrides = {
-            "warehouse": warehouse,
-            "database": database,
-            "schema": schema,
-            "role": role,
-        }
-        packed = {k: v for k, v in overrides.items() if v}
-        result = await anyio.to_thread.run_sync(
-            _execute_query_sync,
-            snowflake_service,
-            statement,
-            packed,
-        )
-        if ctx is not None:
-            await ctx.debug(
-                f"Executed query with {len(result['rows'])} rows (rowcount={result['rowcount']})."
+        try:
+            # Validate profile health before executing query
+            if _health_monitor:
+                profile_health = await anyio.to_thread.run_sync(
+                    _health_monitor.get_profile_health,
+                    config.snowflake.profile,
+                    False,  # use cache
+                )
+                if not profile_health.is_valid:
+                    error_response = create_profile_validation_error_response(
+                        _health_monitor,
+                        config.snowflake.profile,
+                        profile_health.validation_error or "Profile validation failed",
+                    )
+                    return {
+                        "success": False,
+                        "error": error_response,
+                        "timestamp": anyio.current_time(),
+                    }
+
+            overrides = {
+                "warehouse": warehouse,
+                "database": database,
+                "schema": schema,
+                "role": role,
+            }
+            packed = {k: v for k, v in overrides.items() if v}
+
+            result = await anyio.to_thread.run_sync(
+                _execute_query_sync,
+                snowflake_service,
+                statement,
+                packed,
             )
-        return result
+
+            if ctx is not None:
+                await ctx.debug(
+                    f"Executed query with {len(result['rows'])} rows (rowcount={result['rowcount']})."
+                )
+
+            # Add success indicator to result
+            result["success"] = True
+            return result
+
+        except ProfileValidationError as e:
+            if _health_monitor:
+                error_response = create_profile_validation_error_response(
+                    _health_monitor, config.snowflake.profile, str(e)
+                )
+                _health_monitor.record_error(
+                    f"Query execution failed - profile error: {e}"
+                )
+                return {
+                    "success": False,
+                    "error": error_response,
+                    "timestamp": anyio.current_time(),
+                }
+            else:
+                raise RuntimeError(f"Profile validation failed: {e}") from e
+        except Exception as e:
+            if _health_monitor:
+                error_response = create_configuration_error_response(
+                    _health_monitor,
+                    f"Query execution failed: {e}",
+                    statement=statement,
+                    overrides=packed,
+                )
+                _health_monitor.record_error(f"Query execution failed: {e}")
+                return {
+                    "success": False,
+                    "error": error_response,
+                    "timestamp": anyio.current_time(),
+                }
+            else:
+                raise RuntimeError(f"Query execution failed: {e}") from e
 
     @server.tool(name="preview_table", description="Preview table contents")
     async def preview_table_tool(
@@ -401,39 +518,57 @@ def register_snowcli_tools(
     @server.tool(name="health_check", description="Get comprehensive health status")
     async def health_check_tool() -> Dict[str, Any]:
         """Get health status including connection state and system info."""
-        from .services import RobustSnowflakeService
-
         try:
-            # Test basic connection
-            connection_ok = await anyio.to_thread.run_sync(
-                _test_connection_sync, snowflake_service
-            )
+            version = getattr(__import__("snowcli_tools"), "__version__", "unknown")
 
-            # Get more detailed health from service layer
-            robust_service = RobustSnowflakeService(config.snowflake.profile)
-            health_status = await anyio.to_thread.run_sync(
-                robust_service.get_health_status
-            )
+            if _health_monitor:
+                # Use the enhanced health monitor
+                health = await anyio.to_thread.run_sync(
+                    _health_monitor.get_comprehensive_health,
+                    config.snowflake.profile,
+                    snowflake_service,
+                    [
+                        "catalog",
+                        "lineage",
+                        "cortex",
+                        "query_manager",
+                        "semantic_manager",
+                    ],  # Available resources
+                    version,
+                )
+                return health.to_mcp_response()
+            else:
+                # Fallback to basic health check
+                from .services import RobustSnowflakeService
 
-            return {
-                "status": (
-                    "healthy"
-                    if connection_ok and health_status.healthy
-                    else "unhealthy"
-                ),
-                "snowflake_connection": connection_ok,
-                "detailed_health": {
-                    "healthy": health_status.healthy,
-                    "snowflake_connection": health_status.snowflake_connection,
-                    "last_error": health_status.last_error,
-                    "circuit_breaker_state": health_status.circuit_breaker_state,
-                },
-                "version": getattr(
-                    __import__("snowcli_tools"), "__version__", "unknown"
-                ),
-                "timestamp": anyio.current_time(),
-            }
+                connection_ok = await anyio.to_thread.run_sync(
+                    _test_connection_sync, snowflake_service
+                )
+
+                robust_service = RobustSnowflakeService(config.snowflake.profile)
+                health_status = await anyio.to_thread.run_sync(
+                    robust_service.get_health_status
+                )
+
+                return {
+                    "status": (
+                        "healthy"
+                        if connection_ok and health_status.healthy
+                        else "unhealthy"
+                    ),
+                    "snowflake_connection": connection_ok,
+                    "detailed_health": {
+                        "healthy": health_status.healthy,
+                        "snowflake_connection": health_status.snowflake_connection,
+                        "last_error": health_status.last_error,
+                        "circuit_breaker_state": health_status.circuit_breaker_state,
+                    },
+                    "version": version,
+                    "timestamp": anyio.current_time(),
+                }
         except Exception as e:
+            if _health_monitor:
+                _health_monitor.record_error(f"Health check failed: {e}")
             return {
                 "status": "unhealthy",
                 "error": str(e),
@@ -448,6 +583,159 @@ def register_snowcli_tools(
         ] = "./data_catalogue",
     ) -> Dict[str, Any]:
         return await anyio.to_thread.run_sync(_get_catalog_summary_sync, catalog_dir)
+
+    @server.tool(
+        name="check_profile_config", description="Check Snowflake profile configuration"
+    )
+    async def check_profile_config_tool() -> Dict[str, Any]:
+        """Check current Snowflake profile configuration and provide diagnostics."""
+
+        def _check_profile_sync() -> Dict[str, Any]:
+            try:
+                summary = get_profile_summary()
+                current_profile = os.environ.get("SNOWFLAKE_PROFILE")
+
+                # Try to validate current configuration
+                validation_result: dict[str, Any] = {"valid": False, "error": None}
+                try:
+                    resolved_profile = validate_and_resolve_profile()
+                    validation_result = {
+                        "valid": True,
+                        "resolved_profile": resolved_profile,
+                        "error": None,
+                    }
+                except ProfileValidationError as e:
+                    validation_result = {"valid": False, "error": str(e)}
+
+                return {
+                    "success": True,
+                    "config_path": str(summary.config_path),
+                    "config_exists": summary.config_exists,
+                    "available_profiles": summary.available_profiles,
+                    "profile_count": summary.profile_count,
+                    "default_profile": summary.default_profile,
+                    "current_profile": current_profile,
+                    "validation": validation_result,
+                    "recommendations": _get_profile_recommendations(
+                        summary, current_profile
+                    ),
+                }
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "message": "Failed to check profile configuration",
+                }
+
+        return await anyio.to_thread.run_sync(_check_profile_sync)
+
+    @server.tool(
+        name="get_resource_status",
+        description="Get availability status for MCP server resources",
+    )
+    async def get_resource_status_tool(
+        check_catalog: Annotated[
+            bool, Field(description="Include catalog availability check", default=True)
+        ] = True,
+        catalog_dir: Annotated[
+            str,
+            Field(description="Catalog directory to check", default="./data_catalogue"),
+        ] = "./data_catalogue",
+    ) -> Dict[str, Any]:
+        """Get comprehensive resource availability status."""
+        try:
+            if not _resource_manager:
+                return {
+                    "success": False,
+                    "error": "Resource manager not available",
+                    "timestamp": anyio.current_time(),
+                }
+
+            # Define core resources to check
+            resource_names = [
+                "catalog",
+                "lineage",
+                "cortex_search",
+                "cortex_analyst",
+                "query_manager",
+                "object_manager",
+                "semantic_manager",
+            ]
+
+            # Check resource availability
+            resource_status = await anyio.to_thread.run_sync(
+                _resource_manager.create_resource_status_response,
+                resource_names,
+                snowflake_service,
+                catalog_dir=catalog_dir if check_catalog else None,
+            )
+
+            return {
+                "success": True,
+                **resource_status,
+            }
+
+        except Exception as e:
+            if _health_monitor:
+                _health_monitor.record_error(f"Resource status check failed: {e}")
+            return {
+                "success": False,
+                "error": f"Failed to get resource status: {e}",
+                "timestamp": anyio.current_time(),
+            }
+
+    @server.tool(
+        name="check_resource_dependencies",
+        description="Check dependencies for a specific resource",
+    )
+    async def check_resource_dependencies_tool(
+        resource_name: Annotated[str, Field(description="Resource name to check")],
+        catalog_dir: Annotated[
+            str, Field(description="Catalog directory", default="./data_catalogue")
+        ] = "./data_catalogue",
+    ) -> Dict[str, Any]:
+        """Check dependencies for a specific resource."""
+        try:
+            if not _resource_manager:
+                return {
+                    "success": False,
+                    "error": "Resource manager not available",
+                    "timestamp": anyio.current_time(),
+                }
+
+            # Get resource availability
+            availability = await anyio.to_thread.run_sync(
+                _resource_manager.get_resource_availability,
+                resource_name,
+                snowflake_service,
+                catalog_dir=catalog_dir,
+            )
+
+            # Get recommendations
+            recommendations = _resource_manager.get_resource_recommendations(
+                resource_name, availability
+            )
+
+            # Get dependency information
+            dependencies = _resource_manager.dependencies.get(resource_name, [])
+
+            return {
+                "success": True,
+                "resource_name": resource_name,
+                "availability": availability.to_dict(),
+                "dependencies": dependencies,
+                "recommendations": recommendations,
+                "timestamp": anyio.current_time(),
+            }
+
+        except Exception as e:
+            if _health_monitor:
+                _health_monitor.record_error(f"Resource dependency check failed: {e}")
+            return {
+                "success": False,
+                "error": f"Failed to check resource dependencies: {e}",
+                "timestamp": anyio.current_time(),
+            }
 
     if enable_cli_bridge and snow_cli is not None:
 
@@ -626,7 +914,54 @@ def create_combined_lifespan(args: argparse.Namespace):
 
     @asynccontextmanager
     async def lifespan(server: FastMCP):
+        global _health_monitor, _resource_manager
+
+        # Initialize health monitor at server startup
+        _health_monitor = MCPHealthMonitor(server_start_time=anyio.current_time())
+
+        # Initialize resource manager with health monitor
+        _resource_manager = MCPResourceManager(health_monitor=_health_monitor)
+
+        # Perform early profile validation
+        try:
+            config = get_config()
+            if config.snowflake.profile:
+                profile_health = await anyio.to_thread.run_sync(
+                    _health_monitor.get_profile_health,
+                    config.snowflake.profile,
+                    True,  # force_refresh
+                )
+                if not profile_health.is_valid:
+                    logger.warning(
+                        f"Profile validation issue detected: {profile_health.validation_error}"
+                    )
+                    _health_monitor.record_error(
+                        f"Profile validation failed: {profile_health.validation_error}"
+                    )
+                else:
+                    logger.info(
+                        f"✓ Profile health check passed for: {profile_health.profile_name}"
+                    )
+        except Exception as e:
+            logger.warning(f"Early profile validation failed: {e}")
+            _health_monitor.record_error(f"Early profile validation failed: {e}")
+
         async with snowflake_lifespan(server) as snowflake_service:
+            # Test Snowflake connection during startup
+            try:
+                connection_health = await anyio.to_thread.run_sync(
+                    _health_monitor.check_connection_health, snowflake_service
+                )
+                if connection_health.value == "healthy":
+                    logger.info("✓ Snowflake connection health check passed")
+                else:
+                    logger.warning(
+                        f"Snowflake connection health check failed: {connection_health}"
+                    )
+            except Exception as e:
+                logger.warning(f"Connection health check failed: {e}")
+                _health_monitor.record_error(f"Connection health check failed: {e}")
+
             register_snowcli_tools(
                 server,
                 snowflake_service,
@@ -644,19 +979,51 @@ def main() -> None:
     configure_logging(level=args.log_level)
     _apply_config_overrides(args)
 
-    # Ensure SNOWFLAKE_PROFILE is set in environment for snowflake-labs-mcp
-    cfg = get_config()
-    configured_profile = cfg.snowflake.profile or os.environ.get("SNOWFLAKE_PROFILE")
-    default_profile = configured_profile or os.environ.get("SNOWCLI_DEFAULT_PROFILE")
+    # Validate Snowflake profile configuration before starting server
+    try:
+        cfg = get_config()
+        # Use the enhanced validation function
+        resolved_profile = validate_and_resolve_profile()
 
-    if default_profile:
-        os.environ["SNOWFLAKE_PROFILE"] = default_profile
-        os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = default_profile
-    else:
-        logger.warning(
-            "No Snowflake profile configured. Set SNOWFLAKE_PROFILE, "
-            "SNOWCLI_DEFAULT_PROFILE, or pass --profile when starting the MCP server."
-        )
+        logger.info(f"✓ Snowflake profile validation successful: {resolved_profile}")
+
+        # Set the validated profile in environment for snowflake-labs-mcp
+        os.environ["SNOWFLAKE_PROFILE"] = resolved_profile
+        os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = resolved_profile
+
+        # Update config with validated profile
+        cfg.snowflake.profile = resolved_profile
+        set_config(cfg)
+
+        # Log profile summary for debugging
+        summary = get_profile_summary()
+        logger.debug(f"Profile summary: {summary}")
+
+    except ProfileValidationError as e:
+        logger.error("❌ Snowflake profile validation failed")
+        logger.error(f"Error: {e}")
+
+        # Provide helpful next steps
+        if e.available_profiles:
+            logger.error(f"Available profiles: {', '.join(e.available_profiles)}")
+            logger.error("To fix this issue:")
+            logger.error(
+                "1. Set SNOWFLAKE_PROFILE environment variable to one of the available profiles"
+            )
+            logger.error("2. Or pass --profile <profile_name> when starting the server")
+            logger.error("3. Or run 'snow connection add' to create a new profile")
+        else:
+            logger.error("No Snowflake profiles found.")
+            logger.error("Please run 'snow connection add' to create a profile first.")
+
+        if e.config_path:
+            logger.error(f"Expected config file at: {e.config_path}")
+
+        # Exit with clear error code
+        raise SystemExit(1) from e
+    except Exception as e:
+        logger.error(f"❌ Unexpected error during profile validation: {e}")
+        raise SystemExit(1) from e
 
     server = FastMCP(
         args.name,
