@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -79,7 +80,8 @@ class TestConfig:
             config_path = f.name
 
         try:
-            config = Config.from_yaml(config_path)
+            with patch.dict(os.environ, {}, clear=True):
+                config = Config.from_yaml(config_path)
 
             assert config.snowflake.profile == "yaml_profile"
             assert config.snowflake.warehouse == "yaml_wh"
@@ -98,7 +100,10 @@ class TestConfig:
     def test_config_save_to_yaml(self):
         """Test saving config to YAML file."""
         config = Config.from_env()
-        config.snowflake.profile = "test_profile"
+        config = replace(
+            config,
+            snowflake=replace(config.snowflake, profile="test_profile"),
+        )
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             config_path = f.name
@@ -121,8 +126,7 @@ class TestConfig:
         original_config = get_config()
 
         # Set a custom config
-        custom_config = Config.from_env()
-        custom_config.max_concurrent_queries = 99
+        custom_config = replace(get_config(), max_concurrent_queries=99)
         set_config(custom_config)
 
         # Verify it's set
