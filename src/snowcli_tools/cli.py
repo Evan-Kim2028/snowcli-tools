@@ -11,9 +11,8 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .catalog import build_catalog, export_sql_from_catalog
-from .config import Config, get_config, set_config
-from .dependency import build_dependency_graph, to_dot
+from .catalog import export_sql_from_catalog
+from .config import Config, ConfigError, apply_config_overrides, get_config, load_config
 from .lineage import LineageQueryService
 from .lineage.graph import LineageGraph, LineageNode
 from .lineage.identifiers import QualifiedName, parse_table_name
@@ -21,6 +20,8 @@ from .lineage.queries import LineageQueryResult
 
 # MCP import is guarded - only imported when the command is called
 from .parallel import create_object_queries, query_multiple_objects
+from .service_layer import CatalogService, DependencyService, QueryService
+from .session_utils import SessionContext
 from .snow_cli import SnowCLI, SnowCLIError
 
 console = Console()
@@ -36,7 +37,7 @@ console = Console()
 )
 @click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option(version="1.3.0")
+@click.version_option(version="1.5.0")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     """Snowflake CLI Tools - Efficient database operations CLI.
 
@@ -50,28 +51,78 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool):
     Authentication is provided entirely by the official `snow` CLI profiles
     (bring-your-own profile). This tool never manages secrets or opens a browser;
     it shells out to `snow sql` with your selected profile and optional context.
-    """
-    if config_path:
-        try:
-            config = Config.from_yaml(config_path)
-            set_config(config)
-            if verbose:
-                console.print(
-                    f"[green]✓[/green] Loaded configuration from {config_path}"
-                )
-        except Exception as e:
-            console.print(f"[red]✗[/red] Failed to load config: {e}")
-            sys.exit(1)
 
+    Tip: run `snowflake-cli verify` once after setup to confirm your Snow CLI
+    profile exists and basic connectivity succeeds.
+    """
+    overrides: Dict[str, Optional[str]] = {}
     if profile:
-        cfg = get_config()
-        cfg.snowflake.profile = profile
-        set_config(cfg)
-        if verbose:
-            console.print(f"[green]✓[/green] Using profile: {profile}")
+        overrides["profile"] = profile
+
+    try:
+        config = load_config(
+            config_path=config_path,
+            cli_overrides=overrides or None,
+        )
+    except ConfigError as err:
+        console.print(f"[red]✗[/red] Failed to load config: {err}")
+        sys.exit(1)
+
+    if verbose and config_path:
+        console.print(f"[green]✓[/green] Loaded configuration from {config_path}")
+
+    if verbose and profile:
+        console.print(f"[green]✓[/green] Using profile: {config.snowflake.profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.3.0")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.5.0")
+
+
+@cli.command()
+def verify():
+    """Verify Snow CLI availability, profile existence, and basic connectivity.
+
+    This checks that the `snow` CLI is installed, the configured profile exists,
+    and `SELECT 1` succeeds using that profile.
+    """
+    cfg = get_config()
+    try:
+        runner = SnowCLI(profile=cfg.snowflake.profile)
+        # Check that Snow CLI is installed and can list connections
+        conns = runner.list_connections()
+        names = {c.get("name") or c.get("connection_name") for c in conns}
+        if cfg.snowflake.profile not in names:
+            console.print(
+                f"[red]✗[/red] Profile '{cfg.snowflake.profile}' not found in Snow CLI connections."
+            )
+            console.print(
+                "[blue]ℹ[/blue] Create one with: `snow connection add --connection-name "
+                f"{cfg.snowflake.profile} --account <acct> --user <user> --private-key <path>`"
+            )
+            console.print(
+                "[blue]ℹ[/blue] Or run with: `--profile <existing_profile>` or set SNOWFLAKE_PROFILE."
+            )
+            raise SystemExit(1)
+
+        # Smoke test the connection
+        if not runner.test_connection():
+            console.print(
+                f"[red]✗[/red] Connection test failed for profile '{cfg.snowflake.profile}'."
+            )
+            console.print(
+                "[blue]ℹ[/blue] Verify credentials and defaults (role/warehouse/database/schema)."
+            )
+            raise SystemExit(1)
+
+        console.print(
+            f"[green]✓[/green] Verified Snow CLI and profile '{cfg.snowflake.profile}'."
+        )
+    except SnowCLIError as e:
+        console.print(
+            "[red]✗[/red] Snow CLI not ready. Install `snowflake-cli` and configure a profile."
+        )
+        console.print(f"[dim]{e}[/dim]")
+        raise SystemExit(1)
 
 
 @cli.command()
@@ -129,15 +180,24 @@ def query(
     format: str,
 ):
     """Execute a single SQL query via Snowflake CLI."""
-    ctx = {"warehouse": warehouse, "database": database, "schema": schema, "role": role}
+    service = QueryService()
+    session_ctx = SessionContext(
+        warehouse=warehouse,
+        database=database,
+        schema=schema,
+        role=role,
+    )
     try:
-        cli = SnowCLI()
         out_fmt = (
             "json"
             if format == "json"
             else ("csv" if format == "csv" or output_file else None)
         )
-        out = cli.run_query(query, output_format=out_fmt, ctx_overrides=ctx)
+        out = service.execute_cli(
+            query,
+            session=session_ctx,
+            output_format=out_fmt,
+        )
 
         # Save to file
         if output_file:
@@ -271,18 +331,18 @@ def preview(
     output_file: Optional[str],
 ):
     """Preview table contents via Snowflake CLI."""
-    query_str = f"SELECT * FROM {table_name} LIMIT {limit}"
+    service = QueryService()
+    session_ctx = SessionContext(
+        warehouse=warehouse,
+        database=database,
+        schema=schema,
+        role=role,
+    )
     try:
-        cli = SnowCLI()
-        out = cli.run_query(
-            query_str,
-            output_format="csv",
-            ctx_overrides={
-                "warehouse": warehouse,
-                "database": database,
-                "schema": schema,
-                "role": role,
-            },
+        out = service.preview_cli(
+            table_name,
+            limit=limit,
+            session=session_ctx,
         )
 
         if not out.raw_stdout.strip():
@@ -383,14 +443,17 @@ def depgraph(
     Uses ACCOUNT_USAGE.OBJECT_DEPENDENCIES when available, otherwise falls back
     to INFORMATION_SCHEMA (view→table usage).
     """
+    service = DependencyService()
     try:
-        graph = build_dependency_graph(
-            database=database, schema=schema, account_scope=account
+        graph = service.build(
+            database=database,
+            schema=schema,
+            account_scope=account,
         )
         if format == "json":
             payload = json.dumps(graph, indent=2)
         else:
-            payload = to_dot(graph)
+            payload = service.to_dot(graph)
 
         # Determine output target
         default_dir = Path("./dependencies")
@@ -498,9 +561,7 @@ def setup_connection(
             console.print(f"[green]✓[/green] Set '{name}' as default connection")
 
         # Update local config profile to this name for convenience
-        cfg = get_config()
-        cfg.snowflake.profile = name
-        set_config(cfg)
+        apply_config_overrides(snowflake={"profile": name})
         console.print(f"[green]✓[/green] Local profile set to '{name}'")
 
         # Test and print a sample result header
@@ -581,11 +642,12 @@ def catalog(
     materialized_views.json, routines.json, tasks.json, dynamic_tables.json,
     plus a catalog_summary.json with counts.
     """
+    service = CatalogService()
     try:
         console.print(
             f"[blue]🔍[/blue] Building catalog to [cyan]{output_dir}[/cyan]..."
         )
-        totals = build_catalog(
+        totals = service.build(
             output_dir,
             database=database,
             account_scope=account,
@@ -593,7 +655,7 @@ def catalog(
             output_format=format,
             include_ddl=include_ddl,
             max_ddl_concurrency=max_ddl_concurrency,
-            catalog_concurrency=catalog_concurrency or 16,
+            catalog_concurrency=catalog_concurrency,
             export_sql=export_sql,
         )
         console.print("[green]✓[/green] Catalog build complete")
@@ -1193,8 +1255,6 @@ def mcp():
     """
     try:
         # Guarded import - only load MCP when the command is called
-        import asyncio
-
         from .mcp_server import main as mcp_main
 
         console.print("[blue]🚀[/blue] Starting Snowflake MCP Server...")
@@ -1204,8 +1264,27 @@ def mcp():
         console.print("[blue]💡[/blue] Press Ctrl+C to stop the server")
         console.print()
 
-        # Run the MCP server
-        asyncio.run(mcp_main())
+        # Run the MCP server with default service config argument to avoid empty config
+        # Create a minimal service config if none exists
+        import os
+
+        config_path = Path("mcp_service_config.json")
+        if not config_path.exists():
+            minimal_config = {
+                "snowflake": {
+                    "account": "",  # Will be filled from profile
+                    "user": "",  # Will be filled from profile
+                    "database": "",  # Will be filled from profile
+                    "schema": "",  # Will be filled from profile
+                    "warehouse": "",  # Will be filled from profile
+                }
+            }
+            with open(config_path, "w") as f:
+                json.dump(minimal_config, f, indent=2)
+
+        # Pass the service config file argument explicitly
+        # mcp_main is not async, so call it directly
+        mcp_main(["--service-config-file", str(config_path)])
 
     except ImportError:
         console.print(
