@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 from contextlib import asynccontextmanager
+from functools import partial
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -40,29 +41,21 @@ from mcp_server_snowflake.utils import (  # type: ignore[import-untyped]
     warn_deprecated_params,
 )
 
-from .catalog import build_catalog
-from .config import Config, get_config, set_config
-from .dependency import build_dependency_graph, to_dot
-from .lineage import LineageQueryService
-from .lineage.identifiers import parse_table_name
+from .config import Config, ConfigError, apply_config_overrides, get_config, load_config
 from .mcp_health import (
     MCPHealthMonitor,
     create_configuration_error_response,
     create_profile_validation_error_response,
 )
 from .mcp_resources import MCPResourceManager
-from .profile_utils import (
-    ProfileSummary,
-    ProfileValidationError,
-    get_profile_summary,
-    validate_and_resolve_profile,
+from .mcp.utils import (
+    get_profile_recommendations,
+    json_compatible,
+    query_lineage_sync,
 )
-from .session_utils import (
-    apply_session_context,
-    ensure_session_lock,
-    restore_session_context,
-    snapshot_session,
-)
+from .profile_utils import ProfileSummary, ProfileValidationError, get_profile_summary, validate_and_resolve_profile
+from .service_layer import CatalogService, DependencyService, QueryService
+from .session_utils import SessionContext
 from .snow_cli import SnowCLI, SnowCLIError
 
 logger = get_logger(__name__)
@@ -70,195 +63,6 @@ logger = get_logger(__name__)
 # Global health monitor and resource manager instances
 _health_monitor: Optional[MCPHealthMonitor] = None
 _resource_manager: Optional[MCPResourceManager] = None
-
-
-def _json_compatible(payload: Any) -> Any:
-    """Convert non-JSON-serialisable objects to strings recursively."""
-
-    return json.loads(json.dumps(payload, default=str))
-
-
-def _execute_query_sync(
-    snowflake_service: SnowflakeService,
-    statement: str,
-    overrides: Dict[str, str],
-) -> Dict[str, Any]:
-    lock = ensure_session_lock(snowflake_service)
-    with lock:
-        with snowflake_service.get_connection(
-            use_dict_cursor=True,
-            session_parameters=snowflake_service.get_query_tag_param(),
-        ) as (_, cursor):
-            original = snapshot_session(cursor)
-            try:
-                if overrides:
-                    apply_session_context(cursor, overrides)
-                cursor.execute(statement)
-                rows = cursor.fetchall()
-                return {
-                    "statement": statement,
-                    "rowcount": cursor.rowcount,
-                    "rows": _json_compatible(rows),
-                }
-            finally:
-                try:
-                    restore_session_context(cursor, original)
-                except (
-                    Exception
-                ) as restore_error:  # pragma: no cover - catastrophic restore failure
-                    logger.error(
-                        "Failed to restore Snowflake session context: %s", restore_error
-                    )
-                    raise
-
-
-def _test_connection_sync(snowflake_service: SnowflakeService) -> bool:
-    try:
-        with snowflake_service.get_connection(use_dict_cursor=True) as (_, cursor):
-            cursor.execute("SELECT 1")
-            row = cursor.fetchone()
-            if isinstance(row, dict):
-                return any(str(value).strip() == "1" for value in row.values())
-            if isinstance(row, (list, tuple)):
-                return any(str(value).strip() == "1" for value in row)
-            return bool(row)
-    except Exception as exc:  # pragma: no cover - connector errors surface upstream
-        logger.warning("Snowflake connection test failed: %s", exc)
-        return False
-
-
-def _query_lineage_sync(
-    object_name: str,
-    direction: str,
-    depth: int,
-    fmt: str,
-    catalog_dir: str,
-    cache_dir: str,
-    config: Config,
-) -> Dict[str, Any]:
-    service = LineageQueryService(
-        catalog_dir=Path(catalog_dir),
-        cache_root=Path(cache_dir),
-    )
-
-    default_db = config.snowflake.database
-    default_schema = config.snowflake.schema
-
-    qualified = parse_table_name(object_name).with_defaults(default_db, default_schema)
-    base_key = qualified.key()
-    candidates = [base_key]
-    if not base_key.endswith("::task"):
-        candidates.append(f"{base_key}::task")
-
-    lineage_result = None
-    resolved_key: Optional[str] = None
-    for candidate in candidates:
-        try:
-            result = service.object_subgraph(
-                candidate, direction=direction, depth=depth
-            )
-        except KeyError:
-            continue
-        lineage_result = result
-        resolved_key = candidate
-        break
-
-    if lineage_result is None or resolved_key is None:
-        return {
-            "success": False,
-            "message": (
-                "Object not found in lineage graph. Run build_catalog first or verify the name."
-            ),
-        }
-
-    nodes = len(lineage_result.graph.nodes)
-    edges = len(lineage_result.graph.edge_metadata)
-
-    payload: Dict[str, Any] = {
-        "success": True,
-        "object": resolved_key,
-        "direction": direction,
-        "depth": depth,
-        "node_count": nodes,
-        "edge_count": edges,
-    }
-
-    if fmt == "json":
-        graph = getattr(lineage_result.graph, "to_dict", None)
-        payload["graph"] = (
-            graph() if callable(graph) else _json_compatible(lineage_result.graph)
-        )
-    else:
-        summary = [
-            f"- {node.attributes.get('name', key)} ({node.node_type.value})"
-            for key, node in lineage_result.graph.nodes.items()
-        ]
-        payload["summary"] = "\n".join(summary)
-    return payload
-
-
-def _get_catalog_summary_sync(catalog_dir: str) -> Dict[str, Any]:
-    path = Path(catalog_dir) / "catalog_summary.json"
-    if not path.exists():
-        return {
-            "success": False,
-            "message": f"No catalog summary found in {catalog_dir}. Run build_catalog first.",
-        }
-    try:
-        return {
-            "success": True,
-            "catalog_dir": catalog_dir,
-            "summary": json.loads(path.read_text()),
-        }
-    except json.JSONDecodeError:
-        return {
-            "success": False,
-            "message": f"Failed to parse catalog summary at {path}",
-        }
-
-
-def _get_profile_recommendations(
-    summary: ProfileSummary, current_profile: str | None
-) -> list[str]:
-    """Generate actionable recommendations for profile configuration."""
-    recommendations = []
-
-    if not summary.config_exists:
-        recommendations.append(
-            "Snowflake CLI configuration file not found. Run 'snow connection add' to create a profile."
-        )
-        return recommendations
-
-    if summary.profile_count == 0:
-        recommendations.append(
-            "No profiles configured. Run 'snow connection add <profile_name>' to create your first profile."
-        )
-        return recommendations
-
-    if not current_profile and not summary.default_profile:
-        recommendations.append(
-            f"Set SNOWFLAKE_PROFILE environment variable to one of: {', '.join(summary.available_profiles)}"
-        )
-        recommendations.append(
-            "Or set a default profile by running 'snow connection set-default <profile_name>'"
-        )
-
-    if current_profile and current_profile not in summary.available_profiles:
-        recommendations.append(
-            f"Current profile '{current_profile}' not found. "
-            f"Available profiles: {', '.join(summary.available_profiles)}"
-        )
-
-    if summary.profile_count == 1 and not summary.default_profile:
-        profile_name = summary.available_profiles[0]
-        recommendations.append(
-            f"Consider setting '{profile_name}' as default: 'snow connection set-default {profile_name}'"
-        )
-
-    if not recommendations:
-        recommendations.append("Profile configuration looks good!")
-
-    return recommendations
 
 
 def register_snowcli_tools(
@@ -273,6 +77,9 @@ def register_snowcli_tools(
         return
 
     config = get_config()
+    query_service = QueryService(config=config)
+    catalog_service = CatalogService(config=config)
+    dependency_service = DependencyService(config=config)
     snow_cli: SnowCLI | None = SnowCLI() if enable_cli_bridge else None
 
     @server.tool(
@@ -321,12 +128,15 @@ def register_snowcli_tools(
                 "role": role,
             }
             packed = {k: v for k, v in overrides.items() if v}
+            session_ctx = query_service.session_from_mapping(packed)
 
             result = await anyio.to_thread.run_sync(
-                _execute_query_sync,
-                snowflake_service,
-                statement,
-                packed,
+                partial(
+                    query_service.execute_with_service,
+                    snowflake_service,
+                    statement,
+                    session=session_ctx,
+                )
             )
 
             if ctx is not None:
@@ -395,11 +205,14 @@ def register_snowcli_tools(
             "role": role,
         }
         packed = {k: v for k, v in overrides.items() if v}
+        session_ctx = query_service.session_from_mapping(packed)
         return await anyio.to_thread.run_sync(
-            _execute_query_sync,
-            snowflake_service,
-            statement,
-            packed,
+            partial(
+                query_service.execute_with_service,
+                snowflake_service,
+                statement,
+                session=session_ctx,
+            )
         )
 
     @server.tool(name="build_catalog", description="Build Snowflake catalog metadata")
@@ -423,7 +236,7 @@ def register_snowcli_tools(
         ] = True,
     ) -> Dict[str, Any]:
         def run_catalog() -> Dict[str, Any]:
-            totals = build_catalog(
+            totals = catalog_service.build(
                 output_dir,
                 database=database,
                 account_scope=account,
@@ -470,8 +283,8 @@ def register_snowcli_tools(
             Field(description="Lineage cache directory", default="./lineage"),
         ] = "./lineage",
     ) -> Dict[str, Any]:
-        return await anyio.to_thread.run_sync(
-            _query_lineage_sync,
+        result = await anyio.to_thread.run_sync(
+            query_lineage_sync,
             object_name,
             direction,
             depth,
@@ -480,6 +293,7 @@ def register_snowcli_tools(
             cache_dir,
             config,
         )
+        return result
 
     @server.tool(
         name="build_dependency_graph", description="Build object dependency graph"
@@ -499,20 +313,22 @@ def register_snowcli_tools(
         ] = "json",
     ) -> Dict[str, Any]:
         def run_graph() -> Dict[str, Any]:
-            graph = build_dependency_graph(
+            graph = dependency_service.build(
                 database=database,
                 schema=schema,
                 account_scope=account,
             )
             if format == "dot":
-                return {"format": "dot", "graph": to_dot(graph)}
+                return {"format": "dot", "graph": dependency_service.to_dot(graph)}
             return {"format": "json", "graph": graph}
 
         return await anyio.to_thread.run_sync(run_graph)
 
     @server.tool(name="test_connection", description="Validate Snowflake connectivity")
     async def test_connection_tool() -> Dict[str, Any]:
-        ok = await anyio.to_thread.run_sync(_test_connection_sync, snowflake_service)
+        ok = await anyio.to_thread.run_sync(
+            partial(query_service.test_connection, snowflake_service)
+        )
         return {"success": ok}
 
     @server.tool(name="health_check", description="Get comprehensive health status")
@@ -542,7 +358,7 @@ def register_snowcli_tools(
                 from .services import RobustSnowflakeService
 
                 connection_ok = await anyio.to_thread.run_sync(
-                    _test_connection_sync, snowflake_service
+                    partial(query_service.test_connection, snowflake_service)
                 )
 
                 robust_service = RobustSnowflakeService(config.snowflake.profile)
@@ -582,7 +398,9 @@ def register_snowcli_tools(
             Field(description="Catalog directory", default="./data_catalogue"),
         ] = "./data_catalogue",
     ) -> Dict[str, Any]:
-        return await anyio.to_thread.run_sync(_get_catalog_summary_sync, catalog_dir)
+        return await anyio.to_thread.run_sync(
+            partial(catalog_service.load_summary, catalog_dir)
+        )
 
     @server.tool(
         name="check_profile_config", description="Check Snowflake profile configuration"
@@ -616,7 +434,7 @@ def register_snowcli_tools(
                     "default_profile": summary.default_profile,
                     "current_profile": current_profile,
                     "validation": validation_result,
-                    "recommendations": _get_profile_recommendations(
+                    "recommendations": get_profile_recommendations(
                         summary, current_profile
                     ),
                 }
@@ -788,30 +606,29 @@ def register_snowcli_tools(
     setattr(server, "_snowcli_tools_registered", True)
 
 
-def _apply_config_overrides(args: argparse.Namespace) -> None:
-    if args.snowcli_config:
-        cfg = Config.from_yaml(args.snowcli_config)
-    else:
-        cfg = get_config()
+def _apply_config_overrides(args: argparse.Namespace) -> Config:
+    overrides = {
+        key: value
+        for key in ("profile", "warehouse", "database", "schema", "role")
+        if (value := getattr(args, key, None))
+    }
 
-    if args.profile:
-        cfg.snowflake.profile = args.profile
-
-    # Propagate CLI context overrides from args if present
-    for attr in ("warehouse", "database", "schema", "role"):
-        value = getattr(args, attr, None)
-        if value:
-            setattr(cfg.snowflake, attr, value)
-
-    set_config(cfg)
+    try:
+        cfg = load_config(
+            config_path=args.snowcli_config,
+            cli_overrides=overrides or None,
+        )
+    except ConfigError as exc:
+        raise SystemExit(f"Failed to load configuration: {exc}") from exc
 
     if cfg.snowflake.profile:
         os.environ.setdefault("SNOWFLAKE_PROFILE", cfg.snowflake.profile)
-        # Also set it immediately for the snowflake-labs-mcp package
         os.environ["SNOWFLAKE_PROFILE"] = cfg.snowflake.profile
 
+    return cfg
 
-def parse_arguments() -> argparse.Namespace:
+
+def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Snowflake MCP server with snowcli-tools extensions",
     )
@@ -900,7 +717,7 @@ def parse_arguments() -> argparse.Namespace:
         help="Instructions string surfaced to MCP clients",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Mirror CLI behaviour for env overrides
     if not getattr(args, "service_config_file", None):
@@ -972,8 +789,14 @@ def create_combined_lifespan(args: argparse.Namespace):
     return lifespan
 
 
-def main() -> None:
-    args = parse_arguments()
+def main(argv: list[str] | None = None) -> None:
+    """Main entry point for MCP server.
+
+    Args:
+        argv: Optional command line arguments. If None, uses sys.argv[1:].
+               When called from CLI, should pass empty list to avoid argument conflicts.
+    """
+    args = parse_arguments(argv)
 
     warn_deprecated_params()
     configure_logging(level=args.log_level)
@@ -981,7 +804,6 @@ def main() -> None:
 
     # Validate Snowflake profile configuration before starting server
     try:
-        cfg = get_config()
         # Use the enhanced validation function
         resolved_profile = validate_and_resolve_profile()
 
@@ -992,8 +814,7 @@ def main() -> None:
         os.environ["SNOWFLAKE_DEFAULT_CONNECTION_NAME"] = resolved_profile
 
         # Update config with validated profile
-        cfg.snowflake.profile = resolved_profile
-        set_config(cfg)
+        apply_config_overrides(snowflake={"profile": resolved_profile})
 
         # Log profile summary for debugging
         summary = get_profile_summary()
