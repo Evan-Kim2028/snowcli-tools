@@ -1,223 +1,199 @@
-# SNOWCLI-TOOLS
+# SnowCLI Tools
 
-An enhanced Snowflake CLI toolkit with AI-powered MCP server integration. Transform your Snowflake data operations with automated cataloging, advanced lineage analysis, and seamless AI assistant connectivity.
+> **Powerful Snowflake operations with AI assistant integration**
+
+Transform your Snowflake data operations with automated cataloging, advanced lineage analysis, and seamless AI assistant connectivity through MCP (Model Context Protocol).
 
 [![PyPI version](https://badge.fury.io/py/snowcli-tools.svg)](https://pypi.org/project/snowcli-tools/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
-## 🚀 Key Features
+## Quick Start
 
-### 📊 **Data Intelligence**
-- **Automated Data Catalog**: Comprehensive metadata extraction from your Snowflake environment
-- **Advanced Lineage Analysis**: Column-level lineage, cross-database tracking, and impact analysis
-- **Dependency Mapping**: Visual object relationships and circular dependency detection
-- **External Source Integration**: S3/Azure/GCS mapping and tracking
-
-### 🤖 **AI Assistant Integration (MCP Server)**
-- **Claude Code/VS Code/Cursor**: Direct AI assistant access to your Snowflake data
-- **Natural Language Queries**: "Show me the schema of CUSTOMERS table" → Instant results
-- **Real-time Health Monitoring**: Proactive diagnostics and configuration validation
-- **Enhanced Profile Validation**: Clear error messages instead of confusing timeouts
-
-### ⚡ **Performance & Reliability**
-- **Parallel Query Execution**: Concurrent operations for faster bulk workloads
-- **Circuit Breaker Pattern**: Fault-tolerant operations with intelligent failure handling
-- **Modern Python Architecture**: 3.12+ features with performance optimization
-
-## 🎯 Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     AI Assistants                          │
-│          (Claude Code, VS Code, Cursor)                    │
-├─────────────────────────────────────────────────────────────┤
-│                   MCP Protocol Layer                       │
-│    ┌─────────────────┐  ┌──────────────────┐              │
-│    │  Health         │  │  Diagnostic      │              │
-│    │  Monitoring     │  │  Tools           │              │
-│    └─────────────────┘  └──────────────────┘              │
-├─────────────────────────────────────────────────────────────┤
-│              SNOWCLI-TOOLS Core Engine                     │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌───────────┐ │
-│  │  Data Catalog   │  │  Lineage         │  │  Parallel │ │
-│  │  Builder        │  │  Analyzer        │  │  Executor │ │
-│  └─────────────────┘  └──────────────────┘  └───────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│                Snowflake CLI Integration                   │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌───────────┐ │
-│  │  Profile        │  │  Authentication  │  │  Session  │ │
-│  │  Management     │  │  & Security      │  │  Handling │ │
-│  └─────────────────┘  └──────────────────┘  └───────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│                     Snowflake Data Cloud                   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 🏃‍♂️ Quick Start
-
-### Installation
 ```bash
-# Core CLI tools
+# 1. Install SnowCLI Tools
 pip install snowcli-tools
 
-# With AI assistant integration
-pip install "snowcli-tools[mcp]"
+# 2. Set up your Snowflake profile
+snow connection add --connection-name "my-profile" \
+  --account "your-account.region" --user "your-username" \
+  --private-key-file "/path/to/key.p8" --database "DB" --warehouse "WH"
+
+# 3. Verify connection
+snowflake-cli verify -p my-profile
+
+# 4. Start exploring your data
+snowflake-cli catalog -p my-profile
+snowflake-cli lineage MY_TABLE -p my-profile
+
+# 5. Enable AI assistant integration
+SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
 ```
 
-### Setup Snowflake Profile
-```bash
-# Create a connection profile (one-time setup)
-snow connection add \
-  --connection-name my-profile \
-  --account YOUR_ACCOUNT \
-  --user YOUR_USER \
-  --authenticator SNOWFLAKE_JWT \
-  --private-key /path/to/key.p8 \
-  --warehouse YOUR_WAREHOUSE \
-  --default
+## Core Features
+
+### 📊 **Data Discovery & Analysis**
+- **Automated Catalog**: Complete metadata extraction from databases, schemas, tables
+- **Advanced Lineage**: Column-level lineage tracking with impact analysis
+- **Dependency Mapping**: Visual object relationships and circular dependency detection
+- **External Integration**: S3/Azure/GCS source mapping
+
+### 🤖 **AI Assistant Integration**
+- **MCP Server**: Direct integration with Claude Code, VS Code, Cursor
+- **Natural Language**: "Show me schema of CUSTOMERS" → instant results
+- **Health Monitoring**: Real-time diagnostics and validation
+- **Enhanced Profiles**: Clear error messages instead of timeouts
+
+### ⚡ **Enterprise Ready**
+- **Layered Security**: Built on Snowflake's official authentication
+- **High Performance**: Parallel operations and connection pooling
+- **Fault Tolerance**: Circuit breaker patterns for reliability
+- **Modern Architecture**: Python 3.12+ with async support
+
+## Architecture
+
+SnowCLI Tools uses a **layered architecture** that combines official Snowflake tools with enhanced analytics:
+
+```
+┌─────────────────────────────────────┐
+│     AI Assistants & Applications    │  ← Your workflows
+├─────────────────────────────────────┤
+│      SnowCLI Tools MCP Server       │  ← Enhanced analytics
+│   (Catalog, Lineage, Dependencies)  │
+├─────────────────────────────────────┤
+│       Snowflake Labs MCP            │  ← Official foundation
+│    (Auth, Connection, Security)     │
+├─────────────────────────────────────┤
+│        Snowflake Platform           │  ← Your data warehouse
+└─────────────────────────────────────┘
 ```
 
-### Basic Operations
+**Key Benefits:**
+- **🔐 Secure**: Leverages Snowflake's official authentication
+- **🚀 Powerful**: Combines official tools with advanced analytics
+- **🔗 Integrated**: Single MCP endpoint for AI assistants
+- **📈 Scalable**: Service layer architecture for extensibility
+
+## Common Use Cases
+
+### Data Discovery Workflow
 ```bash
-# Test connection
-snowflake-cli query "SELECT CURRENT_VERSION()"
+# Build comprehensive catalog
+snowflake-cli catalog -p prod
 
-# Build data catalog
-snowflake-cli catalog --database ANALYTICS --output ./catalog
+# Map dependencies
+snowflake-cli depgraph -p prod --format dot
 
-# Generate dependency graph
-snowflake-cli depgraph --database ANALYTICS --format dot
-
-# Analyze lineage
-snowflake-cli lineage ANALYTICS.CUSTOMERS --direction both --depth 3
+# Analyze critical table lineage
+snowflake-cli lineage CUSTOMER_ORDERS -p prod --depth 3
 ```
 
 ### AI Assistant Integration
 ```bash
 # Start MCP server for AI assistants
-snowflake-cli mcp
+SNOWFLAKE_PROFILE=prod snowflake-cli mcp
 
-# Add to your AI assistant's MCP configuration:
-{
-  "mcpServers": {
-    "snowflake": {
-      "command": "snowflake-cli",
-      "args": ["mcp"],
-      "env": {"SNOWFLAKE_PROFILE": "my-profile"}
-    }
-  }
-}
+# Now use Claude Code, VS Code, or Cursor to:
+# - "What tables depend on CUSTOMERS?"
+# - "Show me the schema for ORDERS table"
+# - "Generate a data quality report"
 ```
 
-## 🎯 Enhanced Profile Validation (v1.4.5+)
-
-### Before vs After
-**Before:** `❌ Connection timeout after 300 seconds`
-
-**After:**
+### Multi-Environment Development
 ```bash
-❌ Snowflake profile validation failed
-Error: Snowflake profile 'default' not found
-Available profiles: dev-profile, prod-profile
-To fix this issue:
-1. Set SNOWFLAKE_PROFILE environment variable
-2. Or pass --profile <profile_name>
-3. Or run 'snow connection add' to create a new profile
+# Switch between environments easily
+snowflake-cli query "SELECT COUNT(*) FROM users" -p dev
+snowflake-cli query "SELECT COUNT(*) FROM users" -p staging
+snowflake-cli query "SELECT COUNT(*) FROM users" -p prod
 ```
 
-### New MCP Diagnostic Tools
-- **`health_check`** - Comprehensive server health status
-- **`check_profile_config`** - Profile validation and recommendations
-- **`get_resource_status`** - Resource availability monitoring
-- **`check_resource_dependencies`** - Dependency validation
+## Getting Started
 
-## 🛠️ Core CLI Commands
+### Prerequisites
+- **Python 3.12+** with pip or uv
+- **Snowflake account** with appropriate permissions
+- **Snowflake CLI** installed (`pip install snowflake-cli`)
 
-| Command | Description | Example |
-|---------|-------------|---------|
-| `query` | Execute SQL queries | `snowflake-cli query "SELECT * FROM CUSTOMERS LIMIT 10"` |
-| `catalog` | Build metadata catalog | `snowflake-cli catalog --database SALES --include-ddl` |
-| `lineage` | Analyze data lineage | `snowflake-cli lineage SALES.ORDERS --direction upstream` |
-| `depgraph` | Generate dependency graph | `snowflake-cli depgraph --account --format json` |
-| `mcp` | Start MCP server | `snowflake-cli mcp --transport stdio` |
+### Installation Options
 
-## 🔧 Advanced Features
-
-### Column-Level Lineage
-Track data transformations at granular column level with confidence scoring:
+**Option 1: PyPI (Recommended)**
 ```bash
-snowflake-cli lineage ANALYTICS.USER_METRICS --column-level --format html
+pip install snowcli-tools
 ```
 
-### Cross-Database Analysis
-Unified lineage across multiple databases:
+**Option 2: Development Install**
 ```bash
-snowflake-cli catalog --account-scope
-snowflake-cli lineage --cross-database SALES.ORDERS
-```
-
-### Impact Analysis
-Understand change impact before implementation:
-```bash
-snowflake-cli lineage CORE.DIM_CUSTOMER --impact-analysis --depth 5
-```
-
-### External Source Mapping
-Track S3/Azure/GCS dependencies:
-```bash
-snowflake-cli catalog --include-external-sources
-```
-
-## 📚 Documentation
-
-- **[Profile Troubleshooting Guide](docs/profile_troubleshooting_guide.md)** - Comprehensive troubleshooting
-- **[Profile Validation Quick-Start](docs/profile_validation_quickstart.md)** - Step-by-step setup
-- **[MCP Diagnostic Tools Reference](docs/mcp_diagnostic_tools.md)** - Health monitoring API
-- **[MCP Server User Guide](docs/mcp_server_user_guide.md)** - AI assistant integration
-- **[Features Overview](docs/features_overview.md)** - Complete feature documentation
-
-## 🏗️ Development
-
-### Local Development
-```bash
-git clone https://github.com/Evan-Kim2028/snowcli-tools.git
+git clone <repository-url>
 cd snowcli-tools
-uv sync
-uv add snowflake-cli
+uv sync  # or pip install -e .
 ```
 
-### Testing
+### Profile Setup
 ```bash
-# Run tests
-uv run pytest
+# Key-pair authentication (recommended)
+snow connection add --connection-name "my-profile" \
+  --account "your-account.region" \
+  --user "username" \
+  --private-key-file "/path/to/key.p8" \
+  --database "DATABASE" \
+  --warehouse "WAREHOUSE"
 
-# Run with coverage
-uv run pytest --cov=src/snowcli_tools
+# OAuth authentication
+snow connection add --connection-name "my-profile" \
+  --account "your-account.region" \
+  --user "username" \
+  --authenticator "externalbrowser"
 
-# Lint and format
-uv run ruff check
-uv run ruff format
+# Verify setup
+snowflake-cli verify -p my-profile
 ```
 
-## 🤝 Contributing
+## Documentation
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+- **[Getting Started Guide](docs/getting-started.md)** - Complete setup and usage guide
+- **[Architecture Overview](docs/architecture.md)** - Technical architecture and design patterns
+- **[MCP Integration](docs/mcp-integration.md)** - AI assistant setup and configuration
+- **[API Reference](docs/api-reference.md)** - Complete command and API documentation
+- **[Configuration Guide](docs/configuration.md)** - Advanced configuration options
+- **[Contributing](CONTRIBUTING.md)** - Development and contribution guidelines
 
-## 📝 License
+## Requirements
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **Python**: 3.12 or higher
+- **Snowflake CLI**: Latest version recommended
+- **Dependencies**: Automatically installed with package
+- **Permissions**: `USAGE` on warehouse/database/schema, `SELECT` on `INFORMATION_SCHEMA`
 
-## 🔗 Links
+## MCP Integration
 
-- **PyPI**: https://pypi.org/project/snowcli-tools/
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/Evan-Kim2028/snowcli-tools/issues)
-- **Snowflake CLI**: https://docs.snowflake.com/en/user-guide/snowcli
+For AI assistant integration, install MCP extras:
+
+```bash
+# Install MCP dependencies
+pip install "mcp>=1.0.0" "fastmcp>=2.8.1" "snowflake-labs-mcp>=1.3.3"
+
+# Start MCP server
+SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
+
+# Configure your AI assistant to connect via MCP
+```
+
+**Supported AI Assistants:**
+- Claude Code
+- VS Code with MCP extensions
+- Cursor IDE
+- Any MCP-compatible client
+
+## Support
+
+- **Documentation**: Comprehensive guides in `/docs`
+- **Issues**: Report bugs via [GitHub Issues](link-to-issues)
+- **Examples**: Sample workflows in `/examples`
+- **Community**: [Discord/Slack community link]
+
+## License
+
+[License Type] - see [LICENSE](LICENSE) file for details.
 
 ---
 
-⭐ **Star this repo** if you find it useful! Questions? Check our [documentation](docs/) or [open an issue](https://github.com/Evan-Kim2028/snowcli-tools/issues).
+**Version 1.5.0** | Built with ❤️ for the Snowflake community
