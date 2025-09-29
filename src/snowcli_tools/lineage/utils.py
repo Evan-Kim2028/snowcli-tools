@@ -9,7 +9,7 @@ import threading
 from contextlib import contextmanager
 from functools import lru_cache, wraps
 from pathlib import Path
-from typing import Any, Callable, Generator, Optional, Set, TypeVar
+from typing import Any, Callable, Generator, Optional, Set, TypeVar, Union, cast
 
 import networkx as nx
 
@@ -376,7 +376,9 @@ def timeout(seconds: int, error_message: str = "Operation timed out"):
         yield
 
 
-def with_timeout(seconds: int = 30, default: T = None) -> Callable:
+def with_timeout(
+    seconds: int = 30, default: Optional[T] = None
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorator to add timeout to functions.
 
     Args:
@@ -391,12 +393,14 @@ def with_timeout(seconds: int = 30, default: T = None) -> Callable:
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
-        def wrapper(*args, **kwargs) -> T:
+        def wrapper(*args: Any, **kwargs: Any) -> T:
             # For non-Unix systems or when SIGALRM is not available
             if not hasattr(signal, "SIGALRM"):
-                result = [TimeoutError("Operation timed out")]
+                result: list[Union[T, BaseException]] = [
+                    TimeoutError("Operation timed out")
+                ]
 
-                def target():
+                def target() -> None:
                     try:
                         result[0] = func(*args, **kwargs)
                     except Exception as e:
@@ -408,20 +412,26 @@ def with_timeout(seconds: int = 30, default: T = None) -> Callable:
                 thread.join(timeout=seconds)
 
                 if thread.is_alive():
-                    return default
-
-                if isinstance(result[0], Exception):
-                    if isinstance(result[0], TimeoutError):
+                    if default is not None:
                         return default
+                    raise TimeoutError("Operation timed out")
+
+                if isinstance(result[0], BaseException):
+                    if isinstance(result[0], TimeoutError):
+                        if default is not None:
+                            return default
+                        raise TimeoutError("Operation timed out")
                     raise result[0]
-                return result[0]
+                return cast(T, result[0])
             else:
                 # Use signal-based timeout for Unix systems
                 try:
                     with timeout(seconds):
                         return func(*args, **kwargs)
                 except TimeoutError:
-                    return default
+                    if default is not None:
+                        return default
+                    raise
 
         return wrapper
 

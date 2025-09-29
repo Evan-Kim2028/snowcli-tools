@@ -346,7 +346,7 @@ class ImpactAnalyzer:
         return output_path
 
     def _build_networkx_graph(self) -> nx.DiGraph:
-        graph = nx.DiGraph()
+        graph: nx.DiGraph = nx.DiGraph()
 
         for node_key, node in self.lineage_graph.nodes.items():
             # Handle both LineageNode objects and dict-based mock objects
@@ -394,14 +394,18 @@ class ImpactAnalyzer:
             severity = self._determine_severity(distance, change_type, node_data)
             impact_type = self._determine_impact_type(change_type, node_data)
 
+            name_value = node_data.attributes.get("name")
+            if name_value is None:
+                name_value = target
+
             impacted_obj = ImpactedObject(
-                object_name=node_data.attributes.get("name", target),
+                object_name=name_value,
                 object_type=node_data.attributes.get("object_type", "unknown"),
                 database=node_data.attributes.get("database", ""),
                 schema=node_data.attributes.get("schema", ""),
                 impact_type=impact_type,
                 severity=severity,
-                distance_from_source=distance,
+                distance_from_source=int(distance),
                 remediation_steps=self._suggest_remediation(change_type, node_data),
             )
 
@@ -411,7 +415,9 @@ class ImpactAnalyzer:
             upstream = nx.ancestors(self.nx_graph, source)
             for target in upstream:
                 try:
-                    distance = nx.shortest_path_length(self.nx_graph, target, source)
+                    distance = int(
+                        nx.shortest_path_length(self.nx_graph, target, source)
+                    )
                     if distance > max_depth:
                         continue
                 except nx.NetworkXNoPath:
@@ -421,14 +427,18 @@ class ImpactAnalyzer:
                 if not node_data:
                     continue
 
+                name_value = node_data.attributes.get("name")
+                if name_value is None:
+                    name_value = target
+
                 impacted_obj = ImpactedObject(
-                    object_name=node_data.attributes.get("name", target),
+                    object_name=name_value,
                     object_type=node_data.attributes.get("object_type", "unknown"),
                     database=node_data.attributes.get("database", ""),
                     schema=node_data.attributes.get("schema", ""),
                     impact_type="upstream_dependency",
                     severity=ImpactSeverity.INFO,
-                    distance_from_source=-distance,
+                    distance_from_source=-int(distance),
                     remediation_steps=[],
                 )
 
@@ -589,7 +599,7 @@ class ImpactAnalyzer:
             "by_severity": {},
             "by_object_type": {},
             "by_database": {},
-            "average_distance": 0,
+            "average_distance": 0.0,
             "max_distance": 0,
             "direct_impacts": 0,
         }
