@@ -12,7 +12,6 @@ endpoint.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 from contextlib import asynccontextmanager
 from functools import partial
@@ -23,14 +22,15 @@ import anyio
 from pydantic import Field
 from typing_extensions import Annotated
 
+# NOTE: For typing, import from the fastmcp package; fallback handled at runtime.
 try:  # Prefer the standalone fastmcp package when available
     from fastmcp import Context, FastMCP
     from fastmcp.utilities.logging import configure_logging, get_logger
 except ImportError:  # Fall back to the implementation bundled with python-sdk
-    from mcp.server.fastmcp import Context, FastMCP
-    from mcp.server.fastmcp.utilities.logging import configure_logging, get_logger
+    from mcp.server.fastmcp import Context, FastMCP  # type: ignore[import-untyped,assignment]
+    from mcp.server.fastmcp.utilities.logging import configure_logging, get_logger  # type: ignore[import-untyped,assignment]
 
-from mcp_server_snowflake.server import (
+from mcp_server_snowflake.server import (  # type: ignore[import-untyped]
     SnowflakeService,
 )
 from mcp_server_snowflake.server import (
@@ -42,27 +42,137 @@ from mcp_server_snowflake.utils import (  # type: ignore[import-untyped]
 )
 
 from .config import Config, ConfigError, apply_config_overrides, get_config, load_config
+from .context import create_service_context
+from .lineage import LineageQueryService
+from .lineage.identifiers import parse_table_name
+from .mcp.utils import get_profile_recommendations, json_compatible
 from .mcp_health import (
     MCPHealthMonitor,
     create_configuration_error_response,
     create_profile_validation_error_response,
 )
 from .mcp_resources import MCPResourceManager
-from .mcp.utils import (
-    get_profile_recommendations,
-    json_compatible,
-    query_lineage_sync,
+from .profile_utils import (
+    ProfileValidationError,
+    get_profile_summary,
+    validate_and_resolve_profile,
 )
-from .profile_utils import ProfileSummary, ProfileValidationError, get_profile_summary, validate_and_resolve_profile
 from .service_layer import CatalogService, DependencyService, QueryService
-from .session_utils import SessionContext
+from .session_utils import (
+    SessionContext,
+    apply_session_context,
+    ensure_session_lock,
+    restore_session_context,
+    snapshot_session,
+)
 from .snow_cli import SnowCLI, SnowCLIError
+
+_get_profile_recommendations = get_profile_recommendations
 
 logger = get_logger(__name__)
 
 # Global health monitor and resource manager instances
 _health_monitor: Optional[MCPHealthMonitor] = None
 _resource_manager: Optional[MCPResourceManager] = None
+_catalog_service: Optional[CatalogService] = None
+
+
+def _get_catalog_summary_sync(catalog_dir: str) -> Dict[str, Any]:
+    service = _catalog_service
+    if service is None:
+        context = create_service_context(existing_config=get_config())
+        service = CatalogService(context=context)
+    return service.load_summary(catalog_dir)
+
+
+def _execute_query_sync(
+    snowflake_service: Any,
+    statement: str,
+    overrides: Dict[str, Optional[str]] | SessionContext,
+) -> Dict[str, Any]:
+    lock = ensure_session_lock(snowflake_service)
+    with lock:
+        with snowflake_service.get_connection(  # type: ignore[attr-defined]
+            use_dict_cursor=True,
+            session_parameters=snowflake_service.get_query_tag_param(),  # type: ignore[attr-defined]
+        ) as (_, cursor):
+            original = snapshot_session(cursor)
+            try:
+                if overrides:
+                    apply_session_context(cursor, overrides)
+                cursor.execute(statement)
+                rows = cursor.fetchall()
+                return {
+                    "statement": statement,
+                    "rowcount": cursor.rowcount,
+                    "rows": rows,
+                }
+            finally:
+                restore_session_context(cursor, original)
+
+
+def _query_lineage_sync(
+    object_name: str,
+    direction: str,
+    depth: int,
+    fmt: str,
+    catalog_dir: str,
+    cache_dir: str,
+    config: Config,
+) -> Dict[str, Any]:
+    service = LineageQueryService(
+        catalog_dir=Path(catalog_dir), cache_root=Path(cache_dir)
+    )
+
+    default_db = config.snowflake.database
+    default_schema = config.snowflake.schema
+    qualified = parse_table_name(object_name).with_defaults(default_db, default_schema)
+    base_key = qualified.key()
+    candidates = [base_key]
+    if not base_key.endswith("::task"):
+        candidates.append(f"{base_key}::task")
+
+    result = None
+    resolved_key: Optional[str] = None
+    for candidate in candidates:
+        try:
+            result = service.object_subgraph(
+                candidate, direction=direction, depth=depth
+            )
+        except KeyError:
+            continue
+        resolved_key = candidate
+        break
+
+    if result is None or resolved_key is None:
+        return {
+            "success": False,
+            "message": "Object not found in lineage graph. Run build_catalog first or verify the name.",
+        }
+
+    payload: Dict[str, Any] = {
+        "success": True,
+        "object": resolved_key,
+        "direction": direction,
+        "depth": depth,
+        "node_count": len(result.graph.nodes),
+        "edge_count": len(result.graph.edge_metadata),
+    }
+
+    if fmt == "json":
+        payload["graph"] = (
+            result.graph.to_dict()
+            if hasattr(result.graph, "to_dict")
+            else json_compatible(result.graph)
+        )
+    else:
+        summary = [
+            f"- {node.attributes.get('name', key)} ({node.node_type.value})"
+            for key, node in result.graph.nodes.items()
+        ]
+        payload["summary"] = "\n".join(summary)
+
+    return payload
 
 
 def register_snowcli_tools(
@@ -75,11 +185,17 @@ def register_snowcli_tools(
 
     if getattr(server, "_snowcli_tools_registered", False):  # pragma: no cover - safety
         return
+    setattr(server, "_snowcli_tools_registered", True)
 
     config = get_config()
-    query_service = QueryService(config=config)
-    catalog_service = CatalogService(config=config)
-    dependency_service = DependencyService(config=config)
+    context = create_service_context(existing_config=config)
+    query_service = QueryService(context=context)
+    catalog_service = CatalogService(context=context)
+    dependency_service = DependencyService(context=context)
+    global _health_monitor, _resource_manager, _catalog_service
+    _health_monitor = context.health_monitor
+    _resource_manager = context.resource_manager
+    _catalog_service = catalog_service
     snow_cli: SnowCLI | None = SnowCLI() if enable_cli_bridge else None
 
     @server.tool(
@@ -284,7 +400,7 @@ def register_snowcli_tools(
         ] = "./lineage",
     ) -> Dict[str, Any]:
         result = await anyio.to_thread.run_sync(
-            query_lineage_sync,
+            _query_lineage_sync,
             object_name,
             direction,
             depth,
@@ -482,10 +598,12 @@ def register_snowcli_tools(
 
             # Check resource availability
             resource_status = await anyio.to_thread.run_sync(
-                _resource_manager.create_resource_status_response,
-                resource_names,
-                snowflake_service,
-                catalog_dir=catalog_dir if check_catalog else None,
+                partial(
+                    _resource_manager.create_resource_status_response,
+                    resource_names,
+                    snowflake_service,
+                    catalog_dir=catalog_dir if check_catalog else None,
+                )
             )
 
             return {
@@ -523,10 +641,12 @@ def register_snowcli_tools(
 
             # Get resource availability
             availability = await anyio.to_thread.run_sync(
-                _resource_manager.get_resource_availability,
-                resource_name,
-                snowflake_service,
-                catalog_dir=catalog_dir,
+                partial(
+                    _resource_manager.get_resource_availability,
+                    resource_name,
+                    snowflake_service,
+                    catalog_dir=catalog_dir,
+                )
             )
 
             # Get recommendations
@@ -578,19 +698,23 @@ def register_snowcli_tools(
                 Optional[str], Field(description="Role override", default=None)
             ] = None,
         ) -> Dict[str, Any]:
-            overrides = {
+            overrides: Dict[str, Optional[str]] = {
                 "warehouse": warehouse,
                 "database": database,
                 "schema": schema,
                 "role": role,
             }
-            packed = {k: v for k, v in overrides.items() if v}
+            ctx_overrides: Dict[str, Optional[str]] = {
+                k: v for k, v in overrides.items() if v is not None
+            }
             try:
                 result = await anyio.to_thread.run_sync(
-                    snow_cli.run_query,
-                    statement,
-                    output_format="json",
-                    ctx_overrides=packed,
+                    partial(
+                        snow_cli.run_query,
+                        statement,
+                        output_format="json",
+                        ctx_overrides=ctx_overrides,
+                    )
                 )
             except SnowCLIError as exc:
                 raise RuntimeError(f"Snow CLI query failed: {exc}") from exc
@@ -602,8 +726,6 @@ def register_snowcli_tools(
                 "stdout": result.raw_stdout,
                 "stderr": result.raw_stderr,
             }
-
-    setattr(server, "_snowcli_tools_registered", True)
 
 
 def _apply_config_overrides(args: argparse.Namespace) -> Config:

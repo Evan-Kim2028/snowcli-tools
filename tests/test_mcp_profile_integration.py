@@ -12,6 +12,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+import snowcli_tools.profile_utils as profile_utils
+
 
 class TestMCPServerProfileIntegration:
     """Test MCP server integration with profile validation."""
@@ -240,9 +242,13 @@ def mock_config_with_profiles():
         if default:
             config_data["default_connection_name"] = default
 
+        mock_path = Mock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_path.stat.return_value = Mock(st_mtime=123.0)
+
         return patch.multiple(
-            "snowcli_tools.profile_utils",
-            get_snowflake_config_path=Mock(return_value=Path("/mock/config.toml")),
+            profile_utils,
+            get_snowflake_config_path=Mock(return_value=mock_path),
             _load_snowflake_config=Mock(return_value=config_data),
         )
 
@@ -254,9 +260,13 @@ def mock_empty_config():
     """Mock empty configuration (no profiles)."""
 
     def _mock():
+        mock_path = Mock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_path.stat.return_value = Mock(st_mtime=123.0)
+
         return patch.multiple(
-            "snowcli_tools.profile_utils",
-            get_snowflake_config_path=Mock(return_value=Path("/mock/config.toml")),
+            profile_utils,
+            get_snowflake_config_path=Mock(return_value=mock_path),
             _load_snowflake_config=Mock(return_value={"connections": {}}),
         )
 
