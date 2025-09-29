@@ -4,6 +4,7 @@ import json
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional
 
 from ..config import Config, get_config
+from ..context import ServiceContext, create_service_context
 from ..session_utils import (
     SessionContext,
     apply_session_context,
@@ -23,15 +24,24 @@ class QueryService:
     def __init__(
         self,
         *,
+        context: ServiceContext | None = None,
         config: Config | None = None,
         snow_cli: SnowCLI | None = None,
     ) -> None:
-        self._config = config or get_config()
+        if context is not None:
+            self._context = context
+        else:
+            cfg = config or get_config()
+            self._context = create_service_context(existing_config=cfg)
         self._snow_cli = snow_cli
 
     @property
     def config(self) -> Config:
-        return self._config
+        return self._context.config
+
+    @property
+    def context(self) -> ServiceContext:
+        return self._context
 
     def execute_cli(
         self,
@@ -42,13 +52,13 @@ class QueryService:
         timeout: Optional[int] = None,
     ) -> QueryOutput:
         overrides = session.to_mapping() if session else {}
-        cli = self._snow_cli or SnowCLI(profile=self._config.snowflake.profile)
+        cli = self._snow_cli or SnowCLI(profile=self.config.snowflake.profile)
         self._snow_cli = cli
         return cli.run_query(
             statement,
             output_format=output_format,
             ctx_overrides=overrides or None,
-            timeout=timeout or self._config.timeout_seconds,
+            timeout=timeout or self.config.timeout_seconds,
         )
 
     def preview_cli(

@@ -5,12 +5,22 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable
 
-import pytest
 from click.testing import CliRunner
 
 from snowcli_tools.cli import cli as cli_entry
+from snowcli_tools.context import create_service_context
+from snowcli_tools.models import (
+    CatalogBuildResult,
+    CatalogBuildTotals,
+    CatalogMetadata,
+    DependencyCounts,
+    DependencyEdge,
+    DependencyGraph,
+    DependencyNode,
+    DependencyScope,
+)
 from snowcli_tools.service_layer import CatalogService, DependencyService, QueryService
 from snowcli_tools.session_utils import SessionContext
 
@@ -29,9 +39,20 @@ def test_catalog_command_uses_service_snapshot(monkeypatch, tmp_path):
         "columns": 12,
     }
 
-    def fake_build(self, output_dir: str, **kwargs: Any) -> Dict[str, Any]:
+    def fake_build(self, output_dir: str, **kwargs: Any) -> CatalogBuildResult:
         assert output_dir == str(tmp_path)
-        return sample_totals
+        totals = CatalogBuildTotals(**sample_totals)
+        metadata = CatalogMetadata(
+            output_dir=Path(output_dir),
+            output_format=kwargs.get("output_format", "json"),
+            account_scope=kwargs.get("account_scope", False),
+            incremental=kwargs.get("incremental", False),
+            include_ddl=kwargs.get("include_ddl", True),
+            export_sql=kwargs.get("export_sql", False),
+            max_ddl_concurrency=kwargs.get("max_ddl_concurrency", 8),
+            catalog_concurrency=kwargs.get("catalog_concurrency"),
+        )
+        return CatalogBuildResult(totals=totals, metadata=metadata)
 
     monkeypatch.setattr(CatalogService, "build", fake_build)
 
@@ -61,23 +82,32 @@ def test_depgraph_command_writes_json_snapshot(monkeypatch, tmp_path):
             {"id": "DB.SCHEMA.TABLE", "type": "TABLE"},
         ],
         "edges": [
-            {"source": "DB.SCHEMA.VIEW", "target": "DB.SCHEMA.TABLE", "relationship": "uses"}
+            {
+                "source": "DB.SCHEMA.VIEW",
+                "target": "DB.SCHEMA.TABLE",
+                "relationship": "uses",
+            }
         ],
         "counts": {"nodes": 2, "edges": 1},
         "scope": {"database": "DB", "schema": "SCHEMA", "account_scope": False},
     }
 
-    def fake_build(self, **kwargs: Any) -> Dict[str, object]:
+    def fake_build(self, **kwargs: Any) -> DependencyGraph:
         assert kwargs["database"] == "DB"
         assert kwargs["schema"] == "SCHEMA"
         assert kwargs["account_scope"] is False
-        return sample_graph
+        return DependencyGraph(
+            nodes=[DependencyNode(**node) for node in sample_graph["nodes"]],
+            edges=[DependencyEdge(**edge) for edge in sample_graph["edges"]],
+            counts=DependencyCounts(**sample_graph["counts"]),
+            scope=DependencyScope(**sample_graph["scope"]),
+        )
 
     monkeypatch.setattr(DependencyService, "build", fake_build)
     monkeypatch.setattr(
         DependencyService,
         "to_dot",
-        lambda self, graph: "digraph {\n  \"DB.SCHEMA.VIEW\" -> \"DB.SCHEMA.TABLE\";\n}",
+        lambda self, graph: 'digraph {\n  "DB.SCHEMA.VIEW" -> "DB.SCHEMA.TABLE";\n}',
     )
 
     runner = CliRunner()
@@ -132,16 +162,19 @@ class _StubSnowflakeService:
 
     @contextmanager
     def get_connection(self, **_: Any):
-        yield None, _StubCursor(
-            [
-                {"COL1": "A", "COL2": 1},
-                {"COL1": "B", "COL2": 2},
-            ]
+        yield (
+            None,
+            _StubCursor(
+                [
+                    {"COL1": "A", "COL2": 1},
+                    {"COL1": "B", "COL2": 2},
+                ]
+            ),
         )
 
 
 def test_query_service_execute_with_service_returns_expected_payload():
-    service = QueryService()
+    service = QueryService(context=create_service_context())
     snowflake_service = _StubSnowflakeService()
     session = SessionContext(warehouse="WH", database="DB")
 
