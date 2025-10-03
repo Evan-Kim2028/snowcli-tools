@@ -15,6 +15,7 @@ from rich.console import Console
 
 from ..config import get_config
 from ..context import create_service_context
+from ..dependency import DependencyService
 from ..errors import UnifiedErrorFormatter
 from ..lineage import LineageQueryService
 from ..lineage.graph import LineageGraph, LineageNode
@@ -23,7 +24,6 @@ from ..lineage.queries import LineageQueryResult
 from ..logging import StructuredLogger
 from ..models import DependencyGraph
 from ..pipelines.dependency import DependencyOptions, DependencyPipeline
-from ..service_layer.dependency import DependencyService
 from ..snow_cli import SnowCLIError
 from .registry import CommandDescriptor, registry
 from .utils import DefaultCommandGroup

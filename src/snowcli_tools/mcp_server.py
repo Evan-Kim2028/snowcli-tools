@@ -45,6 +45,19 @@ from .config import Config, ConfigError, apply_config_overrides, get_config, loa
 from .context import create_service_context
 from .lineage import LineageQueryService
 from .lineage.identifiers import parse_table_name
+from .mcp.tools import (
+    BuildCatalogTool,
+    BuildDependencyGraphTool,
+    CheckProfileConfigTool,
+    CheckResourceDependenciesTool,
+    ConnectionTestTool,
+    ExecuteQueryTool,
+    GetCatalogSummaryTool,
+    GetResourceStatusTool,
+    HealthCheckTool,
+    PreviewTableTool,
+    QueryLineageTool,
+)
 from .mcp.utils import get_profile_recommendations, json_compatible
 from .mcp_health import (
     MCPHealthMonitor,
@@ -64,7 +77,6 @@ from .session_utils import (
     snapshot_session,
 )
 from .snow_cli import SnowCLI, SnowCLIError
-from .sql_validation import validate_sql_statement
 
 _get_profile_recommendations = get_profile_recommendations
 
@@ -185,7 +197,12 @@ def register_snowcli_tools(
     *,
     enable_cli_bridge: bool = False,
 ) -> None:
-    """Register snowcli-tools MCP endpoints on top of the official service."""
+    """Register snowcli-tools MCP endpoints on top of the official service.
+
+    Simplified in v1.8.0 Phase 2.3 - now delegates to extracted tool classes
+    instead of containing inline implementations. This reduces mcp_server.py
+    from 1,089 LOC to ~300 LOC while improving testability and maintainability.
+    """
 
     if getattr(server, "_snowcli_tools_registered", False):  # pragma: no cover - safety
         return
@@ -201,6 +218,19 @@ def register_snowcli_tools(
     _resource_manager = context.resource_manager
     _catalog_service = catalog_service
     snow_cli: SnowCLI | None = SnowCLI() if enable_cli_bridge else None
+
+    # Instantiate all extracted tool classes
+    execute_query_inst = ExecuteQueryTool(config, snowflake_service, _health_monitor)
+    preview_table_inst = PreviewTableTool(config, snowflake_service, query_service)
+    query_lineage_inst = QueryLineageTool(config)
+    build_catalog_inst = BuildCatalogTool(config, catalog_service)
+    build_dependency_graph_inst = BuildDependencyGraphTool(dependency_service)
+    test_connection_inst = ConnectionTestTool(config, snowflake_service)
+    health_check_inst = HealthCheckTool(_health_monitor)
+    check_profile_config_inst = CheckProfileConfigTool(config)
+    get_resource_status_inst = GetResourceStatusTool(_resource_manager)
+    check_resource_dependencies_inst = CheckResourceDependenciesTool(_resource_manager)
+    get_catalog_summary_inst = GetCatalogSummaryTool(catalog_service)
 
     @server.tool(
         name="execute_query", description="Execute a SQL query against Snowflake"
@@ -237,157 +267,17 @@ def register_snowcli_tools(
         ] = False,
         ctx: Context | None = None,
     ) -> Dict[str, Any]:
-        """Execute a SQL query against Snowflake with optional timeout and error verbosity control.
-
-        Args:
-            statement: SQL statement to execute
-            warehouse: Optional warehouse override
-            database: Optional database override
-            schema: Optional schema override
-            role: Optional role override
-            timeout_seconds: Query timeout in seconds (default: 120s). Use higher values for complex queries.
-            verbose_errors: Include detailed error messages with optimization hints (default: false for compact errors)
-
-        Returns:
-            Query results with rows, rowcount, and execution metadata
-
-        Raises:
-            ValueError: If profile validation fails, SQL is blocked, or query execution encounters validation errors
-            RuntimeError: If query execution fails due to connection, timeout, or other runtime issues
-        """
-        # Validate profile health before executing query
-        if _health_monitor:
-            profile_health = await anyio.to_thread.run_sync(
-                _health_monitor.get_profile_health,
-                config.snowflake.profile,
-                False,  # use cache
-            )
-            if not profile_health.is_valid:
-                error_msg = (
-                    profile_health.validation_error or "Profile validation failed"
-                )
-                available = (
-                    ", ".join(profile_health.available_profiles)
-                    if profile_health.available_profiles
-                    else "none"
-                )
-                _health_monitor.record_error(f"Profile validation failed: {error_msg}")
-                raise ValueError(
-                    f"Snowflake profile validation failed: {error_msg}. "
-                    f"Profile: {config.snowflake.profile}, "
-                    f"Available profiles: {available}. "
-                    f"Check configuration with 'snow connection list' or verify profile settings."
-                )
-
-        # Validate SQL statement against permissions
-        allow_list = config.sql_permissions.get_allow_list()
-        disallow_list = config.sql_permissions.get_disallow_list()
-
-        stmt_type, is_valid, error_msg = validate_sql_statement(
-            statement, allow_list, disallow_list
+        """Execute a SQL query against Snowflake - delegates to ExecuteQueryTool."""
+        return await execute_query_inst.execute(
+            statement=statement,
+            warehouse=warehouse,
+            database=database,
+            schema=schema,
+            role=role,
+            timeout_seconds=timeout_seconds,
+            verbose_errors=verbose_errors,
+            ctx=ctx,
         )
-
-        if not is_valid and error_msg:
-            if _health_monitor:
-                _health_monitor.record_error(
-                    f"SQL statement blocked: {stmt_type} - {statement[:100]}"
-                )
-            raise ValueError(error_msg)
-
-        overrides = {
-            "warehouse": warehouse,
-            "database": database,
-            "schema": schema,
-            "role": role,
-        }
-        packed = {k: v for k, v in overrides.items() if v}
-
-        # Determine timeout (use provided value or config default)
-        timeout = (
-            timeout_seconds if timeout_seconds is not None else config.timeout_seconds
-        )
-
-        try:
-            session_ctx = query_service.session_from_mapping(packed)
-
-            # Execute with timeout using asyncio.wait_for
-            result = await anyio.fail_after(
-                timeout,
-                anyio.to_thread.run_sync,
-                partial(
-                    query_service.execute_with_service,
-                    snowflake_service,
-                    statement,
-                    session=session_ctx,
-                ),
-            )
-
-            if ctx is not None:
-                await ctx.debug(
-                    f"Executed query with {len(result['rows'])} rows (rowcount={result['rowcount']})."
-                )
-
-            return result
-
-        except anyio.get_cancelled_exc_class() as e:
-            # Handle timeout
-            if _health_monitor:
-                _health_monitor.record_error(
-                    f"Query timeout after {timeout}s: {statement[:100]}"
-                )
-
-            if verbose_errors:
-                # Verbose mode: detailed optimization hints (~200-300 tokens)
-                raise RuntimeError(
-                    f"Query timeout after {timeout}s.\n\n"
-                    f"Quick fixes:\n"
-                    f"1. Increase timeout: execute_query(..., timeout_seconds={timeout * 4})\n"
-                    f"2. Add filter: Add WHERE clause to reduce data volume\n"
-                    f"3. Sample data: Add LIMIT clause for testing (e.g., LIMIT 1000)\n"
-                    f"4. Scale warehouse: Consider using a larger warehouse for complex queries\n\n"
-                    f"Current settings:\n"
-                    f"  - Timeout: {timeout}s\n"
-                    f"  - Warehouse: {warehouse or config.snowflake.warehouse or 'default'}\n"
-                    f"  - Database: {database or config.snowflake.database or 'default'}\n\n"
-                    f"Query preview: {statement[:150]}{'...' if len(statement) > 150 else ''}\n\n"
-                    f"Use verbose_errors=False for compact error messages."
-                ) from e
-            else:
-                # Compact mode: concise guidance (~80-100 tokens)
-                raise RuntimeError(
-                    f"Query timeout ({timeout}s). "
-                    f"Try: timeout_seconds={timeout * 4}, add WHERE/LIMIT clause, or scale warehouse. "
-                    f"Use verbose_errors=True for detailed optimization hints."
-                ) from e
-
-        except ProfileValidationError as e:
-            if _health_monitor:
-                _health_monitor.record_error(
-                    f"Query execution failed - profile error: {e}"
-                )
-            raise ValueError(f"Profile validation failed: {e}") from e
-        except Exception as e:
-            if _health_monitor:
-                _health_monitor.record_error(f"Query execution failed: {e}")
-
-            if verbose_errors:
-                # Verbose mode: include more context
-                raise RuntimeError(
-                    f"Query execution failed: {e}\n\n"
-                    f"Context:\n"
-                    f"  - Statement: {statement[:200]}{'...' if len(statement) > 200 else ''}\n"
-                    f"  - Warehouse: {warehouse or config.snowflake.warehouse or 'default'}\n"
-                    f"  - Database: {database or config.snowflake.database or 'default'}\n"
-                    f"  - Schema: {schema or config.snowflake.schema or 'default'}\n\n"
-                    f"Use verbose_errors=False for compact error messages."
-                ) from e
-            else:
-                # Compact mode: brief error
-                raise RuntimeError(
-                    f"Query execution failed: {e}. "
-                    f"Statement: {statement[:100]}{'...' if len(statement) > 100 else ''}. "
-                    f"Use verbose_errors=True for details."
-                ) from e
 
     @server.tool(name="preview_table", description="Preview table contents")
     async def preview_table_tool(
@@ -406,22 +296,14 @@ def register_snowcli_tools(
             Optional[str], Field(description="Role override", default=None)
         ] = None,
     ) -> Dict[str, Any]:
-        statement = f"SELECT * FROM {table_name} LIMIT {limit}"
-        overrides = {
-            "warehouse": warehouse,
-            "database": database,
-            "schema": schema,
-            "role": role,
-        }
-        packed = {k: v for k, v in overrides.items() if v}
-        session_ctx = query_service.session_from_mapping(packed)
-        return await anyio.to_thread.run_sync(
-            partial(
-                query_service.execute_with_service,
-                snowflake_service,
-                statement,
-                session=session_ctx,
-            )
+        """Preview table contents - delegates to PreviewTableTool."""
+        return await preview_table_inst.execute(
+            table_name=table_name,
+            limit=limit,
+            warehouse=warehouse,
+            database=database,
+            schema=schema,
+            role=role,
         )
 
     @server.tool(name="build_catalog", description="Build Snowflake catalog metadata")
@@ -444,27 +326,14 @@ def register_snowcli_tools(
             bool, Field(description="Include object DDL", default=True)
         ] = True,
     ) -> Dict[str, Any]:
-        def run_catalog() -> Dict[str, Any]:
-            totals = catalog_service.build(
-                output_dir,
-                database=database,
-                account_scope=account,
-                incremental=False,
-                output_format=format,
-                include_ddl=include_ddl,
-                max_ddl_concurrency=8,
-                catalog_concurrency=16,
-                export_sql=False,
-            )
-            return {
-                "output_dir": output_dir,
-                "totals": totals,
-            }
-
-        try:
-            return await anyio.to_thread.run_sync(run_catalog)
-        except Exception as exc:
-            raise RuntimeError(f"Catalog build failed: {exc}") from exc
+        """Build catalog metadata - delegates to BuildCatalogTool."""
+        return await build_catalog_inst.execute(
+            output_dir=output_dir,
+            database=database,
+            account=account,
+            format=format,
+            include_ddl=include_ddl,
+        )
 
     @server.tool(name="query_lineage", description="Query cached lineage graph")
     async def query_lineage_tool(
@@ -491,17 +360,15 @@ def register_snowcli_tools(
             Field(description="Lineage cache directory", default="./lineage"),
         ] = "./lineage",
     ) -> Dict[str, Any]:
-        result = await anyio.to_thread.run_sync(
-            _query_lineage_sync,
-            object_name,
-            direction,
-            depth,
-            format,
-            catalog_dir,
-            cache_dir,
-            config,
+        """Query lineage graph - delegates to QueryLineageTool."""
+        return await query_lineage_inst.execute(
+            object_name=object_name,
+            direction=direction,
+            depth=depth,
+            format=format,
+            catalog_dir=catalog_dir,
+            cache_dir=cache_dir,
         )
-        return result
 
     @server.tool(
         name="build_dependency_graph", description="Build object dependency graph"
@@ -520,94 +387,23 @@ def register_snowcli_tools(
             str, Field(description="Output format (json/dot)", default="json")
         ] = "json",
     ) -> Dict[str, Any]:
-        def run_graph() -> Dict[str, Any]:
-            graph = dependency_service.build(
-                database=database,
-                schema=schema,
-                account_scope=account,
-            )
-            if format == "dot":
-                return {"format": "dot", "graph": dependency_service.to_dot(graph)}
-            return {"format": "json", "graph": graph}
-
-        return await anyio.to_thread.run_sync(run_graph)
+        """Build dependency graph - delegates to BuildDependencyGraphTool."""
+        return await build_dependency_graph_inst.execute(
+            database=database,
+            schema=schema,
+            account=account,
+            format=format,
+        )
 
     @server.tool(name="test_connection", description="Validate Snowflake connectivity")
     async def test_connection_tool() -> Dict[str, Any]:
-        """Test Snowflake connection.
-
-        Raises:
-            RuntimeError: If connection test fails
-        """
-        ok = await anyio.to_thread.run_sync(
-            partial(query_service.test_connection, snowflake_service)
-        )
-        if not ok:
-            raise RuntimeError(
-                "Snowflake connection test failed. "
-                "Verify credentials, network connectivity, and warehouse availability."
-            )
-        return {"status": "connected", "message": "Connection test successful"}
+        """Test Snowflake connection - delegates to TestConnectionTool."""
+        return await test_connection_inst.execute()
 
     @server.tool(name="health_check", description="Get comprehensive health status")
     async def health_check_tool() -> Dict[str, Any]:
-        """Get health status including connection state and system info."""
-        try:
-            version = getattr(__import__("snowcli_tools"), "__version__", "unknown")
-
-            if _health_monitor:
-                # Use the enhanced health monitor
-                health = await anyio.to_thread.run_sync(
-                    _health_monitor.get_comprehensive_health,
-                    config.snowflake.profile,
-                    snowflake_service,
-                    [
-                        "catalog",
-                        "lineage",
-                        "cortex",
-                        "query_manager",
-                        "semantic_manager",
-                    ],  # Available resources
-                    version,
-                )
-                return health.to_mcp_response()
-            else:
-                # Fallback to basic health check
-                from .services import RobustSnowflakeService
-
-                connection_ok = await anyio.to_thread.run_sync(
-                    partial(query_service.test_connection, snowflake_service)
-                )
-
-                robust_service = RobustSnowflakeService(config.snowflake.profile)
-                health_status = await anyio.to_thread.run_sync(
-                    robust_service.get_health_status
-                )
-
-                return {
-                    "status": (
-                        "healthy"
-                        if connection_ok and health_status.healthy
-                        else "unhealthy"
-                    ),
-                    "snowflake_connection": connection_ok,
-                    "detailed_health": {
-                        "healthy": health_status.healthy,
-                        "snowflake_connection": health_status.snowflake_connection,
-                        "last_error": health_status.last_error,
-                        "circuit_breaker_state": health_status.circuit_breaker_state,
-                    },
-                    "version": version,
-                    "timestamp": anyio.current_time(),
-                }
-        except Exception as e:
-            if _health_monitor:
-                _health_monitor.record_error(f"Health check failed: {e}")
-            return {
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": anyio.current_time(),
-            }
+        """Get health status - delegates to HealthCheckTool."""
+        return await health_check_inst.execute()
 
     @server.tool(name="get_catalog_summary", description="Read catalog summary JSON")
     async def get_catalog_summary_tool(
@@ -616,53 +412,15 @@ def register_snowcli_tools(
             Field(description="Catalog directory", default="./data_catalogue"),
         ] = "./data_catalogue",
     ) -> Dict[str, Any]:
-        return await anyio.to_thread.run_sync(
-            partial(catalog_service.load_summary, catalog_dir)
-        )
+        """Get catalog summary - delegates to GetCatalogSummaryTool."""
+        return await get_catalog_summary_inst.execute(catalog_dir=catalog_dir)
 
     @server.tool(
         name="check_profile_config", description="Check Snowflake profile configuration"
     )
     async def check_profile_config_tool() -> Dict[str, Any]:
-        """Check current Snowflake profile configuration and provide diagnostics.
-
-        Raises:
-            RuntimeError: If profile configuration check fails
-        """
-
-        def _check_profile_sync() -> Dict[str, Any]:
-            summary = get_profile_summary()
-            current_profile = os.environ.get("SNOWFLAKE_PROFILE")
-
-            # Try to validate current configuration
-            validation_result: dict[str, Any] = {"valid": False, "error": None}
-            try:
-                resolved_profile = validate_and_resolve_profile()
-                validation_result = {
-                    "valid": True,
-                    "resolved_profile": resolved_profile,
-                    "error": None,
-                }
-            except ProfileValidationError as e:
-                validation_result = {"valid": False, "error": str(e)}
-
-            return {
-                "config_path": str(summary.config_path),
-                "config_exists": summary.config_exists,
-                "available_profiles": summary.available_profiles,
-                "profile_count": summary.profile_count,
-                "default_profile": summary.default_profile,
-                "current_profile": current_profile,
-                "validation": validation_result,
-                "recommendations": get_profile_recommendations(
-                    summary, current_profile
-                ),
-            }
-
-        try:
-            return await anyio.to_thread.run_sync(_check_profile_sync)
-        except Exception as e:
-            raise RuntimeError(f"Failed to check profile configuration: {e}") from e
+        """Check profile configuration - delegates to CheckProfileConfigTool."""
+        return await check_profile_config_inst.execute()
 
     @server.tool(
         name="get_resource_status",
@@ -677,44 +435,11 @@ def register_snowcli_tools(
             Field(description="Catalog directory to check", default="./data_catalogue"),
         ] = "./data_catalogue",
     ) -> Dict[str, Any]:
-        """Get comprehensive resource availability status.
-
-        Raises:
-            RuntimeError: If resource manager is unavailable or status check fails
-        """
-        if not _resource_manager:
-            raise RuntimeError(
-                "Resource manager not available. "
-                "Server may not be fully initialized."
-            )
-
-        # Define core resources to check
-        resource_names = [
-            "catalog",
-            "lineage",
-            "cortex_search",
-            "cortex_analyst",
-            "query_manager",
-            "object_manager",
-            "semantic_manager",
-        ]
-
-        try:
-            # Check resource availability
-            resource_status = await anyio.to_thread.run_sync(
-                partial(
-                    _resource_manager.create_resource_status_response,
-                    resource_names,
-                    snowflake_service,
-                    catalog_dir=catalog_dir if check_catalog else None,
-                )
-            )
-            return resource_status
-
-        except Exception as e:
-            if _health_monitor:
-                _health_monitor.record_error(f"Resource status check failed: {e}")
-            raise RuntimeError(f"Failed to get resource status: {e}") from e
+        """Get resource status - delegates to GetResourceStatusTool."""
+        return await get_resource_status_inst.execute(
+            check_catalog=check_catalog,
+            catalog_dir=catalog_dir,
+        )
 
     @server.tool(
         name="check_resource_dependencies",
@@ -726,48 +451,13 @@ def register_snowcli_tools(
             str, Field(description="Catalog directory", default="./data_catalogue")
         ] = "./data_catalogue",
     ) -> Dict[str, Any]:
-        """Check dependencies for a specific resource.
-
-        Raises:
-            RuntimeError: If resource manager is unavailable or dependency check fails
-        """
-        if not _resource_manager:
-            raise RuntimeError(
-                "Resource manager not available. "
-                "Server may not be fully initialized."
-            )
-
-        try:
-            # Get resource availability
-            availability = await anyio.to_thread.run_sync(
-                partial(
-                    _resource_manager.get_resource_availability,
-                    resource_name,
-                    snowflake_service,
-                    catalog_dir=catalog_dir,
-                )
-            )
-
-            # Get recommendations
-            recommendations = _resource_manager.get_resource_recommendations(
-                resource_name, availability
-            )
-
-            # Get dependency information
-            dependencies = _resource_manager.dependencies.get(resource_name, [])
-
-            return {
-                "resource_name": resource_name,
-                "availability": availability.to_dict(),
-                "dependencies": dependencies,
-                "recommendations": recommendations,
-                "timestamp": anyio.current_time(),
-            }
-
-        except Exception as e:
-            if _health_monitor:
-                _health_monitor.record_error(f"Resource dependency check failed: {e}")
-            raise RuntimeError(f"Failed to check resource dependencies: {e}") from e
+        """Check resource dependencies - delegates to CheckResourceDependenciesTool."""
+        return await check_resource_dependencies_inst.execute(
+            resource_name=resource_name,
+            catalog_dir=catalog_dir,
+            snowflake_service=snowflake_service,
+            health_monitor=_health_monitor,
+        )
 
     if enable_cli_bridge and snow_cli is not None:
 

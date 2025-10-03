@@ -54,6 +54,7 @@ dev-dependencies = [
     "dirty-equals>=0.7.0",
     "pytest-examples>=0.0.11",
     "types-networkx>=3.2.0.20240731",
+    "pytest-cov>=7.0.0",
 ]
 
 [tool.ruff]

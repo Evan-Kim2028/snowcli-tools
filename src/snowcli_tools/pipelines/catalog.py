@@ -11,8 +11,8 @@ from typing import Optional
 import anyio
 from pydantic import BaseModel, ConfigDict
 
+from ..catalog import CatalogService
 from ..models import CatalogBuildResult
-from ..service_layer.catalog import CatalogService
 
 
 class CatalogOptions(BaseModel):
