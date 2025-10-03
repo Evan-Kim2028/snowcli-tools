@@ -103,26 +103,33 @@ def test_query_lineage_sync_not_found(tmp_path: Path):
         instance = mock_service.return_value
         instance.object_subgraph.side_effect = KeyError("missing")
 
-        result = mcp_server._query_lineage_sync(
-            object_name="missing.object",
-            direction="both",
-            depth=2,
-            fmt="json",
-            catalog_dir=str(catalog_dir),
-            cache_dir=str(cache_dir),
-            config=cfg,
-        )
+        # Should raise ValueError instead of returning error object
+        import pytest
 
-    assert result["success"] is False
-    assert "Object not found" in result["message"]
+        with pytest.raises(ValueError) as exc_info:
+            mcp_server._query_lineage_sync(
+                object_name="missing.object",
+                direction="both",
+                depth=2,
+                fmt="json",
+                catalog_dir=str(catalog_dir),
+                cache_dir=str(cache_dir),
+                config=cfg,
+            )
+
+    assert "not found in lineage graph" in str(exc_info.value)
+    assert "missing.object" in str(exc_info.value)
 
 
 def test_get_catalog_summary_sync_missing(tmp_path: Path):
-    result = mcp_server._get_catalog_summary_sync(str(tmp_path))
-    assert result == {
-        "success": False,
-        "message": f"No catalog summary found in {tmp_path}. Run build_catalog first.",
-    }
+    # Should raise FileNotFoundError instead of returning error object
+    import pytest
+
+    with pytest.raises(FileNotFoundError) as exc_info:
+        mcp_server._get_catalog_summary_sync(str(tmp_path))
+
+    assert "No catalog summary found" in str(exc_info.value)
+    assert str(tmp_path) in str(exc_info.value)
 
 
 def test_register_snowcli_tools_registers_once():

@@ -53,18 +53,16 @@ def query_lineage_sync(
         break
 
     if lineage_result is None or resolved_key is None:
-        return {
-            "success": False,
-            "message": (
-                "Object not found in lineage graph. Run build_catalog first or verify the name."
-            ),
-        }
+        raise ValueError(
+            f"Object '{object_name}' not found in lineage graph. "
+            f"Run build_catalog first or verify the object name. "
+            f"Catalog directory: {catalog_dir}"
+        )
 
     nodes = len(lineage_result.graph.nodes)
     edges = len(lineage_result.graph.edge_metadata)
 
     payload: Dict[str, Any] = {
-        "success": True,
         "object": resolved_key,
         "direction": direction,
         "depth": depth,

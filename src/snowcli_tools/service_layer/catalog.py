@@ -66,17 +66,20 @@ class CatalogService:
         return CatalogBuildResult(totals=totals_model, metadata=metadata)
 
     def load_summary(self, catalog_dir: str) -> Dict[str, Any]:
+        """Load catalog summary from directory.
+
+        Raises:
+            FileNotFoundError: If catalog summary file does not exist
+            ValueError: If catalog summary cannot be parsed
+        """
         path = Path(catalog_dir) / "catalog_summary.json"
         if not path.exists():
-            return {
-                "success": False,
-                "message": f"No catalog summary found in {catalog_dir}. Run build_catalog first.",
-            }
+            raise FileNotFoundError(
+                f"No catalog summary found in {catalog_dir}. "
+                f"Run build_catalog first to generate the catalog."
+            )
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            return {
-                "success": False,
-                "message": f"Failed to parse catalog summary at {path}",
-            }
-        return {"success": True, "catalog_dir": catalog_dir, "summary": data}
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse catalog summary at {path}: {e}") from e
+        return {"catalog_dir": catalog_dir, "summary": data}
