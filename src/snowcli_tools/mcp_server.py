@@ -64,6 +64,7 @@ from .session_utils import (
     snapshot_session,
 )
 from .snow_cli import SnowCLI, SnowCLIError
+from .sql_validation import validate_sql_statement
 
 _get_profile_recommendations = get_profile_recommendations
 
@@ -249,6 +250,21 @@ def register_snowcli_tools(
                     f"Available profiles: {available}. "
                     f"Check configuration with 'snow connection list' or verify profile settings."
                 )
+
+        # Validate SQL statement against permissions
+        allow_list = config.sql_permissions.get_allow_list()
+        disallow_list = config.sql_permissions.get_disallow_list()
+
+        stmt_type, is_valid, error_msg = validate_sql_statement(
+            statement, allow_list, disallow_list
+        )
+
+        if not is_valid and error_msg:
+            if _health_monitor:
+                _health_monitor.record_error(
+                    f"SQL statement blocked: {stmt_type} - {statement[:100]}"
+                )
+            raise ValueError(error_msg)
 
         overrides = {
             "warehouse": warehouse,
