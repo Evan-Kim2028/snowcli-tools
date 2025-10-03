@@ -9,13 +9,12 @@ from typing import Optional
 import anyio
 import click
 
-from ..catalog import export_sql_from_catalog
+from ..catalog import CatalogService, export_sql_from_catalog
 from ..context import create_service_context
 from ..errors import UnifiedErrorFormatter
 from ..logging import StructuredLogger
 from ..models import CatalogBuildResult
 from ..pipelines.catalog import CatalogOptions, CatalogPipeline
-from ..service_layer.catalog import CatalogService
 from ..snow_cli import SnowCLIError
 from .registry import CommandDescriptor, registry
 from .utils import DefaultCommandGroup
