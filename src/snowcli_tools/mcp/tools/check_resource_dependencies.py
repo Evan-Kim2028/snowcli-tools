@@ -30,49 +30,69 @@ class CheckResourceDependenciesTool(MCPTool):
     def description(self) -> str:
         return "Check dependencies for MCP resources"
 
-    async def execute(self, uri: str, **kwargs: Any) -> Dict[str, Any]:
+    async def execute(
+        self,
+        resource_name: str,
+        catalog_dir: str = "./data_catalogue",
+        snowflake_service: Any = None,
+        health_monitor: Any = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         """Check resource dependencies.
 
         Args:
-            uri: Resource URI to check dependencies for
+            resource_name: Name of the resource to check
+            catalog_dir: Catalog directory path
+            snowflake_service: Snowflake service instance (optional)
+            health_monitor: Health monitor instance (optional)
 
         Returns:
             Resource dependency information
 
         Raises:
-            ValueError: If URI is invalid
             RuntimeError: If resource manager not available or check fails
         """
-        if not uri or not uri.strip():
-            raise ValueError("Resource URI cannot be empty")
+        from functools import partial
+
+        import anyio
 
         if not self.resource_manager:
-            raise RuntimeError("Resource manager not initialized")
+            raise RuntimeError(
+                "Resource manager not available. "
+                "Server may not be fully initialized."
+            )
 
         try:
-            # Check if resource exists
-            resource = self.resource_manager.get_resource(uri)  # type: ignore[attr-defined]
-            if not resource:
-                return {
-                    "uri": uri,
-                    "status": "not_found",
-                    "dependencies": [],
-                }
+            # Get resource availability
+            availability = await anyio.to_thread.run_sync(
+                partial(
+                    self.resource_manager.get_resource_availability,
+                    resource_name,
+                    snowflake_service,
+                    catalog_dir=catalog_dir,
+                )
+            )
 
-            # Get dependencies
-            dependencies = self.resource_manager.get_dependencies(uri)  # type: ignore[attr-defined]
+            # Get recommendations
+            recommendations = self.resource_manager.get_resource_recommendations(
+                resource_name, availability
+            )
+
+            # Get dependency information
+            dependencies = self.resource_manager.dependencies.get(resource_name, [])
 
             return {
-                "uri": uri,
-                "status": "found",
-                "dependency_count": len(dependencies) if dependencies else 0,
-                "dependencies": dependencies if dependencies else [],
+                "resource_name": resource_name,
+                "availability": availability.to_dict(),
+                "dependencies": dependencies,
+                "recommendations": recommendations,
+                "timestamp": anyio.current_time(),
             }
 
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to check resource dependencies for '{uri}': {e}"
-            ) from e
+            if health_monitor:
+                health_monitor.record_error(f"Resource dependency check failed: {e}")
+            raise RuntimeError(f"Failed to check resource dependencies: {e}") from e
 
     def get_parameter_schema(self) -> Dict[str, Any]:
         """Get JSON schema for tool parameters."""
