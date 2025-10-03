@@ -44,6 +44,66 @@ class SnowflakeConfig:
 
 
 @dataclass(frozen=True)
+class SQLPermissions:
+    """SQL statement permissions configuration."""
+
+    select: bool = True
+    show: bool = True
+    describe: bool = True
+    use: bool = True
+    insert: bool = True
+    update: bool = True
+    create: bool = True
+    alter: bool = True
+    delete: bool = False  # Blocked by default - use soft delete
+    drop: bool = False  # Blocked by default - use rename
+    truncate: bool = False  # Blocked by default - use DELETE with WHERE
+    unknown: bool = False  # Reject unparseable SQL by default
+
+    def get_allow_list(self) -> list[str]:
+        """Get list of allowed SQL statement types."""
+        allowed = []
+        for stmt_type, is_allowed in [
+            ("Select", self.select),
+            ("Show", self.show),
+            ("Describe", self.describe),
+            ("Use", self.use),
+            ("Insert", self.insert),
+            ("Update", self.update),
+            ("Create", self.create),
+            ("Alter", self.alter),
+            ("Delete", self.delete),
+            ("Drop", self.drop),
+            ("Truncate", self.truncate),
+            ("Unknown", self.unknown),
+        ]:
+            if is_allowed:
+                allowed.append(stmt_type)
+        return allowed
+
+    def get_disallow_list(self) -> list[str]:
+        """Get list of disallowed SQL statement types."""
+        disallowed = []
+        for stmt_type, is_allowed in [
+            ("Select", self.select),
+            ("Show", self.show),
+            ("Describe", self.describe),
+            ("Use", self.use),
+            ("Insert", self.insert),
+            ("Update", self.update),
+            ("Create", self.create),
+            ("Alter", self.alter),
+            ("Delete", self.delete),
+            ("Drop", self.drop),
+            ("Truncate", self.truncate),
+            ("Unknown", self.unknown),
+        ]:
+            if not is_allowed:
+                disallowed.append(stmt_type)
+        return disallowed
+
+
+@dataclass(frozen=True)
 class Config:
     snowflake: SnowflakeConfig
     max_concurrent_queries: int = 5
@@ -52,6 +112,7 @@ class Config:
     retry_delay: float = 1.0
     timeout_seconds: int = 300
     log_level: str = "INFO"
+    sql_permissions: SQLPermissions = field(default_factory=SQLPermissions)
 
     def apply_overrides(self, overrides: "ConfigOverrides") -> "Config":
         if overrides.is_empty():

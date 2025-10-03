@@ -2,7 +2,17 @@
 
 > **Powerful Snowflake operations with AI assistant integration**
 
-Transform your Snowflake data operations with automated cataloging, advanced lineage analysis, and seamless AI assistant connectivity through MCP (Model Context Protocol).
+Transform your Snowflake data operations with automated cataloging, advanced lineage analysis, SQL safety validation, and seamless AI assistant connectivity through MCP (Model Context Protocol).
+
+## ✨ v1.7.0 New Features
+
+- 🛡️ **SQL Safety:** Blocks destructive operations (DELETE, DROP, TRUNCATE) with safe alternatives
+- 🧠 **Intelligent Errors:** Compact mode (default) saves 70% tokens; verbose mode for debugging
+- ⏱️ **Agent-Controlled Timeouts:** Configure query timeouts per-request (1-3600s)
+- ✅ **MCP Protocol Compliant:** Standard exception-based error handling
+- 🚀 **Zero Vendoring:** Imports from upstream, stays in sync
+
+[📖 See Release Notes](./RELEASE_NOTES.md) for details.
 
 [![PyPI version](https://badge.fury.io/py/snowcli-tools.svg)](https://pypi.org/project/snowcli-tools/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
