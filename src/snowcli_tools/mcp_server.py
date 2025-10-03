@@ -219,13 +219,41 @@ def register_snowcli_tools(
         role: Annotated[
             Optional[str], Field(description="Role override", default=None)
         ] = None,
+        timeout_seconds: Annotated[
+            Optional[int],
+            Field(
+                description="Query timeout in seconds (default: 120s from config)",
+                ge=1,
+                le=3600,
+                default=None,
+            ),
+        ] = None,
+        verbose_errors: Annotated[
+            bool,
+            Field(
+                description="Include detailed optimization hints in error messages (default: false for compact errors)",
+                default=False,
+            ),
+        ] = False,
         ctx: Context | None = None,
     ) -> Dict[str, Any]:
-        """Execute a SQL query against Snowflake.
+        """Execute a SQL query against Snowflake with optional timeout and error verbosity control.
+
+        Args:
+            statement: SQL statement to execute
+            warehouse: Optional warehouse override
+            database: Optional database override
+            schema: Optional schema override
+            role: Optional role override
+            timeout_seconds: Query timeout in seconds (default: 120s). Use higher values for complex queries.
+            verbose_errors: Include detailed error messages with optimization hints (default: false for compact errors)
+
+        Returns:
+            Query results with rows, rowcount, and execution metadata
 
         Raises:
-            ValueError: If profile validation fails or query execution encounters validation errors
-            RuntimeError: If query execution fails due to connection or other runtime issues
+            ValueError: If profile validation fails, SQL is blocked, or query execution encounters validation errors
+            RuntimeError: If query execution fails due to connection, timeout, or other runtime issues
         """
         # Validate profile health before executing query
         if _health_monitor:
@@ -274,15 +302,24 @@ def register_snowcli_tools(
         }
         packed = {k: v for k, v in overrides.items() if v}
 
+        # Determine timeout (use provided value or config default)
+        timeout = (
+            timeout_seconds if timeout_seconds is not None else config.timeout_seconds
+        )
+
         try:
             session_ctx = query_service.session_from_mapping(packed)
-            result = await anyio.to_thread.run_sync(
+
+            # Execute with timeout using asyncio.wait_for
+            result = await anyio.fail_after(
+                timeout,
+                anyio.to_thread.run_sync,
                 partial(
                     query_service.execute_with_service,
                     snowflake_service,
                     statement,
                     session=session_ctx,
-                )
+                ),
             )
 
             if ctx is not None:
@@ -291,6 +328,37 @@ def register_snowcli_tools(
                 )
 
             return result
+
+        except anyio.get_cancelled_exc_class() as e:
+            # Handle timeout
+            if _health_monitor:
+                _health_monitor.record_error(
+                    f"Query timeout after {timeout}s: {statement[:100]}"
+                )
+
+            if verbose_errors:
+                # Verbose mode: detailed optimization hints (~200-300 tokens)
+                raise RuntimeError(
+                    f"Query timeout after {timeout}s.\n\n"
+                    f"Quick fixes:\n"
+                    f"1. Increase timeout: execute_query(..., timeout_seconds={timeout * 4})\n"
+                    f"2. Add filter: Add WHERE clause to reduce data volume\n"
+                    f"3. Sample data: Add LIMIT clause for testing (e.g., LIMIT 1000)\n"
+                    f"4. Scale warehouse: Consider using a larger warehouse for complex queries\n\n"
+                    f"Current settings:\n"
+                    f"  - Timeout: {timeout}s\n"
+                    f"  - Warehouse: {warehouse or config.snowflake.warehouse or 'default'}\n"
+                    f"  - Database: {database or config.snowflake.database or 'default'}\n\n"
+                    f"Query preview: {statement[:150]}{'...' if len(statement) > 150 else ''}\n\n"
+                    f"Use verbose_errors=False for compact error messages."
+                ) from e
+            else:
+                # Compact mode: concise guidance (~80-100 tokens)
+                raise RuntimeError(
+                    f"Query timeout ({timeout}s). "
+                    f"Try: timeout_seconds={timeout * 4}, add WHERE/LIMIT clause, or scale warehouse. "
+                    f"Use verbose_errors=True for detailed optimization hints."
+                ) from e
 
         except ProfileValidationError as e:
             if _health_monitor:
@@ -301,10 +369,25 @@ def register_snowcli_tools(
         except Exception as e:
             if _health_monitor:
                 _health_monitor.record_error(f"Query execution failed: {e}")
-            raise RuntimeError(
-                f"Query execution failed: {e}. "
-                f"Statement: {statement[:100]}{'...' if len(statement) > 100 else ''}"
-            ) from e
+
+            if verbose_errors:
+                # Verbose mode: include more context
+                raise RuntimeError(
+                    f"Query execution failed: {e}\n\n"
+                    f"Context:\n"
+                    f"  - Statement: {statement[:200]}{'...' if len(statement) > 200 else ''}\n"
+                    f"  - Warehouse: {warehouse or config.snowflake.warehouse or 'default'}\n"
+                    f"  - Database: {database or config.snowflake.database or 'default'}\n"
+                    f"  - Schema: {schema or config.snowflake.schema or 'default'}\n\n"
+                    f"Use verbose_errors=False for compact error messages."
+                ) from e
+            else:
+                # Compact mode: brief error
+                raise RuntimeError(
+                    f"Query execution failed: {e}. "
+                    f"Statement: {statement[:100]}{'...' if len(statement) > 100 else ''}. "
+                    f"Use verbose_errors=True for details."
+                ) from e
 
     @server.tool(name="preview_table", description="Preview table contents")
     async def preview_table_tool(

@@ -1,7 +1,7 @@
 [project]
 name = "snowcli-tools"
-version = "1.6.0"
-description = "Snowflake CLI Tools: generate a Data Catalog and Dependency Graph on top of the official Snowflake CLI; includes parallel query helpers and advanced lineage features"
+version = "1.7.0"
+description = "Snowflake CLI Tools: generate a Data Catalog and Dependency Graph on top of the official Snowflake CLI; includes parallel query helpers, advanced lineage features, SQL safety validation, and agent-first error handling"
 readme = "README.md"
 authors = [
     { name = "Evan Kim", email = "ekcopersonal@gmail.com" }
