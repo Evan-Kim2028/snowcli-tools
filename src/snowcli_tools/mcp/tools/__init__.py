@@ -22,7 +22,7 @@ from .get_resource_status import GetResourceStatusTool
 from .health_check import HealthCheckTool
 from .preview_table import PreviewTableTool
 from .query_lineage import QueryLineageTool
-from .test_connection import TestConnectionTool
+from .test_connection import ConnectionTestTool
 
 __all__ = [
     "MCPTool",
@@ -37,5 +37,5 @@ __all__ = [
     "HealthCheckTool",
     "PreviewTableTool",
     "QueryLineageTool",
-    "TestConnectionTool",
+    "ConnectionTestTool",
 ]

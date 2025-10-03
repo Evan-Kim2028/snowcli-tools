@@ -50,13 +50,13 @@ from .mcp.tools import (
     BuildDependencyGraphTool,
     CheckProfileConfigTool,
     CheckResourceDependenciesTool,
+    ConnectionTestTool,
     ExecuteQueryTool,
     GetCatalogSummaryTool,
     GetResourceStatusTool,
     HealthCheckTool,
     PreviewTableTool,
     QueryLineageTool,
-    TestConnectionTool,
 )
 from .mcp.utils import get_profile_recommendations, json_compatible
 from .mcp_health import (
@@ -225,7 +225,7 @@ def register_snowcli_tools(
     query_lineage_inst = QueryLineageTool(config)
     build_catalog_inst = BuildCatalogTool(config, catalog_service)
     build_dependency_graph_inst = BuildDependencyGraphTool(dependency_service)
-    test_connection_inst = TestConnectionTool(config, snowflake_service)
+    test_connection_inst = ConnectionTestTool(config, snowflake_service)
     health_check_inst = HealthCheckTool(_health_monitor)
     check_profile_config_inst = CheckProfileConfigTool(config)
     get_resource_status_inst = GetResourceStatusTool(_resource_manager)

@@ -11,7 +11,7 @@ from ...config import Config
 from .base import MCPTool
 
 
-class TestConnectionTool(MCPTool):
+class ConnectionTestTool(MCPTool):
     """MCP tool for testing Snowflake connection."""
 
     def __init__(self, config: Config, snowflake_service: Any):
