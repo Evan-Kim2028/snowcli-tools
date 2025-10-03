@@ -11,8 +11,8 @@ from typing import Optional
 import anyio
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..dependency import DependencyService
 from ..models import DependencyGraph
-from ..service_layer.dependency import DependencyService
 
 
 class DependencyOptions(BaseModel):

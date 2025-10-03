@@ -1,7 +1,7 @@
 """Domain models for SnowCLI tools."""
 
 from ..catalog.models import CatalogBuildResult, CatalogBuildTotals, CatalogMetadata
-from .dependency import (
+from ..dependency.models import (
     DependencyCounts,
     DependencyEdge,
     DependencyGraph,
