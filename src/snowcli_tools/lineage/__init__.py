@@ -1,63 +1,59 @@
-"""Lineage package exposes helpers to build and query Snowflake lineage graphs."""
+"""Simplified lineage package for building and querying Snowflake lineage graphs.
 
+This module provides core lineage functionality with a focus on simplicity and
+maintainability. Complex features like column-level lineage, cross-database analysis,
+and impact tracking have been removed in v1.9.0.
+
+For backward compatibility, LineageGraph is aliased to Graph.
+"""
+
+# Backward compatibility - keep existing builder and loader
 from .builder import LineageBuilder
-from .column_parser import (
-    ColumnLineageExtractor,
-    ColumnLineageGraph,
-    ColumnTransformation,
-)
-
-# New additions for code quality
-from .constants import Formats, Limits, Patterns, Thresholds, Timeouts
-from .cross_db import CrossDatabaseLineageBuilder, UnifiedLineageGraph
 from .exceptions import LineageException, LineageParseError, ObjectNotFoundException
-from .external import ExternalLineage, ExternalSourceMapper
-from .factory import ConfigFactory, LineageFactory, ObjectFactory
-from .graph import LineageGraph
-from .history import LineageDiff, LineageHistoryManager, LineageSnapshot
-from .impact import ChangeType, ImpactAnalyzer, ImpactReport
+
+# Core simplified lineage components
+from .format import format_as_dot, format_as_mermaid, format_as_text
 from .loader import CatalogLoader, CatalogObject
 from .logging_config import get_logger, setup_logging
+from .models import Edge, EdgeType, Graph, Node, NodeType
 from .queries import LineageQueryService
-from .transformations import TransformationMetadata, TransformationTracker
+from .traversal import traverse_dependencies
+
+# Backward compatibility alias
+LineageGraph = Graph
+LineageNode = Node
+LineageEdge = Edge
 
 # Setup default logging
 setup_logging(level="INFO")
 
 __all__ = [
+    # Core models
+    "Graph",
+    "Node",
+    "Edge",
+    "NodeType",
+    "EdgeType",
+    # Traversal
+    "traverse_dependencies",
+    # Formatting
+    "format_as_text",
+    "format_as_mermaid",
+    "format_as_dot",
+    # Builders and loaders (kept for backward compatibility)
+    "LineageBuilder",
     "CatalogLoader",
     "CatalogObject",
-    "LineageBuilder",
-    "LineageGraph",
     "LineageQueryService",
-    # New Advanced Lineage Features
-    "ColumnLineageExtractor",
-    "ColumnLineageGraph",
-    "ColumnTransformation",
-    "TransformationTracker",
-    "TransformationMetadata",
-    "CrossDatabaseLineageBuilder",
-    "UnifiedLineageGraph",
-    "ExternalSourceMapper",
-    "ExternalLineage",
-    "ImpactAnalyzer",
-    "ImpactReport",
-    "ChangeType",
-    "LineageHistoryManager",
-    "LineageSnapshot",
-    "LineageDiff",
-    # New additions for code quality
-    "Limits",
-    "Timeouts",
-    "Thresholds",
-    "Patterns",
-    "Formats",
+    # Exceptions
     "LineageException",
     "LineageParseError",
     "ObjectNotFoundException",
-    "LineageFactory",
-    "ObjectFactory",
-    "ConfigFactory",
+    # Logging
     "setup_logging",
     "get_logger",
+    # Backward compatibility aliases
+    "LineageGraph",
+    "LineageNode",
+    "LineageEdge",
 ]

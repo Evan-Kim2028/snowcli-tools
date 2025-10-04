@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - v1.9.0 (In Progress)
+
+### Phase 1: Code Simplification (Completed)
+
+#### Added
+- New simplified lineage models: `models.py`, `traversal.py`, `format.py` (~400 LOC total)
+- Consolidated `health.HealthCheckTool` combining health_check, check_profile_config, and get_resource_status
+- Cortex AI availability check in health tool (`include_cortex` parameter)
+- Simplified `test_connection` tool as lightweight wrapper
+- Migration guide: `docs/v1.9.0_migration.md`
+
+#### Changed
+- Lineage module reduced from 6,874 LOC to ~400 LOC (94% reduction)
+- Health tools reduced from 5 tools (426 LOC) to 2 tools (150 LOC)
+- `LineageGraph` aliased to `Graph` for backward compatibility
+- `query_lineage` tool updated to use simplified lineage API
+
+#### Removed
+- `column_parser.py` (584 LOC) - Column-level lineage (too granular for common use cases)
+- `cross_db.py` (509 LOC) - Cross-database lineage (niche use case)
+- `impact.py` (830 LOC) - Impact analysis (move to optional package in future)
+- `history.py` (889 LOC) - Lineage history tracking (complex, rarely used)
+- `transformations.py` (~600 LOC) - Transformation metadata (overlaps with column parser)
+- `external.py` (~400 LOC) - External source mapping (not implemented)
+- `check_resource_dependencies` MCP tool (88 LOC) - Confusing API, rarely used
+- `check_profile_config` MCP tool - Merged into HealthCheckTool
+- `get_resource_status` MCP tool - Merged into HealthCheckTool
+
+**Total Phase 1 Impact**: -4,088 LOC (66% code reduction)
+
+---
+
 ## [1.4.5] - 2025-09-27
 
 ### Added
