@@ -32,30 +32,33 @@ class TestSQLPermissions:
         perms = SQLPermissions()
         allow_list = perms.get_allow_list()
 
-        assert "Select" in allow_list
-        assert "Insert" in allow_list
-        assert "Update" in allow_list
-        assert "Delete" not in allow_list
-        assert "Drop" not in allow_list
-        assert "Truncate" not in allow_list
+        # Config returns lowercase to match upstream validation
+        assert "select" in allow_list
+        assert "insert" in allow_list
+        assert "update" in allow_list
+        assert "delete" not in allow_list
+        assert "drop" not in allow_list
+        assert "truncate" not in allow_list
 
     def test_get_disallow_list(self):
         """Test getting list of disallowed statement types."""
         perms = SQLPermissions()
         disallow_list = perms.get_disallow_list()
 
-        assert "Delete" in disallow_list
-        assert "Drop" in disallow_list
-        assert "Truncate" in disallow_list
-        assert "Select" not in disallow_list
+        # Config returns lowercase to match upstream validation
+        assert "delete" in disallow_list
+        assert "drop" in disallow_list
+        assert "truncate" in disallow_list
+        assert "select" not in disallow_list
 
     def test_custom_permissions(self):
         """Test custom permission configuration."""
         perms = SQLPermissions(delete=True, drop=True)
 
         allow_list = perms.get_allow_list()
-        assert "Delete" in allow_list
-        assert "Drop" in allow_list
+        # Config returns lowercase to match upstream validation
+        assert "delete" in allow_list
+        assert "drop" in allow_list
 
 
 class TestExtractTableName:
@@ -137,8 +140,8 @@ class TestValidateSQLStatement:
     def test_allowed_select_statement(self):
         """Test that SELECT is allowed when in allow list."""
         sql = "SELECT * FROM users"
-        # Explicitly allow SELECT
-        allow_list = ["Select"]
+        # Config uses lowercase for validation (upstream returns capitalized)
+        allow_list = ["select"]
         disallow_list = []
 
         stmt_type, is_valid, error_msg = validate_sql_statement(
@@ -152,8 +155,9 @@ class TestValidateSQLStatement:
     def test_blocked_delete_statement(self):
         """Test that DELETE is blocked with alternatives."""
         sql = "DELETE FROM users WHERE id = 1"
-        allow_list = ["Select", "Insert", "Update"]
-        disallow_list = ["Delete", "Drop", "Truncate"]
+        # Config uses lowercase for validation
+        allow_list = ["select", "insert", "update"]
+        disallow_list = ["delete", "drop", "truncate"]
 
         stmt_type, is_valid, error_msg = validate_sql_statement(
             sql, allow_list, disallow_list
@@ -169,8 +173,9 @@ class TestValidateSQLStatement:
     def test_blocked_drop_statement(self):
         """Test that DROP is blocked with alternatives."""
         sql = "DROP TABLE old_data"
-        allow_list = ["Select", "Insert"]
-        disallow_list = ["Delete", "Drop", "Truncate"]
+        # Config uses lowercase for validation
+        allow_list = ["select", "insert"]
+        disallow_list = ["delete", "drop", "truncate"]
 
         stmt_type, is_valid, error_msg = validate_sql_statement(
             sql, allow_list, disallow_list
@@ -186,8 +191,9 @@ class TestValidateSQLStatement:
     def test_blocked_truncate_statement(self):
         """Test that TRUNCATE is blocked with alternatives."""
         sql = "TRUNCATE TABLE temp_data"
-        allow_list = ["Select"]
-        disallow_list = ["Delete", "Drop", "Truncate", "TruncateTable"]
+        # Config uses lowercase for validation
+        allow_list = ["select"]
+        disallow_list = ["delete", "drop", "truncate", "truncatetable"]
 
         stmt_type, is_valid, error_msg = validate_sql_statement(
             sql, allow_list, disallow_list
@@ -203,8 +209,8 @@ class TestValidateSQLStatement:
     def test_allowed_insert_statement(self):
         """Test that INSERT is allowed when in allow list."""
         sql = "INSERT INTO users (name) VALUES ('Alice')"
-        # Explicitly allow INSERT
-        allow_list = ["Insert"]
+        # Config uses lowercase for validation (upstream returns capitalized)
+        allow_list = ["insert"]
         disallow_list = []
 
         stmt_type, is_valid, error_msg = validate_sql_statement(

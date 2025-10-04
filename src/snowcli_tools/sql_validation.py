@@ -164,9 +164,11 @@ def validate_sql_statement(
             f"Safe alternatives:\n{alt_text}"
         )
     else:
+        # Capitalize allow_list for display (they're lowercase for validation)
+        display_allowed = [t.capitalize() for t in allow_list]
         error_msg = (
             f"SQL statement type '{stmt_type}' is not permitted. "
-            f"Allowed types: {', '.join(allow_list)}"
+            f"Allowed types: {', '.join(display_allowed)}"
         )
 
     return stmt_type, False, error_msg

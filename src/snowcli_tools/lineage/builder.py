@@ -7,9 +7,13 @@ from typing import Dict, Optional
 
 from .audit import LineageAudit, ObjectAuditEntry
 from .constants import Timeouts
-from .graph import EdgeType, LineageEdge, LineageGraph, LineageNode, NodeType
 from .identifiers import normalize
 from .loader import CatalogLoader, CatalogObject, ObjectType
+from .models import Edge as LineageEdge
+from .models import EdgeType
+from .models import Graph as LineageGraph
+from .models import Node as LineageNode
+from .models import NodeType
 from .sql_parser import LineageParseResult, SqlLineageExtractor, extract_select_clause
 from .utils import TimeoutError, timeout
 
