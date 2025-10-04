@@ -61,42 +61,48 @@ class SQLPermissions:
     unknown: bool = False  # Reject unparseable SQL by default
 
     def get_allow_list(self) -> list[str]:
-        """Get list of allowed SQL statement types."""
+        """Get list of allowed SQL statement types.
+
+        Returns lowercase statement types to match upstream validation.
+        """
         allowed = []
         for stmt_type, is_allowed in [
-            ("Select", self.select),
-            ("Show", self.show),
-            ("Describe", self.describe),
-            ("Use", self.use),
-            ("Insert", self.insert),
-            ("Update", self.update),
-            ("Create", self.create),
-            ("Alter", self.alter),
-            ("Delete", self.delete),
-            ("Drop", self.drop),
-            ("Truncate", self.truncate),
-            ("Unknown", self.unknown),
+            ("select", self.select),
+            ("show", self.show),
+            ("describe", self.describe),
+            ("use", self.use),
+            ("insert", self.insert),
+            ("update", self.update),
+            ("create", self.create),
+            ("alter", self.alter),
+            ("delete", self.delete),
+            ("drop", self.drop),
+            ("truncate", self.truncate),
+            ("unknown", self.unknown),
         ]:
             if is_allowed:
                 allowed.append(stmt_type)
         return allowed
 
     def get_disallow_list(self) -> list[str]:
-        """Get list of disallowed SQL statement types."""
+        """Get list of disallowed SQL statement types.
+
+        Returns lowercase statement types to match upstream validation.
+        """
         disallowed = []
         for stmt_type, is_allowed in [
-            ("Select", self.select),
-            ("Show", self.show),
-            ("Describe", self.describe),
-            ("Use", self.use),
-            ("Insert", self.insert),
-            ("Update", self.update),
-            ("Create", self.create),
-            ("Alter", self.alter),
-            ("Delete", self.delete),
-            ("Drop", self.drop),
-            ("Truncate", self.truncate),
-            ("Unknown", self.unknown),
+            ("select", self.select),
+            ("show", self.show),
+            ("describe", self.describe),
+            ("use", self.use),
+            ("insert", self.insert),
+            ("update", self.update),
+            ("create", self.create),
+            ("alter", self.alter),
+            ("delete", self.delete),
+            ("drop", self.drop),
+            ("truncate", self.truncate),
+            ("unknown", self.unknown),
         ]:
             if not is_allowed:
                 disallowed.append(stmt_type)
