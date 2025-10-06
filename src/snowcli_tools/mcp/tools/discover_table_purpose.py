@@ -25,6 +25,13 @@ from ...discovery.relationship_discoverer import RelationshipDiscoverer
 from ...snow_cli import SnowCLI
 from .base import MCPTool
 
+# Constants
+MAX_TIMEOUT_SECONDS = 600  # 10 minutes
+MIN_TIMEOUT_SECONDS = 5
+MAX_BATCH_SIZE = 50  # Prevent runaway costs
+MAX_COST_PER_DISCOVERY = 1.0  # $1.00 per discovery
+DEFAULT_TIMEOUT = 60
+
 
 class DiscoverTablePurposeTool(MCPTool):
     """MCP tool for discovering and documenting Snowflake tables using AI."""
@@ -69,7 +76,7 @@ Supports batch discovery of multiple tables."""
         depth: str = "standard",
         output_format: str = "markdown",
         cache_policy: str = "if_fresh",
-        timeout_seconds: int = 60,
+        timeout_seconds: int = DEFAULT_TIMEOUT,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """Execute table discovery.
@@ -86,7 +93,28 @@ Supports batch discovery of multiple tables."""
 
         Returns:
             Discovery results with documentation
+
+        Raises:
+            ValueError: If input validation fails
         """
+        # Input validation
+        if (
+            timeout_seconds < MIN_TIMEOUT_SECONDS
+            or timeout_seconds > MAX_TIMEOUT_SECONDS
+        ):
+            raise ValueError(
+                f"timeout_seconds must be between {MIN_TIMEOUT_SECONDS} and "
+                f"{MAX_TIMEOUT_SECONDS}, got {timeout_seconds}"
+            )
+
+        if isinstance(table_name, list):
+            if len(table_name) == 0:
+                raise ValueError("table_name list cannot be empty")
+            if len(table_name) > MAX_BATCH_SIZE:
+                raise ValueError(
+                    f"Batch size limited to {MAX_BATCH_SIZE} tables, got {len(table_name)}"
+                )
+
         # Parse enums
         depth_mode = DepthMode(depth)
         out_format = OutputFormat(output_format)
@@ -336,15 +364,27 @@ Supports batch discovery of multiple tables."""
 
         Returns:
             Estimated cost in USD
+
+        Raises:
+            ValueError: If estimated cost exceeds MAX_COST_PER_DISCOVERY
         """
         if depth == DepthMode.QUICK:
-            return 0.01
+            cost = 0.01
         elif depth == DepthMode.STANDARD:
             # Base cost + per-column LLM cost
-            return 0.05 + (column_count * 0.001)
+            cost = 0.05 + (column_count * 0.001)
         else:  # DEEP
             # Base cost + LLM + relationship discovery
-            return 0.08 + (column_count * 0.002)
+            cost = 0.08 + (column_count * 0.002)
+
+        # Cost limit check
+        if cost > MAX_COST_PER_DISCOVERY:
+            raise ValueError(
+                f"Estimated cost ${cost:.2f} exceeds maximum ${MAX_COST_PER_DISCOVERY:.2f}. "
+                f"Table has {column_count} columns. Consider using 'quick' or 'standard' depth mode."
+            )
+
+        return cost
 
     def _check_cache(
         self,

@@ -251,19 +251,34 @@ JSON response:"""
         # Strip markdown code blocks if present
         response = response.strip()
         if response.startswith("```"):
-            # Extract JSON from code block
-            match = re.search(r"```(?:json)?\s*(\{.*\})\s*```", response, re.DOTALL)
+            # Extract JSON from code block (use non-greedy match)
+            match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", response, re.DOTALL)
             if match:
                 response = match.group(1)
+            else:
+                # Try without code block markers
+                match = re.search(r"\{.*?\}", response, re.DOTALL)
+                if match:
+                    response = match.group(0)
 
         # Parse JSON
         try:
             data = json.loads(response)
         except json.JSONDecodeError:
-            # Try to extract JSON object with regex
-            match = re.search(r"\{.*\}", response, re.DOTALL)
+            # Try to extract JSON object with non-greedy regex
+            match = re.search(r"\{.*?\}", response, re.DOTALL)
             if match:
-                data = json.loads(match.group(0))
+                try:
+                    data = json.loads(match.group(0))
+                except json.JSONDecodeError:
+                    # Last resort: try greedy match
+                    match = re.search(r"\{.*\}", response, re.DOTALL)
+                    if match:
+                        data = json.loads(match.group(0))
+                    else:
+                        raise ValueError(
+                            f"Could not parse JSON from response: {response[:200]}"
+                        )
             else:
                 raise ValueError(
                     f"Could not parse JSON from response: {response[:200]}"
