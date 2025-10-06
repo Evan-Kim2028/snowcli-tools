@@ -6,11 +6,11 @@ The MCP (Model Context Protocol) server is an optional feature of snowcli-tools 
 
 ### Key Benefits
 
-- **Natural Language Queries**: Ask questions in plain English, get SQL results
-- **Intelligent Context**: AI understands your schema, relationships, and data lineage
-- **Secure Integration**: Uses existing Snowflake CLI authentication
-- **Tool-based Safety**: Structured tools prevent arbitrary code execution
-- **Multi-Client Support**: Works with VS Code, Cursor, Claude Code, and other MCP clients
+- 🔒 **Security-First Design**: Read-only by default with SQL injection protection
+- 🛡️ **Safe Query Execution**: Destructive operations blocked, timeout controls enforced
+- 🔐 **Secure Integration**: Uses official Snowflake CLI authentication
+- 🧠 **Intelligent Context**: AI understands schema, relationships, and data lineage
+- 🤖 **Multi-Client Support**: Works with VS Code, Cursor, Claude Code, and other MCP clients
 
 ### How It Works
 
@@ -72,12 +72,14 @@ The server will display usage information and available tools. Press `Ctrl+C` to
 The MCP server exposes the following tools to AI assistants:
 
 ### Core Data Tools
-- **`execute_query`** - Execute SQL queries against Snowflake
-  - Parameters: `query`, `warehouse`, `database`, `schema`, `role`
+- **`execute_query`** - Execute SQL queries against Snowflake (read-only by default)
+  - Parameters: `statement`, `timeout_seconds` (default: 120s, max: 3600s), `warehouse`, `database`, `schema`, `role`
+  - Security: Blocks DROP, DELETE, TRUNCATE, ALTER, CREATE operations
+  - Validation: SQL injection protection with sqlglot parsing
   - Returns: Query results as JSON
 
-- **`preview_table`** - Preview table contents
-  - Parameters: `table_name`, `limit`, `warehouse`, `database`, `schema`, `role`
+- **`preview_table`** - Preview table contents safely
+  - Parameters: `table_name`, `limit` (max: 1000), `warehouse`, `database`, `schema`, `role`
   - Returns: Table preview data
 
 ### Catalog and Metadata Tools
