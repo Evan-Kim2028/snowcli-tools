@@ -1,56 +1,73 @@
 # SnowCLI Tools
 
-> **AI-Powered Snowflake Discovery & Data Operations**
+> **Security-First Snowflake MCP Server for AI Agents**
 
-Transform your Snowflake data operations with automated cataloging, advanced lineage analysis, SQL safety validation, and seamless AI assistant connectivity through MCP (Model Context Protocol).
+A hardened MCP server extending official Snowflake Labs MCP with read-only-by-default design, SQL injection protection, query timeouts for safer agentic native workflows.
 
 [![PyPI version](https://badge.fury.io/py/snowcli-tools.svg)](https://pypi.org/project/snowcli-tools/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
----
-### 🧠 **AI-Powered Discovery**
-Automatically understand tables using Snowflake Cortex Complete:
-- **Business Purpose**: "Customer master data with contact info" (not just column names)
-- **PII Detection**: Identifies sensitive data with 95%+ accuracy
-- **Relationship Discovery**: Finds foreign keys even without constraints
-- **Smart Documentation**: Generates readable docs with confidence indicators
 
-### 🎛️ **Simplified Interface**
-Control every aspect independently:
-```python
-# Full control with boolean flags
-profile_table(
-    "CUSTOMERS",
-    include_ai_analysis=True,      # AI business context ($0.05)
-    include_relationships=True,     # FK discovery ($0.03 more)
-    force_refresh=False             # Use cache when available
-)
+### 🏗️ **Architecture Overview**
 
-# Quick profiling without AI (2-5s, $0.01)
-profile_table("HUGE_TABLE", include_ai_analysis=False)
-
-# Batch profiling with automatic caching
-profile_table(["CUSTOMERS", "ORDERS", "PRODUCTS"])
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AI Agent (Claude, etc.)                  │
+│              "Show me tables with PII in CUSTOMERS"         │
+└────────────────────────────┬────────────────────────────────┘
+                             │ MCP Protocol (JSON-RPC 2.0)
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│              SnowCLI Tools MCP Server (This Package)        │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Security Layer (SQL Validation & Safety Guards)     │  │
+│  │  • SQL injection detection (sqlglot parsing)         │  │
+│  │  • Destructive operation blocking (DROP/DELETE/etc)  │  │
+│  │  • Query timeout enforcement (120s default)          │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  9 MCP Tools:                                        │  │
+│  │  • execute_query      → Safe SQL execution           │  │
+│  │  • preview_table      → Quick table inspection       │  │
+│  │  • profile_table      → AI-powered discovery         │  │
+│  │  • build_catalog      → Metadata extraction          │  │
+│  │  • get_catalog_summary → Catalog stats              │  │
+│  │  • query_lineage      → Data flow analysis           │  │
+│  │  • build_dependency_graph → Object relationships     │  │
+│  │  • health_check       → System validation            │  │
+│  │  • test_connection    → Connectivity check           │  │
+│  └──────────────────────────────────────────────────────┘  │
+└────────────────────────────┬────────────────────────────────┘
+                             │ Extends & Reuses
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│          Snowflake Labs Official MCP Server                 │
+│  • Authentication & connection management                   │
+│  • Session context handling                                 │
+│  • Base Snowflake operations                                │
+└────────────────────────────┬────────────────────────────────┘
+                             │ Snowflake Python Connector
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   Snowflake Data Cloud                      │
+│  • Your tables, views, and data                             │
+│  • Cortex Complete (AI analysis)                            │
+│  • Information Schema (metadata)                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 🚀 **Built on Snowflake Labs Official MCP**
-```
-┌──────────────────────────────────┐
-│   Your AI Assistant (Claude)    │  ← Natural language queries
-├──────────────────────────────────┤
-│  SnowCLI Tools (This Package)   │  ← Discovery, Catalog, Lineage
-├──────────────────────────────────┤
-│  Snowflake Labs MCP Server       │  ← Official auth & queries
-├──────────────────────────────────┤
-│  Snowflake Data Cloud            │  ← Your data warehouse
-└──────────────────────────────────┘
-```
+**How It Works:**
+1. **Agent Request**: AI assistant receives natural language query from user
+2. **Tool Selection**: Agent selects appropriate MCP tool(s) based on intent
+3. **Security Validation**: Request passes through security layer (SQL validation, timeout checks)
+4. **Execution**: Tool executes using official Snowflake connection (read-only by default)
+5. **Response**: Results formatted and returned to agent for user presentation
 
-**Benefits:**
-- ✅ Secure: Uses official Snowflake authentication
-- ✅ Maintained: Stays in sync with Snowflake updates
-- ✅ Integrated: Single MCP endpoint for AI assistants
-- ✅ Zero Vendoring: Imports upstream, doesn't fork
+**Security Features:**
+- 🔒 **Read-Only by Default**: Prevents destructive operations (DROP, DELETE, TRUNCATE)
+- 🛡️ **SQL Injection Protection**: Input validation and parameterized queries
+- ⏱️ **Query Timeouts**: Agent-controlled execution limits (default 120s)
+- ✅ **Safe Execution**: Built on official Snowflake authentication
 
 ---
 
@@ -88,154 +105,107 @@ SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
 
 ---
 
-## 🎨 Core Features
+## 🤖 Agent-First MCP Tools
 
-### 🔍 Discovery Assistant
-**AI-powered table understanding**
+All tools designed for safe, intelligent AI agent interaction with Snowflake.
 
-| Mode | What You Get | Cost | Speed |
-|------|-------------|------|-------|
-| **Quick** | SQL profiling, patterns, stats | $0.01 | 2-5s |
-| **Standard** (default) | + AI purpose analysis, PII detection | $0.05 | 15-20s |
-| **Deep** | + Relationship discovery, FK mapping | $0.08 | 25-30s |
+### Core Query Tools
 
-**Features:**
-- ✅ 75-85% accuracy on table purpose inference
-- ✅ 95%+ PII detection (email, phone, SSN patterns)
-- ✅ Multi-strategy relationship discovery (name + value overlap)
-- ✅ Automatic caching (1-hour TTL, DDL invalidation)
-- ✅ Qualitative confidence: "confirmed", "likely", "possibly"
-- ✅ Batch processing for multiple tables
+**`execute_query`** - Secure SQL execution with safety guardrails
+- **Security**: Blocks DROP, DELETE, TRUNCATE, ALTER, CREATE by default
+- **Validation**: SQL injection protection via sqlglot parsing
+- **Timeouts**: Configurable limits (default 120s, max 3600s)
+- **Use Cases**: Safe data exploration, metrics calculation, audit queries
 
-### 📊 Data Catalog
-**Complete metadata extraction**
-```bash
-# Build full catalog
-snowflake-cli catalog -p prod -o ./catalog
+**`preview_table`** - Quick table inspection
+- **Limit**: Max 1000 rows to prevent memory issues
+- **Smart Defaults**: Uses session database/schema context
+- **Use Cases**: Quick data sampling, schema validation
 
-# Incremental refresh (10-20x faster)
-snowflake-cli catalog -p prod -o ./catalog --incremental
-```
+### Discovery & Documentation Tools
 
-**Features:**
-- ✅ Database, schema, table, column metadata
-- ✅ DDL extraction for recreating objects
-- ✅ Incremental updates (only changed objects)
-- ✅ JSON/JSONL output formats
+**`profile_table`** - AI-powered table understanding
+- **SQL Profiling**: Column stats, patterns, sample data (2-5s, $0.01)
+- **AI Analysis**: Business purpose, PII detection via Cortex Complete (15-20s, $0.05)
+- **Relationships**: Foreign key discovery via name + value overlap (25-30s, $0.08)
+- **Caching**: LRU cache with DDL-based invalidation (1-hour TTL)
+- **Use Cases**: Database onboarding, documentation generation, compliance audits
 
-### 🔗 Lineage & Dependencies
-**Understand data flows**
-```bash
-# Column-level lineage
-snowflake-cli lineage CUSTOMER_ORDERS -p prod
+### Catalog & Lineage Tools
 
-# Dependency graph (DOT format for Graphviz)
-snowflake-cli depgraph -p prod --format dot
-```
+**`build_catalog`** - Metadata extraction
+- **Incremental**: 10-20x faster refreshes (only changed objects)
+- **DDL Capture**: Full object definitions for recreation
+- **Use Cases**: Data governance, impact analysis preparation
 
-**Features:**
-- ✅ Direct table dependencies
-- ✅ Circular dependency detection
-- ✅ Impact analysis (what breaks if I change this?)
-- ✅ Visual dependency graphs
+**`get_catalog_summary`** - Catalog statistics
+- **Fast Lookup**: Pre-computed catalog metadata
+- **Use Cases**: Quick database overview, object counts
 
-### 🛡️ SQL Safety (v1.7.0)
-**Prevent data disasters**
-```python
-# Destructive operations are blocked
->>> execute_query("DROP TABLE customers")
-Error: Destructive operation blocked. Use execute_query_unsafe() if intentional.
+**`query_lineage`** - Data flow analysis
+- **Directions**: Upstream (dependencies), downstream (consumers), both
+- **Depth Control**: Configurable traversal (default 3 levels)
+- **Formats**: Text, JSON, HTML visualization
+- **Use Cases**: Impact analysis, data flow documentation
 
-# Safe alternatives suggested
->>> execute_query("DELETE FROM orders WHERE id = 123")
-Suggestion: Consider using MERGE or UPDATE for targeted changes.
-```
+**`build_dependency_graph`** - Object relationships
+- **Graph Formats**: JSON (programmatic), DOT (Graphviz visualization)
+- **Circular Detection**: Identifies dependency cycles
+- **Use Cases**: Migration planning, refactoring analysis
 
-### 🤖 AI Assistant Integration
-**Natural language Snowflake operations**
+### Health & Diagnostics Tools
 
-Chat with your data using Claude, VS Code, or Cursor:
-- "What's in the CUSTOMERS table?"
-- "Show me tables that join with ORDERS"
-- "Find all tables containing PII"
-- "Generate a data quality report for PRODUCTS"
+**`health_check`** - System validation
+- **Components**: Profile config, Snowflake connectivity, Cortex availability
+- **Proactive**: Validates setup before query execution
+- **Use Cases**: Troubleshooting, deployment verification
+
+**`test_connection`** - Quick connectivity check
+- **Lightweight**: Fast profile validation
+- **Use Cases**: Connection debugging, profile switching
 
 ---
 
-## 💡 Common Workflows
+## 💡 Agent Workflow Examples
 
-### Onboard to a New Database
-```python
-# 1. Profile all tables
-results = profile_table([
-    "CUSTOMERS", "ORDERS", "PRODUCTS", "ORDER_ITEMS"
-])
-
-# 2. Generate documentation
-print(results.to_markdown())
-
-# 3. Export for wiki
-with open("data_dictionary.md", "w") as f:
-    f.write(results.to_markdown())
+### Safe Data Exploration
+```
+Agent: "What's in the CUSTOMERS table?"
+→ Uses: preview_table(table_name="CUSTOMERS", limit=100)
+→ Returns: Safe sample with schema info, no risk of large data transfer
 ```
 
-### Find Undocumented PII
-```python
-# Scan all tables for PII
-for table in get_all_tables():
-    result = profile_table(table)
-    if result.first().analysis.pii_columns:
-        print(f"⚠️ PII found in {table}: {result.first().analysis.pii_columns}")
+### Intelligent Discovery
+```
+Agent: "Document all tables with PII"
+→ Uses: profile_table(tables=["USERS", "ORDERS", "PAYMENTS"], include_ai_analysis=True)
+→ Returns: Business purpose, PII columns identified, cached for 1 hour
 ```
 
-### Understand Table Relationships
-```python
-# Map relationships for data modeling
-result = profile_table(
-    "FACT_SALES",
-    include_relationships=True
-)
-
-for rel in result.first().relationships:
-    print(f"{rel.from_column} → {rel.to_table}.{rel.to_column} ({rel.confidence:.0%})")
+### Impact Analysis
+```
+Agent: "What breaks if I change the ORDERS table?"
+→ Uses: query_lineage(object_name="ORDERS", direction="downstream", depth=5)
+→ Returns: All downstream views, tables, tasks that depend on ORDERS
 ```
 
----
-
-## 📚 Documentation
-
-- **[Getting Started](docs/getting-started.md)** - Detailed setup guide
-- **[Discovery Assistant Guide](docs/discovery-assistant.md)** - AI-powered discovery walkthrough
-- **[MCP Server Setup](docs/mcp/mcp_server_user_guide.md)** - AI assistant integration
-- **[Architecture](docs/architecture.md)** - Technical design & patterns
-- **[API Reference](docs/api/TOOLS_INDEX.md)** - Complete API documentation
-- **[Migration Guide](CHANGELOG.md)** - Upgrading from older versions
-
----
-
-## 🛠️ Requirements
-
-| Component | Version | Notes |
-|-----------|---------|-------|
-| Python | 3.12+ | Required for modern syntax |
-| Snowflake CLI | Latest | `pip install snowflake-cli` |
-| Snowflake Account | Any tier | Need `SELECT` on `INFORMATION_SCHEMA` |
-| Cortex Complete | Optional | Required for AI discovery features |
-
-**Permissions Needed:**
-- `USAGE` on warehouse, database, schema
-- `SELECT` on `INFORMATION_SCHEMA.TABLES`, `INFORMATION_SCHEMA.COLUMNS`
-- `SELECT` on target tables for profiling
-- Cortex Complete access for AI features
+### Secure Metrics
+```
+Agent: "Calculate monthly revenue"
+→ Uses: execute_query("SELECT DATE_TRUNC('month', order_date), SUM(total) FROM orders GROUP BY 1", timeout_seconds=60)
+→ Returns: Results with automatic timeout protection, no destructive ops possible
+```
 
 ---
 
 ## 🔄 Version History
 
-### v1.10.0 (Current) - Discovery Assistant UX Simplification
+### v1.10.0 (Unreleased) - Security Hardening & Discovery Assistant
+- 🔒 Read-only by default (blocks DROP, DELETE, TRUNCATE)
+- 🛡️ SQL injection protection with sqlglot validation
+- ⏱️ Query timeout controls (default 120s, configurable)
 - ✅ Simplified boolean parameters (remove depth enum)
 - ✅ Automatic caching with LRU + TTL
-- ✅ Qualitative confidence indicators
 - ✅ 40% reduction in MCP token usage
 
 ### v1.9.0 - Code Simplification
@@ -252,24 +222,54 @@ for rel in result.first().relationships:
 
 ---
 
+## 📚 Documentation
+
+- **[MCP Server Setup](docs/mcp/mcp_server_user_guide.md)** - AI assistant integration guide
+- **[API Reference](docs/api/TOOLS_INDEX.md)** - Complete MCP tools documentation
+- **[Migration Guide](CHANGELOG.md)** - Upgrading from older versions
+
+---
+
+## 🛠️ Requirements
+
+| Component | Version | Notes |
+|-----------|---------|-------|
+| Python | 3.12+ | Required for modern syntax |
+| Snowflake Account | Any tier | Read permissions sufficient |
+| Cortex Complete | Optional | For AI-powered `profile_table` analysis |
+
+**Minimum Permissions (Read-Only):**
+- `USAGE` on warehouse, database, schema
+- `SELECT` on `INFORMATION_SCHEMA.TABLES`, `INFORMATION_SCHEMA.COLUMNS`
+- `SELECT` on target tables for data access
+- `USAGE` on Cortex Complete (optional, for AI features)
+
+**Why These Permissions Are Safe:**
+- No `CREATE`, `DROP`, `DELETE`, `UPDATE` required
+- Agent cannot modify data or schema
+- Perfect for production read-only analyst workflows
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 Built on top of:
 - [Snowflake Labs MCP Server](https://github.com/Snowflake-Labs/mcp-servers) - Official Snowflake MCP integration
 - [FastMCP](https://github.com/jlowin/fastmcp) - MCP framework
 - [Snowflake Python Connector](https://github.com/snowflakedb/snowflake-connector-python) - Official connector
+
 ---
 
 <div align="center">
 
-**Made with ❤️ for data engineers and analysts**
+**Security-First Data Tools for AI Agents**
 
-[Report Bug](link-to-issues) · [Request Feature](link-to-issues) · [Documentation](docs/)
+[GitHub](https://github.com/Evan-Kim2028/snowcli-tools) · [PyPI](https://pypi.org/project/snowcli-tools/) · [Documentation](docs/mcp/mcp_server_user_guide.md)
 
 </div>
