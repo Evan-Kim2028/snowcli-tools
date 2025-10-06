@@ -1,7 +1,7 @@
 [project]
 name = "snowcli-tools"
-version = "1.9.0"
-description = "Snowflake CLI Tools: generate a Data Catalog and Dependency Graph on top of the official Snowflake CLI; includes parallel query helpers, advanced lineage features, SQL safety validation, and agent-first error handling"
+version = "1.10.0"
+description = "Security-first Snowflake MCP server that extends official Snowflake Labs MCP with agentic first design such as read-only-by-default design, SQL injection protection and query execution timeouts"
 readme = "README.md"
 authors = [
     { name = "Evan Kim", email = "ekcopersonal@gmail.com" }

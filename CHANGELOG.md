@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.10.0] - 2025-01-09
+## [Unreleased] - v1.10.0
 
 ### 🚨 Breaking Changes
 
@@ -23,7 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation Updated**: README.md examples now use `profile_table`
 - **Scope Clarification**: Tool description explicitly states it profiles "Snowflake TABLE STRUCTURES (schema, stats, samples), NOT business entities or packages"
 
-### Added - Discovery Assistant
+### Added - Discovery Assistant & Security Hardening
+
+#### Security Features
+- **🔒 Read-Only by Default**: Destructive operations (DROP, DELETE, TRUNCATE) blocked
+- **🛡️ SQL Injection Protection**: Input validation and safe query parsing with sqlglot
+- **⏱️ Query Timeout Controls**: Agent-controlled execution limits (default 120s, max 3600s)
+- **📊 Comprehensive Error Handling**: Structured error responses with actionable guidance
+- **✅ Input Validation**: Cost limits, regex pattern validation, and safe parameter handling
 
 #### Core Features
 - **🔍 SQL-Based Table Profiling**: `profile_table` MCP tool for automated table analysis (renamed from `discover_table_purpose`)
@@ -81,8 +88,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Old `depth="deep"` → `include_ai_analysis=True, include_relationships=True`
 - Old `cache_policy` → Use `force_refresh=True` to bypass cache
 
+### Security Implementation Details
+- **SQL Parsing**: sqlglot-based query analysis for injection detection
+- **Blocked Operations**: DROP, DELETE, TRUNCATE, ALTER, CREATE (configurable)
+- **Timeout Enforcement**: Snowflake server-side query timeout with async monitoring
+- **Error Codes**: MCP-compliant JSON-RPC 2.0 error responses
+- **Validation Layers**: Multi-stage input validation (regex, cost limits, parameter types)
+
 ### Technical Details
-- **Files Added**: `src/snowcli_tools/discovery/cache.py` (~320 LOC)
+- **Files Added**:
+  - `src/snowcli_tools/discovery/cache.py` (~320 LOC)
+  - Enhanced security validation in `mcp/tools/execute_query.py`
 - **Files Modified**:
   - `models.py` - Added DiscoveryResults, ExecutionMetadata (~125 LOC)
   - `discover_table_purpose.py` - Simplified interface (~100 LOC changed)
