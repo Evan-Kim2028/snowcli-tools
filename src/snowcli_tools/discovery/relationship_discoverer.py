@@ -205,11 +205,15 @@ class RelationshipDiscoverer:
     def _table_exists(self, table_name: str) -> bool:
         """Check if table exists in database/schema."""
         try:
+            # Escape single quotes to prevent SQL injection
+            safe_schema = self.schema.replace("'", "''")
+            safe_table = table_name.replace("'", "''")
+
             sql = f"""
                 SELECT COUNT(*) as cnt
                 FROM "{self.database}".INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = '{self.schema}'
-                  AND TABLE_NAME = '{table_name}'
+                WHERE TABLE_SCHEMA = '{safe_schema}'
+                  AND TABLE_NAME = '{safe_table}'
             """
             result = self.snow_cli.run_query(sql, output_format="json")
             return bool(result.rows and int(result.rows[0]["CNT"]) > 0)
@@ -219,10 +223,13 @@ class RelationshipDiscoverer:
     def _get_tables_in_schema(self) -> list[str]:
         """Get list of table names in the schema."""
         try:
+            # Escape single quotes to prevent SQL injection
+            safe_schema = self.schema.replace("'", "''")
+
             sql = f"""
                 SELECT TABLE_NAME
                 FROM "{self.database}".INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = '{self.schema}'
+                WHERE TABLE_SCHEMA = '{safe_schema}'
                 LIMIT 100
             """
             result = self.snow_cli.run_query(sql, output_format="json")
@@ -241,9 +248,11 @@ class RelationshipDiscoverer:
             # Create a temporary values list for IN clause (limit to avoid SQL issues)
             sample_values = source_values[: min(100, len(source_values))]
 
-            # Format values for SQL IN clause
+            # Format values for SQL IN clause with proper escaping
             if isinstance(sample_values[0], str):
-                values_str = ", ".join([f"'{v}'" for v in sample_values])
+                # Escape single quotes to prevent SQL injection
+                escaped_values = [v.replace("'", "''") for v in sample_values]
+                values_str = ", ".join([f"'{v}'" for v in escaped_values])
             else:
                 values_str = ", ".join([str(v) for v in sample_values])
 

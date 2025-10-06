@@ -117,6 +117,30 @@ class LLMAnalyzer:
             # Other errors - re-raise with context
             raise RuntimeError(f"LLM analysis failed: {str(e)}") from e
 
+    def _sanitize_sample_data(
+        self, sample_rows: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """
+        Sanitize sample data to prevent prompt injection.
+
+        Truncates long strings and removes potentially dangerous content.
+        """
+        sanitized = []
+        for row in sample_rows:
+            sanitized_row = {}
+            for key, value in row.items():
+                if isinstance(value, str):
+                    # Truncate long strings
+                    if len(value) > 100:
+                        value = value[:100] + "..."
+                    # Remove control characters
+                    value = "".join(
+                        char for char in value if ord(char) >= 32 or char == "\n"
+                    )
+                sanitized_row[key] = value
+            sanitized.append(sanitized_row)
+        return sanitized
+
     def _build_analysis_prompt(self, profile: TableProfile) -> str:
         """
         Build structured prompt for Cortex Complete.
@@ -137,9 +161,10 @@ class LLMAnalyzer:
         if len(profile.columns) > 20:
             columns_text += f"\n  ... and {len(profile.columns) - 20} more columns"
 
-        # Format sample rows (first 3 only)
+        # Format sample rows (first 3 only) with sanitization
         sample_rows = profile.sample_rows[:3]
-        sample_text = json.dumps(sample_rows, indent=2, default=str)
+        sanitized_rows = self._sanitize_sample_data(sample_rows)
+        sample_text = json.dumps(sanitized_rows, indent=2, default=str)
 
         prompt = f"""Analyze this Snowflake table and infer its business purpose.
 
