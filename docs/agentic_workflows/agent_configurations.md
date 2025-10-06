@@ -19,19 +19,52 @@ These agents are designed to orchestrate complex, multi-step workflows that comb
 
 **Agent ID**: `sui-blockchain-data-analyst`
 
-**Purpose**: Comprehensive Sui blockchain data analysis combining catalog exploration, package research, lineage tracking, and report synthesis.
+**Purpose**: Comprehensive Sui blockchain data analysis combining catalog exploration, package research, lineage tracking, and report synthesis with deep understanding of Sui's object-centric architecture.
 
 **When to Use**:
 - Analyzing on-chain data architecture for specific Sui packages
 - Mapping data flows and dependencies for DeFi protocols
 - Understanding table relationships for blockchain applications
 - Researching how data flows through Sui Move modules
+- Investigating object ownership patterns and state transitions
+- Analyzing event emissions and their relationship to on-chain state changes
+
+**Core Sui Blockchain Concepts**:
+
+*Sui Object Model Understanding*:
+- **Object-Centric Architecture**: Unlike traditional account-based blockchains, Sui centers storage around objects with unique IDs as the fundamental unit
+- **Object Types**:
+  - *Sui Move Packages*: Immutable bytecode modules published on-chain
+  - *Sui Move Objects*: Typed data governed by specific Move modules
+- **Object Metadata Structure**:
+  - 32-byte globally unique ID (primary identifier)
+  - 8-byte version number (state evolution tracking)
+  - 32-byte transaction digest (provenance)
+  - 32-byte owner field (ownership model)
+  - BCS-encoded variable-sized contents
+- **Object Addressing**: Objects referenced via ID (stable), Versioned ID (ID + version), or Object Reference (ID + version + digest)
+- **Ownership Models**: Address-owned, dynamic fields, immutable, shared, or wrapped within other objects
+- **Transaction-Object DAG**: Transactions create, modify, and consume objects forming a directed acyclic graph
+
+*Event Model Understanding*:
+- **Event Purpose**: Notify off-chain listeners about on-chain state changes without storing data on-chain
+- **Event Structure Requirements**:
+  - Custom types with `copy` and `drop` abilities
+  - Internal to emitting module
+  - Emitted via `sui::event::emit<T>()`
+  - Cannot use primitive types directly
+- **Event Metadata**: Automatically includes sender address and timestamp in transaction effects
+- **Event-Object Relationship**: Events signal object state transitions, ownership changes, and module interactions
+- **Indexing Integration**: Events are the primary mechanism for building off-chain indexes and analytics
 
 **Capabilities**:
-- **Data Discovery**: Explores Snowflake catalogs, schemas, and tables containing Sui data
-- **Package Analysis**: Researches Sui Move packages and on-chain interactions
-- **Lineage Mapping**: Tracks dependencies and data flows between tables
-- **Report Synthesis**: Generates comprehensive architecture and flow reports
+- **Data Discovery**: Explores Snowflake catalogs, schemas, and tables containing Sui objects, transactions, and events
+- **Object Analysis**: Understands object lifecycles, ownership patterns, and version evolution across tables
+- **Package Analysis**: Researches Sui Move packages, module interactions, and object type definitions
+- **Event Analysis**: Maps event emissions to object state changes and transaction flows
+- **Lineage Mapping**: Tracks dependencies between objects, events, and transactions across data tables
+- **DAG Analysis**: Understands transaction-object relationships and state transition graphs
+- **Report Synthesis**: Generates comprehensive architecture reports with object-centric and event-driven insights
 
 **Tools Available**: All snowcli-tools MCP tools
 
@@ -63,54 +96,108 @@ These agents are designed to orchestrate complex, multi-step workflows that comb
 
 ### Sui Blockchain Data Analyst Workflow
 
-The agent follows a structured 3-phase approach:
+The agent follows a structured 3-phase approach with Sui-specific analysis:
 
 #### Phase 1: Discovery
 ```
 1. Use get_catalog_summary to understand available databases/schemas
-2. Use execute_query to explore relevant tables (transactions, objects, events)
+2. Use execute_query to explore relevant tables (transactions, objects, events, packages)
 3. Use preview_table to inspect sample data
+4. Identify key Sui-specific columns:
+   - Object tables: object_id, version, owner, object_type, digest
+   - Event tables: event_type, package_id, module, sender, timestamp
+   - Transaction tables: transaction_digest, sender, gas_object_id
 ```
 
 #### Phase 2: Analysis
 ```
 1. Identify tables related to target package/module
-2. Use query_lineage to map dependencies
+2. Use query_lineage to map dependencies between object/event/transaction tables
 3. Use check_resource_dependencies for detailed relationships
-4. Execute targeted SQL queries to understand patterns
+4. Execute Sui-specific analysis queries:
+   - Object lifecycle: Track version evolution and ownership changes
+   - Event flows: Map event emissions to state transitions
+   - Package interactions: Analyze module call patterns
+   - Ownership patterns: Identify shared vs owned object distributions
+   - DAG analysis: Understand transaction-object dependency graphs
 ```
 
 #### Phase 3: Synthesis
 ```
 Generate comprehensive report covering:
-- Data architecture overview
-- Table relationships and lineage
-- On-chain data flows
-- Key metrics and patterns
-- Recommendations for further analysis
+- Data architecture overview (object-centric perspective)
+- Table relationships and lineage (objects → events → transactions)
+- On-chain data flows (DAG visualization)
+- Object ownership and lifecycle patterns
+- Event emission patterns and their business logic implications
+- Package/module interaction maps
+- Key metrics: object creation rates, ownership distributions, event frequencies
+- Data quality observations (missing versions, orphaned objects, event gaps)
+- Recommendations for further analysis or optimization
 ```
 
 #### Standard Report Structure
 ```markdown
-# Package Analysis Report
+# Sui Package Analysis Report
 
 ## Executive Summary
-High-level findings and key insights
+High-level findings and key insights about the package's on-chain footprint
 
 ## Data Architecture
-Schema and table organization
+- Schema and table organization
+- Object storage patterns (owned vs shared vs immutable)
+- Event table structures
+- Transaction table relationships
+
+## Object Model Analysis
+- Object types defined by the package
+- Object lifecycle patterns (creation → modification → deletion/wrapping)
+- Ownership distribution (address-owned, shared, immutable percentages)
+- Version evolution patterns
+- Object reference relationships
+
+## Event Analysis
+- Event types emitted by package modules
+- Event emission frequency and patterns
+- Event-to-object state change correlations
+- Timestamp distribution analysis
+- Off-chain indexing implications
 
 ## Lineage Map
-Visual/textual representation of dependencies
+- Visual/textual representation of dependencies
+- Object → Event → Transaction flow diagrams
+- Table-level lineage
+- Cross-package dependencies
 
-## Package Analysis
-Specific findings about the Sui package
+## Package/Module Interactions
+- Specific findings about the Sui package
+- Module call patterns
+- Inter-package object sharing
+- Common transaction patterns
 
-## Data Flows
-How data moves through the system
+## Transaction-Object DAG
+- How data moves through the system
+- Transaction dependency chains
+- Object consumption and creation patterns
+- Parallel execution opportunities
+
+## Data Quality Findings
+- Missing or inconsistent versions
+- Orphaned objects
+- Event emission gaps
+- Timestamp anomalies
+
+## Key Metrics
+- Object creation/modification rates
+- Event emission frequencies
+- Ownership distribution statistics
+- Transaction throughput patterns
 
 ## Recommendations
-Next steps or areas of interest
+- Further analysis areas
+- Query optimization opportunities
+- Data quality improvements
+- Indexing strategies
 ```
 
 ---
@@ -212,12 +299,41 @@ These agents should **NOT** be implemented as MCP tools because:
 
 ### For Sui Blockchain Data Analyst
 
-1. **Always start with catalog exploration** to understand available data
-2. **Use lineage tools extensively** to avoid missing relationships
-3. **Provide reproducible SQL queries** in reports
-4. **Highlight data quality issues** discovered during analysis
-5. **Be specific** about package addresses and module names
-6. **Include sample data** when illustrating patterns
+1. **Always start with catalog exploration** to understand available data and identify object/event/transaction tables
+2. **Understand Sui's object model first**:
+   - Objects are the fundamental storage unit (not accounts)
+   - Each object has unique ID, version, owner, and digest
+   - Objects can be owned, shared, immutable, or wrapped
+3. **Map the object lifecycle** in your analysis:
+   - Creation: Where/when objects first appear
+   - Modifications: Version increments and state changes
+   - Ownership changes: Transfers between addresses
+   - Consumption: Objects used as inputs to transactions
+4. **Connect events to state changes**:
+   - Events don't store on-chain data, they signal changes
+   - Map event emissions to object state transitions
+   - Understand that events are the primary indexing mechanism
+5. **Analyze the Transaction-Object DAG**:
+   - Transactions create, modify, and consume objects
+   - Look for dependency chains and parallel execution patterns
+   - Understand how objects flow through transactions
+6. **Use lineage tools extensively** to map:
+   - Object → Event relationships
+   - Event → Transaction relationships
+   - Package → Module → Object Type dependencies
+7. **Provide reproducible SQL queries** that demonstrate:
+   - Object version tracking: `SELECT object_id, version, owner, transaction_digest ORDER BY version`
+   - Event analysis: `SELECT event_type, COUNT(*) GROUP BY event_type`
+   - Ownership distribution: `SELECT owner_type, COUNT(*) GROUP BY owner_type`
+8. **Highlight Sui-specific data quality issues**:
+   - Missing object versions (gaps in version sequences)
+   - Orphaned objects (objects without corresponding events)
+   - Event emission gaps (expected events not found)
+   - Inconsistent object references
+9. **Be specific** about package addresses (0x2::sui::SUI format) and module names
+10. **Include sample data** showing object metadata structure, event payloads, and transaction patterns
+11. **Explain blockchain semantics**: Help users understand how Sui's object-centric model differs from account-based chains
+12. **Consider indexing implications**: How event structures support efficient off-chain queries
 
 ### For Snowflake Query Optimizer
 
@@ -293,6 +409,146 @@ While agents have standard workflows, they adapt to:
 - Data availability constraints
 - Performance considerations
 - Analysis depth preferences
+
+---
+
+## Sui-Specific Analysis Patterns
+
+### Object Lifecycle Queries
+
+Track how objects evolve over time:
+
+```sql
+-- Object version history
+SELECT
+    object_id,
+    version,
+    owner,
+    transaction_digest,
+    timestamp
+FROM objects_table
+WHERE object_id = '<target_object_id>'
+ORDER BY version ASC;
+
+-- Object ownership changes
+SELECT
+    object_id,
+    version,
+    owner,
+    LAG(owner) OVER (PARTITION BY object_id ORDER BY version) as previous_owner
+FROM objects_table
+WHERE object_id = '<target_object_id>'
+  AND owner != LAG(owner) OVER (PARTITION BY object_id ORDER BY version);
+```
+
+### Event-to-Object Correlation
+
+Link events to the state changes they represent:
+
+```sql
+-- Events correlated with object modifications
+SELECT
+    e.event_type,
+    e.package_id,
+    e.module,
+    e.sender,
+    o.object_id,
+    o.version,
+    o.owner,
+    e.timestamp
+FROM events_table e
+JOIN objects_table o
+    ON e.transaction_digest = o.transaction_digest
+WHERE e.package_id = '<target_package>'
+ORDER BY e.timestamp DESC;
+```
+
+### Package Interaction Analysis
+
+Understand how packages interact through shared objects:
+
+```sql
+-- Cross-package object sharing
+SELECT
+    o.object_type,
+    o.owner_type,
+    COUNT(DISTINCT o.object_id) as object_count,
+    COUNT(DISTINCT t.transaction_digest) as transaction_count
+FROM objects_table o
+JOIN transactions_table t
+    ON o.transaction_digest = t.transaction_digest
+WHERE o.object_type LIKE '<package_id>%'
+GROUP BY o.object_type, o.owner_type;
+```
+
+### Transaction-Object DAG Patterns
+
+Analyze transaction dependencies:
+
+```sql
+-- Transaction dependency chains
+WITH transaction_objects AS (
+    SELECT
+        transaction_digest,
+        object_id,
+        version,
+        CASE
+            WHEN version = 1 THEN 'created'
+            ELSE 'modified'
+        END as action
+    FROM objects_table
+)
+SELECT
+    t1.transaction_digest as tx1,
+    t2.transaction_digest as tx2,
+    t1.object_id,
+    t1.action as tx1_action,
+    t2.action as tx2_action
+FROM transaction_objects t1
+JOIN transaction_objects t2
+    ON t1.object_id = t2.object_id
+    AND t2.version = t1.version + 1;
+```
+
+### Ownership Distribution Analysis
+
+Understand object ownership patterns:
+
+```sql
+-- Ownership model distribution
+SELECT
+    CASE
+        WHEN owner LIKE '0x%' THEN 'address-owned'
+        WHEN owner = 'Immutable' THEN 'immutable'
+        WHEN owner = 'Shared' THEN 'shared'
+        ELSE 'other'
+    END as ownership_type,
+    COUNT(*) as object_count,
+    COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () as percentage
+FROM objects_table
+WHERE object_type LIKE '<package_id>%'
+GROUP BY ownership_type;
+```
+
+### Event Emission Patterns
+
+Analyze event frequency and distribution:
+
+```sql
+-- Event emission patterns by module
+SELECT
+    package_id,
+    module,
+    event_type,
+    COUNT(*) as emission_count,
+    MIN(timestamp) as first_emission,
+    MAX(timestamp) as last_emission,
+    COUNT(DISTINCT sender) as unique_senders
+FROM events_table
+WHERE package_id = '<target_package>'
+GROUP BY package_id, module, event_type
+ORDER BY emission_count DESC;
+```
 
 ---
 
