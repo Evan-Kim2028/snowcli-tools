@@ -224,9 +224,21 @@ Agent: "Calculate monthly revenue"
 
 ## 📚 Documentation
 
-- **[MCP Server Setup](docs/mcp/mcp_server_user_guide.md)** - AI assistant integration guide
-- **[API Reference](docs/api/TOOLS_INDEX.md)** - Complete MCP tools documentation
+### Getting Started
+- **[Getting Started Guide](docs/getting_started.md)** - 5-minute setup for AI assistants (Claude, VS Code, Cursor)
+- **[Security Guide](docs/security.md)** - Safety features and read-only protections
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+
+### Tool Reference
+- **[All MCP Tools](docs/api/TOOLS_REFERENCE.md)** - Complete API reference for all 9 tools
+- **[profile_table](docs/api/tools/profile_table.md)** - AI-powered table profiling and discovery
+- **[query_lineage](docs/api/tools/query_lineage.md)** - Data flow and impact analysis
+- **[build_dependency_graph](docs/api/tools/build_dependency_graph.md)** - Object relationship mapping
+
+### Workflows & Guides
+- **[Common Workflows](docs/workflows.md)** - Database onboarding, PII detection, impact analysis
 - **[Migration Guide](CHANGELOG.md)** - Upgrading from older versions
+- **[Documentation Index](docs/INDEX.md)** - Browse all documentation
 
 ---
 

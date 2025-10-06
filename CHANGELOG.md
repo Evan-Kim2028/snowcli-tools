@@ -64,6 +64,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Iterator support (`__len__`, `__iter__`, `__getitem__`)
 
 #### Documentation Improvements
+- **Comprehensive Documentation Suite**: Complete reorganization for v1.10.0
+  - **[Getting Started Guide](docs/getting_started.md)** - 5-minute setup from installation to first query
+  - **[Security Guide](docs/security.md)** - Safety features, SQL validation, and read-only protections
+  - **[Troubleshooting Guide](docs/troubleshooting.md)** - Common issues with solutions
+  - **[Common Workflows](docs/workflows.md)** - Database onboarding, PII detection, impact analysis
+  - **[Complete API Reference](docs/api/TOOLS_REFERENCE.md)** - All 9 MCP tools documented
+  - **[Documentation Index](docs/INDEX.md)** - Master navigation hub
+  - Tool coverage: 5/9 (55%) → 9/9 (100%)
+  - ~4,700 lines of new professional documentation
 - **Qualitative Confidence**: User-friendly confidence indicators
   - Maps numeric scores to qualitative terms: "confirmed", "likely", "possibly", "uncertain"
   - Removed numeric percentages from user-facing documentation
