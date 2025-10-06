@@ -15,6 +15,29 @@ from snowcli_tools.discovery.models import DiscoveryResult, OutputFormat
 class DocumentationGenerator:
     """Generate documentation from discovery results."""
 
+    @staticmethod
+    def _map_confidence_to_qualifier(confidence: float) -> str:
+        """
+        Map numeric confidence score to qualitative qualifier.
+
+        Internal confidence scores are still calculated for analysis,
+        but presented qualitatively to users for clarity.
+
+        Args:
+            confidence: Numeric confidence score (0.0 to 1.0)
+
+        Returns:
+            Qualitative descriptor: "confirmed", "likely", "possibly", or "uncertain"
+        """
+        if confidence >= 0.85:
+            return "confirmed"
+        elif confidence >= 0.70:
+            return "likely"
+        elif confidence >= 0.50:
+            return "possibly"
+        else:
+            return "uncertain"
+
     def generate(
         self,
         result: DiscoveryResult,
@@ -64,14 +87,14 @@ class DocumentationGenerator:
 
         # Purpose (if analyzed)
         if analysis:
+            # Map confidence to qualifier
+            purpose_qualifier = self._map_confidence_to_qualifier(analysis.confidence)
+
             lines.append("## Purpose")
             lines.append("")
-            lines.append(analysis.suggested_description)
+            lines.append(f"{analysis.suggested_description} ({purpose_qualifier})")
             lines.append("")
             lines.append(f"**Category**: {analysis.category.value}")
-            lines.append(
-                f"**Confidence**: {analysis.confidence*100:.0f}% ({metadata.confidence_level.value})"
-            )
             lines.append("")
 
         # Schema
@@ -216,11 +239,13 @@ class DocumentationGenerator:
             lines.append(
                 "- Check that you have access to the specified database/schema"
             )
-        elif "permission" in str(error).lower():
+        elif "permission" in str(error).lower() or isinstance(error, PermissionError):
             lines.append("- Verify you have SELECT permissions on the table")
             lines.append("- Check your Snowflake role has necessary grants")
-        elif "timeout" in str(error).lower():
-            lines.append("- The table may be very large - try using 'quick' depth mode")
+        elif "timeout" in str(error).lower() or isinstance(error, TimeoutError):
+            lines.append(
+                "- The table may be very large - try using include_ai_analysis=False for faster profiling"
+            )
             lines.append("- Increase the timeout_seconds parameter")
         else:
             lines.append("- Check the error message above for specific details")

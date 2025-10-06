@@ -5,12 +5,17 @@ This module defines all data structures used by the Discovery Assistant.
 """
 
 from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
 
 class DepthMode(str, Enum):
-    """Discovery depth modes."""
+    """Discovery depth modes.
+
+    NOTE: This enum is kept for backward compatibility with DiscoveryMetadata only.
+    New code should use boolean parameters (include_ai_analysis, include_relationships).
+    """
 
     QUICK = "quick"  # SQL profiling only
     STANDARD = "standard"  # + LLM analysis
@@ -25,7 +30,11 @@ class OutputFormat(str, Enum):
 
 
 class CachePolicy(str, Enum):
-    """Cache behavior policies."""
+    """Cache behavior policies.
+
+    NOTE: This enum is kept for backward compatibility only.
+    New code uses automatic caching with force_refresh parameter.
+    """
 
     ALWAYS = "always"  # Always use cache if available
     IF_FRESH = "if_fresh"  # Use cache if table hasn't changed (LAST_DDL check)
@@ -211,3 +220,111 @@ class DiscoveryResult:
             "relationships": [r.to_dict() for r in self.relationships],
             "metadata": self.metadata.to_dict() if self.metadata else None,
         }
+
+
+@dataclass
+class ExecutionMetadata:
+    """Metadata about discovery execution."""
+
+    total_cost_usd: float
+    execution_time_ms: int
+    cache_hits: int
+    cache_misses: int
+    tables_analyzed: int
+    components_run: list[str]  # ["profiler", "llm_analyzer", "relationship_discoverer"]
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "total_cost_usd": round(self.total_cost_usd, 4),
+            "execution_time_ms": self.execution_time_ms,
+            "cache_hits": self.cache_hits,
+            "cache_misses": self.cache_misses,
+            "tables_analyzed": self.tables_analyzed,
+            "components_run": self.components_run,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
+
+@dataclass
+class DiscoveryResults:
+    """
+    Wrapper for discovery results with consistent return type.
+
+    This class ensures type safety and consistent MCP serialization
+    for both single-table and batch discovery operations.
+    """
+
+    results: list[DiscoveryResult]
+    is_batch: bool
+    metadata: ExecutionMetadata
+
+    def first(self) -> Optional[DiscoveryResult]:
+        """
+        Get the first result (convenience method for single-table queries).
+
+        Returns:
+            The first DiscoveryResult if available, None otherwise.
+        """
+        return self.results[0] if self.results else None
+
+    def __len__(self) -> int:
+        """Return number of results."""
+        return len(self.results)
+
+    def __iter__(self):
+        """Allow iteration over results."""
+        return iter(self.results)
+
+    def __getitem__(self, index: int) -> DiscoveryResult:
+        """Allow indexing into results."""
+        return self.results[index]
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Serialize for MCP JSON response.
+
+        Format depends on whether this is a batch or single-table query.
+        """
+        base = {"metadata": self.metadata.to_dict(), "is_batch": self.is_batch}
+
+        if self.is_batch:
+            return {**base, "results": [r.to_dict() for r in self.results]}
+        else:
+            # Single table: unwrap for simpler response
+            return {
+                **base,
+                "result": self.results[0].to_dict() if self.results else None,
+            }
+
+    def to_markdown(self) -> str:
+        """
+        Generate markdown documentation for all results.
+
+        Returns:
+            Markdown string with all table documentation.
+        """
+        if not self.results:
+            return "# No Results\n\nNo tables were discovered."
+
+        sections = []
+
+        # Add summary header for batch queries
+        if self.is_batch:
+            sections.append(f"# Discovery Results ({len(self.results)} tables)\n")
+            sections.append(f"**Total Cost**: ${self.metadata.total_cost_usd:.4f}")
+            sections.append(f"**Execution Time**: {self.metadata.execution_time_ms}ms")
+            sections.append(
+                f"**Cache Hits**: {self.metadata.cache_hits}/{len(self.results)}\n"
+            )
+
+        # Add each table's documentation
+        for result in self.results:
+            sections.append(result.documentation)
+
+        return "\n\n".join(sections)
+
+
+# Type alias for backward compatibility
+DiscoveryOutput = DiscoveryResults
