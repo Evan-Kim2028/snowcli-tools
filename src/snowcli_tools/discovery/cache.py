@@ -157,7 +157,9 @@ class DiscoveryCacheManager:
         self.ttl_seconds = ttl_seconds
 
         # Secondary cache for DDL timestamps (reduces metadata queries)
-        self.ddl_cache: Dict[str, Tuple[str, datetime]] = {}
+        # Use OrderedDict with LRU eviction to prevent memory leak
+        self.ddl_cache: OrderedDict[str, Tuple[str, datetime]] = OrderedDict()
+        self.ddl_cache_maxsize = maxsize  # Same limit as main cache
         self.ddl_check_ttl = ddl_check_ttl
         self.lock = threading.RLock()
 
@@ -213,8 +215,9 @@ class DiscoveryCacheManager:
         if not entry:
             return None
 
-        # Check if we recently verified this table's DDL
+        # CRITICAL: Keep entire validation inside lock to prevent race condition
         with self.lock:
+            # Check if we recently verified this table's DDL
             if table_name in self.ddl_cache:
                 cached_ddl, cached_at = self.ddl_cache[table_name]
                 age = (datetime.utcnow() - cached_at).total_seconds()
@@ -224,25 +227,30 @@ class DiscoveryCacheManager:
                     if entry.is_valid(cached_ddl, self.ttl_seconds):
                         return entry.result
 
-        # Need to verify DDL hasn't changed
-        try:
-            current_ddl = current_ddl_getter()
-        except Exception:
-            # If DDL check fails, invalidate cache entry
-            self.cache.invalidate(cache_key)
-            return None
+            # Need to verify DDL hasn't changed (still within lock)
+            try:
+                current_ddl = current_ddl_getter()
+            except Exception:
+                # If DDL check fails, invalidate cache entry
+                self.cache.invalidate(cache_key)
+                return None
 
-        # Update DDL cache
-        with self.lock:
+            # Update DDL cache with LRU eviction
             self.ddl_cache[table_name] = (current_ddl, datetime.utcnow())
+            # Move to end (most recently used)
+            self.ddl_cache.move_to_end(table_name)
 
-        # Check if entry is still valid
-        if entry.is_valid(current_ddl, self.ttl_seconds):
-            return entry.result
-        else:
-            # Invalidate stale entry
-            self.cache.invalidate(cache_key)
-            return None
+            # Evict oldest entries if over limit
+            while len(self.ddl_cache) > self.ddl_cache_maxsize:
+                self.ddl_cache.popitem(last=False)  # Remove oldest (FIFO)
+
+            # Check if entry is still valid (still within lock)
+            if entry.is_valid(current_ddl, self.ttl_seconds):
+                return entry.result
+            else:
+                # Invalidate stale entry
+                self.cache.invalidate(cache_key)
+                return None
 
     def cache_result(
         self,
@@ -272,9 +280,15 @@ class DiscoveryCacheManager:
 
         self.cache.put(cache_key, entry)
 
-        # Update DDL cache
+        # Update DDL cache with LRU eviction
         with self.lock:
             self.ddl_cache[table_name] = (table_last_ddl, datetime.utcnow())
+            # Move to end (most recently used)
+            self.ddl_cache.move_to_end(table_name)
+
+            # Evict oldest entries if over limit
+            while len(self.ddl_cache) > self.ddl_cache_maxsize:
+                self.ddl_cache.popitem(last=False)  # Remove oldest (FIFO)
 
     def invalidate_table(self, table_name: str) -> None:
         """

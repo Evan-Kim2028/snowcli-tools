@@ -17,6 +17,36 @@ from snowcli_tools.discovery.utils import build_qualified_table_name, parse_tabl
 from snowcli_tools.snow_cli import SnowCLI
 
 
+def _validate_snowflake_identifier(
+    identifier: str, identifier_type: str = "identifier"
+) -> None:
+    """
+    Validate Snowflake identifier against SQL injection.
+
+    Snowflake identifiers must:
+    - Start with letter or underscore
+    - Contain only letters, digits, underscores, and dollar signs
+    - Be 1-255 characters long
+
+    Args:
+        identifier: The identifier to validate
+        identifier_type: Type description for error messages (e.g., "database", "table")
+
+    Raises:
+        ValueError: If identifier is invalid or potentially malicious
+    """
+    if not identifier:
+        raise ValueError(f"Empty {identifier_type} name")
+
+    # Snowflake unquoted identifier pattern
+    # Allows: A-Z, a-z, 0-9, _, $ (but cannot start with digit)
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_$]{0,254}$", identifier):
+        raise ValueError(
+            f"Invalid Snowflake {identifier_type}: '{identifier}'. "
+            f"Must start with letter/underscore and contain only alphanumeric, _, or $"
+        )
+
+
 class TableProfiler:
     """Profile Snowflake tables using SQL queries."""
 
@@ -91,6 +121,13 @@ class TableProfiler:
 
         # Parse table name (SQL injection prevention)
         db, sch, tbl = parse_table_name(table_name, database, schema)
+
+        # Validate all identifiers against SQL injection
+        if db:
+            _validate_snowflake_identifier(db, "database")
+        if sch:
+            _validate_snowflake_identifier(sch, "schema")
+        _validate_snowflake_identifier(tbl, "table")
 
         # Build qualified table name with proper quoting
         full_table = build_qualified_table_name(db, sch, tbl)
