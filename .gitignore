@@ -158,3 +158,4 @@ repo/
 local_sf_test/
 .claude/*
 CLIProxyAPI/
+.mcp.json
