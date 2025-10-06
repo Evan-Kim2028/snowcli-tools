@@ -40,6 +40,32 @@ class RelationshipDiscoverer:
         self.min_confidence = min_confidence
         self.sample_size = sample_size
 
+    @staticmethod
+    def _escape_literal(value: str) -> str:
+        """Escape single quotes for safe SQL literal usage."""
+        return value.replace("'", "''")
+
+    @staticmethod
+    def _quote_identifier(identifier: str) -> str:
+        """Quote identifiers while escaping embedded double quotes."""
+        return f'"{identifier.replace("\"", "\"\"")}"'
+
+    def _qualified_table(self, table_name: str) -> str:
+        """Build fully qualified quoted table identifier."""
+        parts: list[str] = []
+        if self.database:
+            parts.append(self._quote_identifier(self.database))
+        if self.schema:
+            parts.append(self._quote_identifier(self.schema))
+        parts.append(self._quote_identifier(table_name))
+        return ".".join(parts)
+
+    def _information_schema(self) -> str:
+        """Return INFORMATION_SCHEMA prefix using explicit or session database."""
+        if self.database:
+            return f"{self._quote_identifier(self.database)}.INFORMATION_SCHEMA"
+        return "INFORMATION_SCHEMA"
+
     def discover_relationships(
         self, table_name: str, columns: list[str]
     ) -> list[Relationship]:
@@ -148,12 +174,15 @@ class RelationshipDiscoverer:
 
         # Get sample values from source column
         try:
-            sample_sql = f"""
-                SELECT DISTINCT "{column_name}"
-                FROM "{self.database}"."{self.schema}"."{table_name}"
-                WHERE "{column_name}" IS NOT NULL
-                LIMIT {self.sample_size}
-            """
+            column_identifier = self._quote_identifier(column_name)
+            table_identifier = self._qualified_table(table_name)
+            sample_sql = (
+                "SELECT DISTINCT "
+                f"{column_identifier} "
+                f"FROM {table_identifier} "
+                f"WHERE {column_identifier} IS NOT NULL "
+                f"LIMIT {self.sample_size}"
+            )
             result = self.snow_cli.run_query(sample_sql, output_format="json")
             if not result.rows:
                 return candidates
@@ -205,16 +234,15 @@ class RelationshipDiscoverer:
     def _table_exists(self, table_name: str) -> bool:
         """Check if table exists in database/schema."""
         try:
-            # Escape single quotes to prevent SQL injection
-            safe_schema = self.schema.replace("'", "''")
-            safe_table = table_name.replace("'", "''")
-
-            sql = f"""
-                SELECT COUNT(*) as cnt
-                FROM "{self.database}".INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = '{safe_schema}'
-                  AND TABLE_NAME = '{safe_table}'
-            """
+            safe_schema = self._escape_literal(self.schema)
+            safe_table = self._escape_literal(table_name)
+            info_schema = self._information_schema()
+            sql = (
+                "SELECT COUNT(*) as cnt "
+                f"FROM {info_schema}.TABLES "
+                f"WHERE TABLE_SCHEMA = '{safe_schema}' "
+                f"AND TABLE_NAME = '{safe_table}'"
+            )
             result = self.snow_cli.run_query(sql, output_format="json")
             return bool(result.rows and int(result.rows[0]["CNT"]) > 0)
         except Exception:
@@ -223,15 +251,14 @@ class RelationshipDiscoverer:
     def _get_tables_in_schema(self) -> list[str]:
         """Get list of table names in the schema."""
         try:
-            # Escape single quotes to prevent SQL injection
-            safe_schema = self.schema.replace("'", "''")
-
-            sql = f"""
-                SELECT TABLE_NAME
-                FROM "{self.database}".INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = '{safe_schema}'
-                LIMIT 100
-            """
+            safe_schema = self._escape_literal(self.schema)
+            info_schema = self._information_schema()
+            sql = (
+                "SELECT TABLE_NAME "
+                f"FROM {info_schema}.TABLES "
+                f"WHERE TABLE_SCHEMA = '{safe_schema}' "
+                "LIMIT 100"
+            )
             result = self.snow_cli.run_query(sql, output_format="json")
             return [row["TABLE_NAME"] for row in result.rows] if result.rows else []
         except Exception:
@@ -248,19 +275,20 @@ class RelationshipDiscoverer:
             # Create a temporary values list for IN clause (limit to avoid SQL issues)
             sample_values = source_values[: min(100, len(source_values))]
 
-            # Format values for SQL IN clause with proper escaping
             if isinstance(sample_values[0], str):
-                # Escape single quotes to prevent SQL injection
-                escaped_values = [v.replace("'", "''") for v in sample_values]
+                escaped_values = [self._escape_literal(v) for v in sample_values]
                 values_str = ", ".join([f"'{v}'" for v in escaped_values])
             else:
                 values_str = ", ".join([str(v) for v in sample_values])
 
-            sql = f"""
-                SELECT COUNT(DISTINCT "{target_column}") as match_count
-                FROM "{self.database}"."{self.schema}"."{target_table}"
-                WHERE "{target_column}" IN ({values_str})
-            """
+            target_table_identifier = self._qualified_table(target_table)
+            target_column_identifier = self._quote_identifier(target_column)
+            sql = (
+                "SELECT COUNT(DISTINCT "
+                f"{target_column_identifier}) as match_count "
+                f"FROM {target_table_identifier} "
+                f"WHERE {target_column_identifier} IN ({values_str})"
+            )
 
             result = self.snow_cli.run_query(sql, output_format="json")
             if not result.rows:

@@ -23,11 +23,38 @@ class SnowCLIError(RuntimeError):
     pass
 
 
-def _ensure_snow_available() -> None:
-    if shutil.which("snow") is None:
-        raise SnowCLIError(
-            "`snow` CLI not found. Install with `pip install snowflake-cli` and configure a profile.",
-        )
+def _ensure_snow_available() -> str:
+    """Find snow CLI, checking venv first, then system PATH.
+
+    Returns:
+        Path to snow executable
+
+    Raises:
+        SnowCLIError: If snow CLI not found
+    """
+    # Check if we're in a venv and look for snow there first
+    venv_path = os.environ.get("VIRTUAL_ENV")
+    if venv_path:
+        venv_snow = os.path.join(venv_path, "bin", "snow")
+        if os.path.isfile(venv_snow) and os.access(venv_snow, os.X_OK):
+            return venv_snow
+
+    # Check for snow in system PATH using sys.executable's directory
+    import sys
+
+    python_dir = os.path.dirname(sys.executable)
+    local_snow = os.path.join(python_dir, "snow")
+    if os.path.isfile(local_snow) and os.access(local_snow, os.X_OK):
+        return local_snow
+
+    # Fall back to shutil.which
+    snow_path = shutil.which("snow")
+    if snow_path:
+        return snow_path
+
+    raise SnowCLIError(
+        "`snow` CLI not found. Install with `pip install snowflake-cli` and configure a profile.",
+    )
 
 
 @dataclass
@@ -52,12 +79,14 @@ class SnowCLI:
             "schema": cfg.snowflake.schema,
             "role": cfg.snowflake.role,
         }
+        # Cache the snow CLI path on initialization
+        self.snow_path = _ensure_snow_available()
 
     def _base_args(
         self, ctx_overrides: Optional[Dict[str, Optional[str]]] = None
     ) -> List[str]:
         # Use --connection/-c to select the configured connection name
-        args = ["snow", "sql", "--connection", self.profile]
+        args = [self.snow_path, "sql", "--connection", self.profile]
         ctx = {**self.default_ctx}
         if ctx_overrides:
             ctx.update({k: v for k, v in ctx_overrides.items() if v})
@@ -80,8 +109,6 @@ class SnowCLI:
         Attempts to parse output when `output_format` is provided. Falls back
         to raw stdout if parsing is not possible.
         """
-        _ensure_snow_available()
-
         args = self._base_args(ctx_overrides)
         args.extend(["-q", query])
 
@@ -146,7 +173,6 @@ class SnowCLI:
         ctx_overrides: Optional[Dict[str, Optional[str]]] = None,
         timeout: Optional[int] = None,
     ) -> QueryOutput:
-        _ensure_snow_available()
         args = self._base_args(ctx_overrides)
         args.extend(["-f", file_path])
         if output_format in {"csv", "json"}:
@@ -186,9 +212,8 @@ class SnowCLI:
 
     # Connection management helpers
     def list_connections(self) -> List[Dict[str, Any]]:
-        _ensure_snow_available()
         proc = subprocess.run(
-            ["snow", "connection", "list", "--format", "JSON"],
+            [self.snow_path, "connection", "list", "--format", "JSON"],
             capture_output=True,
             text=True,
             check=False,
@@ -223,9 +248,8 @@ class SnowCLI:
         schema: Optional[str] = None,
         make_default: bool = False,
     ) -> None:
-        _ensure_snow_available()
         args = [
-            "snow",
+            self.snow_path,
             "connection",
             "add",
             "--connection-name",
@@ -254,9 +278,8 @@ class SnowCLI:
             raise SnowCLIError(proc.stderr.strip() or "Failed to add connection")
 
     def set_default_connection(self, name: str) -> None:
-        _ensure_snow_available()
         proc = subprocess.run(
-            ["snow", "connection", "set-default", name],
+            [self.snow_path, "connection", "set-default", name],
             capture_output=True,
             text=True,
             check=False,

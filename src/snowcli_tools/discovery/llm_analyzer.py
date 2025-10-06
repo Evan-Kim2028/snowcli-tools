@@ -214,17 +214,15 @@ JSON response:"""
         SELECT SNOWFLAKE.CORTEX.COMPLETE(model, prompt, options)
         """
         # Build Cortex Complete SQL
-        options = {"temperature": self.temperature, "max_tokens": self.max_tokens}
-        options_json = json.dumps(options)
-
         # Escape single quotes in prompt
         prompt_escaped = prompt.replace("'", "''")
 
+        # Note: Cortex Complete currently only supports model and prompt parameters
+        # Temperature and max_tokens are not configurable via SQL interface
         sql = f"""
             SELECT SNOWFLAKE.CORTEX.COMPLETE(
                 '{self.model}',
-                '{prompt_escaped}',
-                {options_json}
+                '{prompt_escaped}'
             ) as response
         """
 
