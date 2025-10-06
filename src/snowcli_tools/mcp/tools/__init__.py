@@ -16,6 +16,7 @@ from __future__ import annotations
 from .base import MCPTool, MCPToolSchema
 from .build_catalog import BuildCatalogTool
 from .build_dependency_graph import BuildDependencyGraphTool
+from .discover_table_purpose import DiscoverTablePurposeTool
 from .execute_query import ExecuteQueryTool
 from .get_catalog_summary import GetCatalogSummaryTool
 from .health import HealthCheckTool
@@ -28,6 +29,7 @@ __all__ = [
     "MCPToolSchema",
     "BuildCatalogTool",
     "BuildDependencyGraphTool",
+    "DiscoverTablePurposeTool",
     "ExecuteQueryTool",
     "GetCatalogSummaryTool",
     "HealthCheckTool",
