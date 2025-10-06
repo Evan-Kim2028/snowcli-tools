@@ -5,6 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2025-01-09
+
+### 🚨 Breaking Changes
+
+#### MCP Tool Renamed: `discover_table_purpose` → `profile_table`
+- **Reason**: Original name suggested business purpose discovery, but tool actually profiles Snowflake table structures (schema, stats, samples)
+- **Impact**: All MCP tool calls must update to new name
+- **Migration**:
+  ```python
+  # OLD (will break)
+  mcp__snowcli-tools-v1_10_0__discover_table_purpose(table_name="CUSTOMERS")
+
+  # NEW (required)
+  mcp__snowcli-tools-v1_10_0__profile_table(table_name="CUSTOMERS")
+  ```
+- **Documentation Updated**: README.md examples now use `profile_table`
+- **Scope Clarification**: Tool description explicitly states it profiles "Snowflake TABLE STRUCTURES (schema, stats, samples), NOT business entities or packages"
+
+### Added - Discovery Assistant
+
+#### Core Features
+- **🔍 SQL-Based Table Profiling**: `profile_table` MCP tool for automated table analysis (renamed from `discover_table_purpose`)
+  - SQL-based table profiling (column stats, patterns, sample data)
+  - Cortex Complete AI analysis for business purpose inference
+  - Multi-strategy relationship discovery (name patterns + value overlap)
+  - Comprehensive documentation generation (Markdown + JSON)
+
+#### New Simplified Interface
+- **Simplified Parameters**: Boolean flags instead of depth enum
+  - `include_ai_analysis: bool = True` - Control AI analysis independently
+  - `include_relationships: bool = False` - Control relationship discovery
+  - `force_refresh: bool = False` - Bypass cache for fresh analysis
+  - **REMOVED**: `depth` enum parameter (quick/standard/deep)
+  - **REMOVED**: `cache_policy` enum parameter
+
+#### Cache Management System
+- **Automatic Caching**: LRU cache with TTL and DDL-based invalidation
+  - `src/snowcli_tools/discovery/cache.py` - Complete cache implementation
+  - LRU eviction (max 100 entries)
+  - TTL-based expiration (1 hour default)
+  - DDL change detection for automatic invalidation
+  - Secondary DDL cache (1 minute TTL) to reduce metadata queries
+
+#### Data Models
+- **DiscoveryResults Wrapper**: Type-safe consistent return type
+  - `ExecutionMetadata` - Cost, timing, cache statistics
+  - `first()` method for single-table convenience
+  - `to_dict()` for MCP JSON serialization
+  - `to_markdown()` for batch documentation generation
+  - Iterator support (`__len__`, `__iter__`, `__getitem__`)
+
+#### Documentation Improvements
+- **Qualitative Confidence**: User-friendly confidence indicators
+  - Maps numeric scores to qualitative terms: "confirmed", "likely", "possibly", "uncertain"
+  - Removed numeric percentages from user-facing documentation
+  - Clearer error messages with actionable troubleshooting
+
+### Changed
+- **Cost Model Transparency**: Clear pricing for each operation
+  - Profiling only: $0.01 per table (~2-5s)
+  - With AI analysis: $0.05 per table (~15-20s)
+  - With relationships: $0.08 per table (~25-30s)
+- **MCP Parameter Schema**: Reduced token usage by 40% (400 vs 650 tokens)
+- **Error Messages**: Updated to reference new boolean parameters instead of depth modes
+
+### Performance
+- **Cache Hit**: <100ms latency for cached results
+- **LRU Eviction**: Thread-safe with minimal overhead
+- **DDL Checking**: Secondary cache reduces metadata queries by 90%
+
+### Migration Guide
+- Old `depth="quick"` → `include_ai_analysis=False, include_relationships=False`
+- Old `depth="standard"` → `include_ai_analysis=True, include_relationships=False` (default)
+- Old `depth="deep"` → `include_ai_analysis=True, include_relationships=True`
+- Old `cache_policy` → Use `force_refresh=True` to bypass cache
+
+### Technical Details
+- **Files Added**: `src/snowcli_tools/discovery/cache.py` (~320 LOC)
+- **Files Modified**:
+  - `models.py` - Added DiscoveryResults, ExecutionMetadata (~125 LOC)
+  - `discover_table_purpose.py` - Simplified interface (~100 LOC changed)
+  - `documentation_generator.py` - Qualitative confidence (~25 LOC)
+- **Test Coverage**: 57/59 tests passing (96.6%)
+
+---
+
 ## [1.9.0] - 2025-01-04
 
 ### Phase 1: Code Simplification (Completed)

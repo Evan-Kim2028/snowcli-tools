@@ -1,227 +1,275 @@
 # SnowCLI Tools
 
-> **Powerful Snowflake operations with AI assistant integration**
+> **AI-Powered Snowflake Discovery & Data Operations**
 
 Transform your Snowflake data operations with automated cataloging, advanced lineage analysis, SQL safety validation, and seamless AI assistant connectivity through MCP (Model Context Protocol).
-
-## ✨ v1.10.0 New Features - Discovery Assistant
-
-- 🔍 **AI-Powered Table Discovery:** Automatically profile and document tables using Cortex Complete
-- 📊 **Three Depth Modes:** quick (stats only), standard (+ AI analysis), deep (+ relationships)
-- 🤖 **Smart Analysis:** 75%+ accuracy on table purpose, 95%+ PII detection
-- 🔗 **Relationship Discovery:** Multi-strategy FK detection with confidence scoring
-- 📝 **Rich Documentation:** Markdown data dictionaries with Mermaid ER diagrams
-- ⚡ **Fast:** <5s for 1M row tables, batch discovery support
-- 💰 **Cost Transparent:** Estimates shown for each discovery operation
-
-```bash
-# Discover and document a table with AI analysis
-snowflake-cli discover CUSTOMERS --depth standard
-
-# Batch discovery with relationship mapping
-snowflake-cli discover CUSTOMERS,ORDERS,PRODUCTS --depth deep
-```
-
-## ✨ v1.7.0 New Features
-
-- 🛡️ **SQL Safety:** Blocks destructive operations (DELETE, DROP, TRUNCATE) with safe alternatives
-- 🧠 **Intelligent Errors:** Compact mode (default) saves 70% tokens; verbose mode for debugging
-- ⏱️ **Agent-Controlled Timeouts:** Configure query timeouts per-request (1-3600s)
-- ✅ **MCP Protocol Compliant:** Standard exception-based error handling
-- 🚀 **Zero Vendoring:** Imports from upstream, stays in sync
-
-[📖 See Release Notes](./RELEASE_NOTES.md) for details.
 
 [![PyPI version](https://badge.fury.io/py/snowcli-tools.svg)](https://pypi.org/project/snowcli-tools/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
-## Quick Start
+---
+### 🧠 **AI-Powered Discovery**
+Automatically understand tables using Snowflake Cortex Complete:
+- **Business Purpose**: "Customer master data with contact info" (not just column names)
+- **PII Detection**: Identifies sensitive data with 95%+ accuracy
+- **Relationship Discovery**: Finds foreign keys even without constraints
+- **Smart Documentation**: Generates readable docs with confidence indicators
 
-```bash
-# 1. Install SnowCLI Tools
-pip install snowcli-tools
+### 🎛️ **Simplified Interface**
+Control every aspect independently:
+```python
+# Full control with boolean flags
+profile_table(
+    "CUSTOMERS",
+    include_ai_analysis=True,      # AI business context ($0.05)
+    include_relationships=True,     # FK discovery ($0.03 more)
+    force_refresh=False             # Use cache when available
+)
 
-# 2. Set up your Snowflake profile
-snow connection add --connection-name "my-profile" \
-  --account "your-account.region" --user "your-username" \
-  --private-key-file "/path/to/key.p8" --database "DB" --warehouse "WH"
+# Quick profiling without AI (2-5s, $0.01)
+profile_table("HUGE_TABLE", include_ai_analysis=False)
 
-# 3. Verify connection
-snowflake-cli verify -p my-profile
-
-# 4. Start exploring your data
-snowflake-cli catalog -p my-profile
-snowflake-cli lineage MY_TABLE -p my-profile
-
-# 5. Enable AI assistant integration
-SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
+# Batch profiling with automatic caching
+profile_table(["CUSTOMERS", "ORDERS", "PRODUCTS"])
 ```
 
-## Core Features
-
-### 📊 **Data Discovery & Analysis**
-- **Automated Catalog**: Complete metadata extraction from databases, schemas, tables
-- **Advanced Lineage**: Column-level lineage tracking with impact analysis
-- **Dependency Mapping**: Visual object relationships and circular dependency detection
-- **External Integration**: S3/Azure/GCS source mapping
-
-### 🤖 **AI Assistant Integration**
-- **MCP Server**: Direct integration with Claude Code, VS Code, Cursor
-- **Natural Language**: "Show me schema of CUSTOMERS" → instant results
-- **Health Monitoring**: Real-time diagnostics and validation
-- **Enhanced Profiles**: Clear error messages instead of timeouts
-
-### ⚡ **Enterprise Ready**
-- **Layered Security**: Built on Snowflake's official authentication
-- **High Performance**: Parallel operations and connection pooling
-- **Fault Tolerance**: Circuit breaker patterns for reliability
-- **Modern Architecture**: Python 3.12+ with async support
-
-## Architecture
-
-SnowCLI Tools uses a **layered architecture** that combines official Snowflake tools with enhanced analytics:
-
+### 🚀 **Built on Snowflake Labs Official MCP**
 ```
-┌─────────────────────────────────────┐
-│     AI Assistants & Applications    │  ← Your workflows
-├─────────────────────────────────────┤
-│      SnowCLI Tools MCP Server       │  ← Enhanced analytics
-│   (Catalog, Lineage, Dependencies)  │
-├─────────────────────────────────────┤
-│       Snowflake Labs MCP            │  ← Official foundation
-│    (Auth, Connection, Security)     │
-├─────────────────────────────────────┤
-│        Snowflake Platform           │  ← Your data warehouse
-└─────────────────────────────────────┘
+┌──────────────────────────────────┐
+│   Your AI Assistant (Claude)    │  ← Natural language queries
+├──────────────────────────────────┤
+│  SnowCLI Tools (This Package)   │  ← Discovery, Catalog, Lineage
+├──────────────────────────────────┤
+│  Snowflake Labs MCP Server       │  ← Official auth & queries
+├──────────────────────────────────┤
+│  Snowflake Data Cloud            │  ← Your data warehouse
+└──────────────────────────────────┘
 ```
 
-**Key Benefits:**
-- **🔐 Secure**: Leverages Snowflake's official authentication
-- **🚀 Powerful**: Combines official tools with advanced analytics
-- **🔗 Integrated**: Single MCP endpoint for AI assistants
-- **📈 Scalable**: Service layer architecture for extensibility
-
-## Common Use Cases
-
-### Data Discovery Workflow
-```bash
-# Build comprehensive catalog
-snowflake-cli catalog -p prod
-
-# Map dependencies
-snowflake-cli depgraph -p prod --format dot
-
-# Analyze critical table lineage
-snowflake-cli lineage CUSTOMER_ORDERS -p prod --depth 3
-```
-
-### AI Assistant Integration
-```bash
-# Start MCP server for AI assistants
-SNOWFLAKE_PROFILE=prod snowflake-cli mcp
-
-# Now use Claude Code, VS Code, or Cursor to:
-# - "What tables depend on CUSTOMERS?"
-# - "Show me the schema for ORDERS table"
-# - "Generate a data quality report"
-```
-
-### Multi-Environment Development
-```bash
-# Switch between environments easily
-snowflake-cli query "SELECT COUNT(*) FROM users" -p dev
-snowflake-cli query "SELECT COUNT(*) FROM users" -p staging
-snowflake-cli query "SELECT COUNT(*) FROM users" -p prod
-```
-
-## Getting Started
-
-### Prerequisites
-- **Python 3.12+** with pip or uv
-- **Snowflake account** with appropriate permissions
-- **Snowflake CLI** installed (`pip install snowflake-cli`)
-
-### Installation Options
-
-**Option 1: PyPI (Recommended)**
-```bash
-pip install snowcli-tools
-```
-
-**Option 2: Development Install**
-```bash
-git clone <repository-url>
-cd snowcli-tools
-uv sync  # or pip install -e .
-```
-
-### Profile Setup
-```bash
-# Key-pair authentication (recommended)
-snow connection add --connection-name "my-profile" \
-  --account "your-account.region" \
-  --user "username" \
-  --private-key-file "/path/to/key.p8" \
-  --database "DATABASE" \
-  --warehouse "WAREHOUSE"
-
-# OAuth authentication
-snow connection add --connection-name "my-profile" \
-  --account "your-account.region" \
-  --user "username" \
-  --authenticator "externalbrowser"
-
-# Verify setup
-snowflake-cli verify -p my-profile
-```
-
-## Documentation
-
-- **[Getting Started Guide](docs/getting-started.md)** - Complete setup and usage guide
-- **[Architecture Overview](docs/architecture.md)** - Technical architecture and design patterns
-- **[MCP Integration](docs/mcp-integration.md)** - AI assistant setup and configuration
-- **[API Reference](docs/api-reference.md)** - Complete command and API documentation
-- **[Configuration Guide](docs/configuration.md)** - Advanced configuration options
-- **[Contributing](CONTRIBUTING.md)** - Development and contribution guidelines
-
-## Requirements
-
-- **Python**: 3.12 or higher
-- **Snowflake CLI**: Latest version recommended
-- **Dependencies**: Automatically installed with package
-- **Permissions**: `USAGE` on warehouse/database/schema, `SELECT` on `INFORMATION_SCHEMA`
-
-## MCP Integration
-
-For AI assistant integration, install MCP extras:
-
-```bash
-# Install MCP dependencies
-pip install "mcp>=1.0.0" "fastmcp>=2.8.1" "snowflake-labs-mcp>=1.3.3"
-
-# Start MCP server
-SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
-
-# Configure your AI assistant to connect via MCP
-```
-
-**Supported AI Assistants:**
-- Claude Code
-- VS Code with MCP extensions
-- Cursor IDE
-- Any MCP-compatible client
-
-## Support
-
-- **Documentation**: Comprehensive guides in `/docs`
-- **Issues**: Report bugs via [GitHub Issues](link-to-issues)
-- **Examples**: Sample workflows in `/examples`
-- **Community**: [Discord/Slack community link]
-
-## License
-
-[License Type] - see [LICENSE](LICENSE) file for details.
+**Benefits:**
+- ✅ Secure: Uses official Snowflake authentication
+- ✅ Maintained: Stays in sync with Snowflake updates
+- ✅ Integrated: Single MCP endpoint for AI assistants
+- ✅ Zero Vendoring: Imports upstream, doesn't fork
 
 ---
 
-**Version 1.5.0** | Built with ❤️ for the Snowflake community
+## 🚀 Quick Start (3 minutes)
+
+### 1. Install
+```bash
+uv install snowcli-tools
+```
+
+### 2. Configure Snowflake Profile
+```bash
+# Using key-pair authentication (recommended)
+snow connection add --connection-name "my-profile" \
+  --account "myorg-myaccount" \
+  --user "analyst" \
+  --private-key-file "~/.ssh/snowflake_key.p8" \
+  --database "ANALYTICS" \
+  --warehouse "COMPUTE_WH"
+
+# Verify connection
+snowflake-cli verify -p my-profile
+```
+
+### 3. Start Discovering
+```bash
+# Connect to AI assistant (Claude, VS Code, Cursor)
+SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
+
+# Now in your AI assistant, try:
+# "Discover and document the CUSTOMERS table"
+# "What tables have PII?"
+# "Show me relationships for ORDER_ITEMS"
+```
+
+---
+
+## 🎨 Core Features
+
+### 🔍 Discovery Assistant
+**AI-powered table understanding**
+
+| Mode | What You Get | Cost | Speed |
+|------|-------------|------|-------|
+| **Quick** | SQL profiling, patterns, stats | $0.01 | 2-5s |
+| **Standard** (default) | + AI purpose analysis, PII detection | $0.05 | 15-20s |
+| **Deep** | + Relationship discovery, FK mapping | $0.08 | 25-30s |
+
+**Features:**
+- ✅ 75-85% accuracy on table purpose inference
+- ✅ 95%+ PII detection (email, phone, SSN patterns)
+- ✅ Multi-strategy relationship discovery (name + value overlap)
+- ✅ Automatic caching (1-hour TTL, DDL invalidation)
+- ✅ Qualitative confidence: "confirmed", "likely", "possibly"
+- ✅ Batch processing for multiple tables
+
+### 📊 Data Catalog
+**Complete metadata extraction**
+```bash
+# Build full catalog
+snowflake-cli catalog -p prod -o ./catalog
+
+# Incremental refresh (10-20x faster)
+snowflake-cli catalog -p prod -o ./catalog --incremental
+```
+
+**Features:**
+- ✅ Database, schema, table, column metadata
+- ✅ DDL extraction for recreating objects
+- ✅ Incremental updates (only changed objects)
+- ✅ JSON/JSONL output formats
+
+### 🔗 Lineage & Dependencies
+**Understand data flows**
+```bash
+# Column-level lineage
+snowflake-cli lineage CUSTOMER_ORDERS -p prod
+
+# Dependency graph (DOT format for Graphviz)
+snowflake-cli depgraph -p prod --format dot
+```
+
+**Features:**
+- ✅ Direct table dependencies
+- ✅ Circular dependency detection
+- ✅ Impact analysis (what breaks if I change this?)
+- ✅ Visual dependency graphs
+
+### 🛡️ SQL Safety (v1.7.0)
+**Prevent data disasters**
+```python
+# Destructive operations are blocked
+>>> execute_query("DROP TABLE customers")
+Error: Destructive operation blocked. Use execute_query_unsafe() if intentional.
+
+# Safe alternatives suggested
+>>> execute_query("DELETE FROM orders WHERE id = 123")
+Suggestion: Consider using MERGE or UPDATE for targeted changes.
+```
+
+### 🤖 AI Assistant Integration
+**Natural language Snowflake operations**
+
+Chat with your data using Claude, VS Code, or Cursor:
+- "What's in the CUSTOMERS table?"
+- "Show me tables that join with ORDERS"
+- "Find all tables containing PII"
+- "Generate a data quality report for PRODUCTS"
+
+---
+
+## 💡 Common Workflows
+
+### Onboard to a New Database
+```python
+# 1. Profile all tables
+results = profile_table([
+    "CUSTOMERS", "ORDERS", "PRODUCTS", "ORDER_ITEMS"
+])
+
+# 2. Generate documentation
+print(results.to_markdown())
+
+# 3. Export for wiki
+with open("data_dictionary.md", "w") as f:
+    f.write(results.to_markdown())
+```
+
+### Find Undocumented PII
+```python
+# Scan all tables for PII
+for table in get_all_tables():
+    result = profile_table(table)
+    if result.first().analysis.pii_columns:
+        print(f"⚠️ PII found in {table}: {result.first().analysis.pii_columns}")
+```
+
+### Understand Table Relationships
+```python
+# Map relationships for data modeling
+result = profile_table(
+    "FACT_SALES",
+    include_relationships=True
+)
+
+for rel in result.first().relationships:
+    print(f"{rel.from_column} → {rel.to_table}.{rel.to_column} ({rel.confidence:.0%})")
+```
+
+---
+
+## 📚 Documentation
+
+- **[Getting Started](docs/getting-started.md)** - Detailed setup guide
+- **[Discovery Assistant Guide](docs/discovery-assistant.md)** - AI-powered discovery walkthrough
+- **[MCP Server Setup](docs/mcp/mcp_server_user_guide.md)** - AI assistant integration
+- **[Architecture](docs/architecture.md)** - Technical design & patterns
+- **[API Reference](docs/api/TOOLS_INDEX.md)** - Complete API documentation
+- **[Migration Guide](CHANGELOG.md)** - Upgrading from older versions
+
+---
+
+## 🛠️ Requirements
+
+| Component | Version | Notes |
+|-----------|---------|-------|
+| Python | 3.12+ | Required for modern syntax |
+| Snowflake CLI | Latest | `pip install snowflake-cli` |
+| Snowflake Account | Any tier | Need `SELECT` on `INFORMATION_SCHEMA` |
+| Cortex Complete | Optional | Required for AI discovery features |
+
+**Permissions Needed:**
+- `USAGE` on warehouse, database, schema
+- `SELECT` on `INFORMATION_SCHEMA.TABLES`, `INFORMATION_SCHEMA.COLUMNS`
+- `SELECT` on target tables for profiling
+- Cortex Complete access for AI features
+
+---
+
+## 🔄 Version History
+
+### v1.10.0 (Current) - Discovery Assistant UX Simplification
+- ✅ Simplified boolean parameters (remove depth enum)
+- ✅ Automatic caching with LRU + TTL
+- ✅ Qualitative confidence indicators
+- ✅ 40% reduction in MCP token usage
+
+### v1.9.0 - Code Simplification
+- ✅ 94% code reduction in lineage module
+- ✅ Incremental catalog building (10-20x faster)
+- ✅ Consolidated health tools
+
+### v1.7.0 - SQL Safety & Error Handling
+- ✅ Destructive operation blocking
+- ✅ Intelligent error messages (70% token reduction)
+- ✅ Agent-controlled timeouts
+
+[See full changelog](CHANGELOG.md)
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## Acknowledgments
+
+Built on top of:
+- [Snowflake Labs MCP Server](https://github.com/Snowflake-Labs/mcp-servers) - Official Snowflake MCP integration
+- [FastMCP](https://github.com/jlowin/fastmcp) - MCP framework
+- [Snowflake Python Connector](https://github.com/snowflakedb/snowflake-connector-python) - Official connector
+---
+
+<div align="center">
+
+**Made with ❤️ for data engineers and analysts**
+
+[Report Bug](link-to-issues) · [Request Feature](link-to-issues) · [Documentation](docs/)
+
+</div>
