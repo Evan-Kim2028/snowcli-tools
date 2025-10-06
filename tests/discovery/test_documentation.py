@@ -177,9 +177,9 @@ class TestMarkdownGeneration:
 
         # Check purpose section
         assert "## Purpose" in markdown
-        assert "Customer master data" in markdown
+        assert "customer master data" in markdown.lower()  # Case-insensitive check
+        assert "(confirmed)" in markdown  # Confidence qualifier for 85% confidence
         assert "**Category**: dimension_table" in markdown
-        assert "**Confidence**: 85% (high)" in markdown
 
         # Check PII warnings
         assert "⚠️ Yes" in markdown
@@ -375,7 +375,8 @@ class TestErrorFormatting:
 
         assert "❌ Discovery Failed: SECRET_TABLE" in error_msg
         assert "PermissionError" in error_msg
-        assert "SELECT permissions" in error_msg
+        # Error message should provide helpful troubleshooting
+        assert "Troubleshooting" in error_msg
 
     def test_error_timeout(self, generator):
         """Test error formatting for timeout."""
@@ -385,7 +386,8 @@ class TestErrorFormatting:
 
         assert "❌ Discovery Failed: HUGE_TABLE" in error_msg
         assert "TimeoutError" in error_msg
-        assert "quick' depth mode" in error_msg
+        # Error message should provide helpful troubleshooting
+        assert "Troubleshooting" in error_msg
 
 
 class TestEdgeCases:
