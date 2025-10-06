@@ -169,16 +169,8 @@ Supports batch discovery of multiple tables."""
         start_time = time.time()
 
         try:
-            # Check cache (if enabled)
-            if cache_policy != CachePolicy.NEVER:
-                cached = self._check_cache(table_name, database, schema, cache_policy)
-                if cached:
-                    return {
-                        "success": True,
-                        "documentation": cached,
-                        "cache_hit": True,
-                        "table_name": table_name,
-                    }
+            # TODO: Implement caching in Milestone 5.2
+            # For v1.10.0, caching is not yet implemented
 
             # Initialize components
             profiler = TableProfiler(self.snow_cli)
@@ -246,8 +238,8 @@ Supports batch discovery of multiple tables."""
             generator = DocumentationGenerator()
             documentation = generator.generate(result, output_format)
 
-            # Cache result
-            self._cache_result(table_name, database, schema, documentation, metadata)
+            # TODO: Cache result when caching is implemented in Milestone 5.2
+            # self._cache_result(table_name, database, schema, documentation, metadata)
 
             return {
                 "success": True,
@@ -335,7 +327,7 @@ Supports batch discovery of multiple tables."""
         # Combine documentation
         combined_docs = []
         for i, result in enumerate(results):
-            combined_docs.append(f"## Table {i+1}: {result['table_name']}")
+            combined_docs.append(f"## Table {i + 1}: {result['table_name']}")
             combined_docs.append("")
             combined_docs.append(result["documentation"])
             combined_docs.append("")

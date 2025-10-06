@@ -20,6 +20,13 @@ from snowcli_tools.snow_cli import SnowCLI
 class TableProfiler:
     """Profile Snowflake tables using SQL queries."""
 
+    # Constants
+    DEFAULT_SAMPLE_SIZE = 100  # Default number of sample rows to extract
+    MAX_SAMPLE_SIZE_FOR_PATTERN = 100  # Max sample size for pattern detection
+    PATTERN_MATCH_THRESHOLD = 0.8  # 80%+ match rate to consider a pattern
+    LARGE_TABLE_THRESHOLD = 100_000  # Use APPROX_COUNT_DISTINCT for tables > this size
+    MAX_SAMPLE_VALUES = 10  # Max sample values to store per column
+
     # Pattern detection regexes
     PATTERNS = {
         "email": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
@@ -129,11 +136,15 @@ class TableProfiler:
         if not database or not schema:
             return None
 
+        # Escape single quotes for SQL injection prevention
+        safe_schema = schema.replace("'", "''")
+        safe_table = table.replace("'", "''")
+
         sql = f"""
             SELECT LAST_DDL
             FROM "{database}".INFORMATION_SCHEMA.TABLES
-            WHERE TABLE_SCHEMA = '{schema}'
-              AND TABLE_NAME = '{table}'
+            WHERE TABLE_SCHEMA = '{safe_schema}'
+              AND TABLE_NAME = '{safe_table}'
         """
         result = self._execute_query(sql)
         if result and result[0].get("LAST_DDL"):
@@ -146,20 +157,40 @@ class TableProfiler:
 
     def _get_columns_info(self, database: str, schema: str, table: str) -> list[dict]:
         """Get column metadata from INFORMATION_SCHEMA."""
+        # Escape single quotes for SQL injection prevention
+        safe_table = table.replace("'", "''")
+
         # Need to handle case where database/schema might not be provided
         if database and schema:
+            safe_schema = schema.replace("'", "''")
             sql = f"""
                 SELECT
                     COLUMN_NAME,
                     DATA_TYPE,
                     ORDINAL_POSITION
                 FROM "{database}".INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = '{schema}'
-                  AND TABLE_NAME = '{table}'
+                WHERE TABLE_SCHEMA = '{safe_schema}'
+                  AND TABLE_NAME = '{safe_table}'
                 ORDER BY ORDINAL_POSITION
             """
         else:
             # Use CURRENT_DATABASE() and CURRENT_SCHEMA()
+            # First check if session defaults are set
+            try:
+                check_sql = (
+                    "SELECT CURRENT_SCHEMA() as schema, CURRENT_DATABASE() as db"
+                )
+                check_result = self._execute_query(check_sql)
+                if not check_result or not check_result[0].get("SCHEMA"):
+                    raise ValueError(
+                        "No schema specified and CURRENT_SCHEMA() is NULL. "
+                        "Please specify database and schema explicitly or set session defaults."
+                    )
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to check session defaults: {e}. Please specify database and schema explicitly."
+                )
+
             sql = f"""
                 SELECT
                     COLUMN_NAME,
@@ -167,7 +198,7 @@ class TableProfiler:
                     ORDINAL_POSITION
                 FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = CURRENT_SCHEMA()
-                  AND TABLE_NAME = '{table}'
+                  AND TABLE_NAME = '{safe_table}'
                 ORDER BY ORDINAL_POSITION
             """
 
@@ -193,7 +224,7 @@ class TableProfiler:
             return []
 
         # Get sample data first for pattern detection
-        sample_sql = f"SELECT * FROM {full_table} LIMIT {min(self.sample_size, 100)}"
+        sample_sql = f"SELECT * FROM {full_table} LIMIT {min(self.sample_size, self.MAX_SAMPLE_SIZE_FOR_PATTERN)}"
         try:
             sample_data = self._execute_query(sample_sql)
         except Exception:
@@ -207,7 +238,7 @@ class TableProfiler:
             data_type = col_info["DATA_TYPE"]
 
             # Use APPROX_COUNT_DISTINCT for large tables
-            if self.use_approx_count and row_count > 100_000:
+            if self.use_approx_count and row_count > self.LARGE_TABLE_THRESHOLD:
                 cardinality_fn = "APPROX_COUNT_DISTINCT"
             else:
                 cardinality_fn = "COUNT(DISTINCT"
@@ -272,7 +303,7 @@ class TableProfiler:
                 row.get(col_name)
                 for row in sample_data
                 if row.get(col_name) is not None
-            ][:10]
+            ][: self.MAX_SAMPLE_VALUES]
 
             # Detect patterns
             pattern = self._detect_pattern(sample_values, data_type)
@@ -318,8 +349,8 @@ class TableProfiler:
             )
             match_rate = matches / len(str_values)
 
-            # If 80%+ match, consider it that pattern
-            if match_rate >= 0.8:
+            # If threshold match rate met, consider it that pattern
+            if match_rate >= self.PATTERN_MATCH_THRESHOLD:
                 return pattern_name
 
         return None
