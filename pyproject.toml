@@ -1,7 +1,7 @@
 [project]
 name = "nanuk-mcp"
 version = "2.0.0"
-description = "Nanuk MCP - Snowflake MCP Server: AI-first Snowflake data operations via Model Context Protocol"
+description = "Nanuk MCP - Snowflake MCP Server for agentic native workflows"
 readme = "README.md"
 authors = [
     { name = "Evan Kim", email = "ekcopersonal@gmail.com" }
