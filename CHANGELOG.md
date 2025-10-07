@@ -31,7 +31,7 @@ The legacy CLI interface (`nanuk` command) has been removed. Nanuk is now MCP-on
 - CLI-specific tests
 
 #### Migration
-- **Rebrand migration**: See [Migration Guide](docs/migration-from-snowcli-tools.md) for package name changes
+- **Rebrand migration**: See [Migration Guide](docs/migration-guide.md) for package name changes and CLI to MCP migration
 - **CLI migration**: See [CLI Migration Guide](docs/cli-to-mcp-migration.md) for transitioning to MCP tools
 - All CLI functionality is available through MCP tools (see table in migration guide)
 

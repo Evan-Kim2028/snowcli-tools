@@ -289,4 +289,4 @@ check_profile_config()  # Returns:
 ---
 
 **Last Updated:** December 2024
-**Version:** v1.9.0
+**Version:** v2.0.0

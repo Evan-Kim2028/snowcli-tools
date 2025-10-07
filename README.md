@@ -1,6 +1,5 @@
-# Nanuk MCP - Snowflake MCP Server
+# Nanuk MCP - Agentic Native Snowflake Workflow with MCP
 
-> 🐻‍❄️ **AI-first Snowflake operations via Model Context Protocol**
 
 Nanuk (Inuit for "polar bear") enhances the official [Snowflake Labs MCP](https://github.com/Snowflake-Labs/mcp) with more features for agentic native workflows.
 
@@ -17,6 +16,26 @@ Nanuk (Inuit for "polar bear") enhances the official [Snowflake Labs MCP](https:
 [![PyPI version](https://badge.fury.io/py/nanuk-mcp.svg)](https://pypi.org/project/nanuk-mcp/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
+## Available MCP Tools
+
+### Nanuk MCP Tools
+- `execute_query` - Execute SQL queries with safety checks
+- `preview_table` - Preview table contents
+- `build_catalog` - Build metadata catalog
+- `get_catalog_summary` - Get catalog overview
+- `query_lineage` - Query data lineage
+- `build_dependency_graph` - Build dependency graph
+- `test_connection` - Test Snowflake connection
+- `health_check` - Get system health status
+
+### Upstream Snowflake Labs MCP Tools
+Nanuk MCP also provides access to all tools from the [official Snowflake Labs MCP](https://github.com/Snowflake-Labs/mcp), including Cortex AI and object management tools.
+
+See [MCP Documentation](docs/mcp/mcp_server_user_guide.md) for details.
+
+
 
 ---
 
@@ -102,24 +121,6 @@ See [Getting Started Guide](docs/getting-started.md) for detailed setup instruct
 - **Environment variable**: `export SNOWFLAKE_PROFILE=PROFILE_NAME` (session)
 - **Default profile**: Set with `snow connection set-default PROFILE_NAME` (implicit)
 
-
-## Available MCP Tools
-
-### Nanuk MCP Tools
-- `execute_query` - Execute SQL queries with safety checks
-- `preview_table` - Preview table contents
-- `build_catalog` - Build metadata catalog
-- `get_catalog_summary` - Get catalog overview
-- `query_lineage` - Query data lineage
-- `build_dependency_graph` - Build dependency graph
-- `test_connection` - Test Snowflake connection
-- `health_check` - Get system health status
-
-### Upstream Snowflake Labs MCP Tools
-Nanuk MCP also provides access to all tools from the [official Snowflake Labs MCP](https://github.com/Snowflake-Labs/mcp), including Cortex AI and object management tools.
-
-See [MCP Documentation](docs/mcp/mcp_server_user_guide.md) for details.
-
 ## Python API
 
 ```python
@@ -140,7 +141,7 @@ catalog = catalog_service.build_catalog(database="MY_DB")
 - [MCP Server User Guide](docs/mcp/mcp_server_user_guide.md)
 - [Architecture Overview](docs/architecture.md)
 - [API Reference](docs/api/README.md)
-- [Migration from snowcli-tools](docs/migration-from-snowcli-tools.md)
+- [Migration Guide (CLI to MCP)](docs/migration-guide.md)
 - [Contributing Guide](CONTRIBUTING.md)
 
 ## Examples

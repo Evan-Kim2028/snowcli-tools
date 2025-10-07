@@ -159,5 +159,5 @@ get_resource_status()
 
 ---
 
-**Version:** v1.9.0
+**Version:** v2.0.0
 **Last Updated:** December 2024

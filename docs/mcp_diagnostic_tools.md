@@ -1,8 +1,8 @@
-# MCP Diagnostic Tools Reference (v1.4.4+)
+# MCP Diagnostic Tools Reference (v2.0.0)
 
 ## Overview
 
-The v1.4.4+ release introduces comprehensive diagnostic tools for the MCP server that provide real-time health monitoring, profile validation, and resource dependency checking. These tools help quickly identify and resolve configuration issues.
+Nanuk MCP v2.0.0 provides comprehensive diagnostic tools for the MCP server that provide real-time health monitoring, profile validation, and resource dependency checking. These tools help quickly identify and resolve configuration issues.
 
 ## Tool Categories
 
@@ -347,7 +347,7 @@ AI: "Validate cortex search dependencies"
 
 ### `test_connection`
 
-**Purpose**: Basic Snowflake connection testing (enhanced in v1.4.4+).
+**Purpose**: Basic Snowflake connection testing.
 
 **Parameters**: None
 
@@ -358,7 +358,7 @@ AI: "Is the database connection working?"
 AI: "Check if I can connect to Snowflake"
 ```
 
-**Enhanced Response Format (v1.4.4+)**:
+**Response Format**:
 ```json
 {
   "connection_status": "healthy",

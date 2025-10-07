@@ -1,6 +1,6 @@
 # Incremental Catalog Building Guide
 
-**Version**: v1.9.0+
+**Version**: v2.0.0
 **Feature**: LAST_DDL-based delta detection for 10-20x faster catalog refreshes
 
 ## Overview
@@ -89,7 +89,7 @@ The incremental builder maintains a `_catalog_metadata.json` file with:
   "last_full_refresh": "2025-01-04T12:00:00+00:00",
   "databases": ["ANALYTICS"],
   "total_objects": 583,
-  "version": "1.9.0",
+  "version": "2.0.0",
   "schema_count": 12,
   "table_count": 583
 }
@@ -312,7 +312,7 @@ The incremental builder can be integrated with MCP tools:
 result = await build_catalog(
     output_dir="./data_catalogue",
     database="ANALYTICS",
-    incremental=True,  # NEW: v1.9.0+
+    incremental=True,  # Incremental catalog building
 )
 ```
 
@@ -370,6 +370,5 @@ Planned for v1.10.0+:
 
 ## See Also
 
-- [v1.9.0 Migration Guide](./v1.9.0_migration.md)
-- [Catalog Service API](./api/catalog_service.md)
-- [MCP Tools Index](./api/TOOLS_INDEX.md)
+- [Migration Guide](./migration-guide.md)
+- [API Reference](./api/README.md)
