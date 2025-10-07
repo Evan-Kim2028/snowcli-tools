@@ -33,7 +33,7 @@ For example, asking "What tables are in my database?" triggers the AI to use the
    uv add nanuk-mcp[mcp]
    ```
 
-   If you get an ImportError when running `nanuk mcp`, install the extra as shown above.
+   If you get an ImportError when running `nanuk-mcp`, install the extra as shown above.
 
 2. **Configure Snowflake Connection**: Set up a Snowflake CLI connection profile
    ```bash
@@ -57,7 +57,7 @@ For example, asking "What tables are in my database?" triggers the AI to use the
 
 #### Option 1: CLI Command (Recommended)
 ```bash
-uv run nanuk mcp
+nanuk-mcp
 ```
 
 #### Option 2: Direct Python Example

@@ -2,7 +2,7 @@
  
  ## Overview
  
- SnowCLI Tools can be configured through multiple methods, with the following precedence:
+ Nanuk MCP can be configured through multiple methods, with the following precedence:
  1. Command-line arguments (highest priority)
  2. Environment variables
  3. Configuration files
@@ -89,7 +89,7 @@
  
  ### Snowflake CLI Profiles
  
- SnowCLI Tools uses Snowflake CLI profiles for authentication. Configure them with:
+ Nanuk MCP uses Snowflake CLI profiles for authentication. Configure them with:
  
  ```bash
  # List existing profiles
@@ -112,7 +112,7 @@
  
  ## Output Directory Structure
  
- SnowCLI Tools creates the following directory structure:
+ Nanuk MCP creates the following directory structure:
  
  ```
  project-root/

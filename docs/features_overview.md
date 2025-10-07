@@ -135,7 +135,7 @@ nanuk config show
 nanuk config set snowflake.warehouse COMPUTE_WH
 
 # Enhanced profile validation (v1.4.4+)
-nanuk mcp  # Shows validation success/failure immediately
+nanuk-mcp  # Shows validation success/failure immediately
 export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 ```
 
@@ -196,7 +196,7 @@ export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 **CLI Usage**:
 ```bash
 # Enhanced startup with validation (v1.4.4+)
-nanuk mcp  # Shows immediate validation feedback
+nanuk-mcp  # Shows immediate validation feedback
 
 # Expected successful startup:
 # ✓ Snowflake profile validation successful: dev

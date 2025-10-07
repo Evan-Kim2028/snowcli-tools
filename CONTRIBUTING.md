@@ -15,8 +15,8 @@ Thank you for your interest in contributing to SnowCLI Tools! This guide will he
 
 1. **Fork and clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/snowcli-tools.git
-   cd snowcli-tools
+   git clone https://github.com/Evan-Kim2028/nanuk-mcp.git
+   cd nanuk-mcp
    ```
 
 2. **Install dependencies**:
@@ -67,7 +67,7 @@ Run the test suite:
 uv run pytest
 
 # Run with coverage
-uv run pytest --cov=src/snowcli_tools
+uv run pytest --cov=src/nanuk_mcp
 
 # Run specific test file
 uv run pytest tests/test_specific.py

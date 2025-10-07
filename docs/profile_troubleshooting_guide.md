@@ -16,7 +16,7 @@ Starting with v1.4.4, nanuk-mcp includes robust profile validation and enhanced 
 
 **Before v1.4.4 (Confusing Experience):**
 ```bash
-$ nanuk mcp
+$ nanuk-mcp
 Starting MCP server...
 # Server appears to start successfully, but first tool call fails with:
 Connection timeout error after 30 seconds
@@ -24,7 +24,7 @@ Connection timeout error after 30 seconds
 
 **After v1.4.4 (Clear Feedback):**
 ```bash
-$ nanuk mcp
+$ nanuk-mcp
 ❌ Snowflake profile validation failed
 Error: Snowflake profile 'default' not found
 Available profiles: evan-oauth, mystenlabs-keypair
@@ -55,7 +55,7 @@ Available profiles: evan-oauth, mystenlabs-keypair
 export SNOWFLAKE_PROFILE=evan-oauth
 
 # Or pass it when starting the server
-nanuk mcp --profile evan-oauth
+nanuk-mcp --profile evan-oauth
 ```
 
 **Option B: Create the missing profile**
@@ -289,7 +289,7 @@ snow connection add \
 ```bash
 # Enable debug logging for detailed error information
 export SNOWCLI_MCP_LOG_LEVEL=DEBUG
-nanuk mcp
+nanuk-mcp
 ```
 
 ### Configuration File Locations

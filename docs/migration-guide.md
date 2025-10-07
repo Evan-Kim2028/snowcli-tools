@@ -35,7 +35,7 @@ This guide helps you migrate from the deprecated CLI interface to the modern MCP
 | `nanuk lineage TABLE` | `query_lineage` tool | Lineage analysis |
 | `nanuk depgraph -d DB` | `build_dependency_graph` tool | Dependency mapping |
 | `nanuk query "SQL"` | `execute_query` tool | SQL execution |
-| `nanuk mcp` | MCP server startup | Server management |
+| `nanuk-mcp` | MCP server startup | Server management |
 
 ## Migration Examples
 
@@ -94,7 +94,7 @@ nanuk --profile prod query "SELECT * FROM users LIMIT 10"
 export SNOWFLAKE_PROFILE=my-profile
 
 # Start MCP server
-nanuk mcp
+nanuk-mcp
 ```
 
 ### 2. Configure AI Assistant
@@ -117,7 +117,7 @@ Add to your AI assistant configuration:
 ### 3. Test MCP Integration
 ```bash
 # Test connection via MCP
-echo '{"tool": "test_connection", "arguments": {}}' | nanuk mcp
+echo '{"tool": "test_connection", "arguments": {}}' | nanuk-mcp
 
 # Expected: JSON response with connection status
 ```
@@ -140,7 +140,7 @@ nanuk --profile prod lineage MY_TABLE
 export SNOWFLAKE_PROFILE=prod
 
 # Start MCP server in background
-nanuk mcp &
+nanuk-mcp &
 MCP_PID=$!
 
 # Send MCP requests
@@ -165,7 +165,7 @@ kill $MCP_PID
 - name: Build Catalog
   run: |
     export SNOWFLAKE_PROFILE=prod
-    echo '{"tool": "build_catalog", "arguments": {"database": "MY_DB"}}' | nanuk mcp
+    echo '{"tool": "build_catalog", "arguments": {"database": "MY_DB"}}' | nanuk-mcp
 ```
 
 ## Troubleshooting

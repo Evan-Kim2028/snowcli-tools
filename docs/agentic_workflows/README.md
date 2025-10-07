@@ -44,7 +44,7 @@ Master prompt crafting with:
 export SNOWFLAKE_PROFILE=your-profile-name
 
 # Start MCP server (if not already running via Claude Code config)
-nanuk mcp
+nanuk-mcp
 ```
 
 ### 2. Simple Agent Invocation

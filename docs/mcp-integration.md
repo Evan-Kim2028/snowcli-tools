@@ -1,17 +1,17 @@
 # MCP Integration Guide
 
-SnowCLI Tools provides MCP (Model Context Protocol) integration for AI assistants, enabling natural language interaction with your Snowflake data.
+Nanuk MCP provides MCP (Model Context Protocol) integration for AI assistants, enabling natural language interaction with your Snowflake data.
 
 ## Quick Start
 
-1. **Install SnowCLI Tools**:
+1. **Install Nanuk MCP**:
    ```bash
    pip install nanuk-mcp
    ```
 
 2. **Start the MCP server**:
    ```bash
-   SNOWFLAKE_PROFILE=my-profile nanuk mcp
+   SNOWFLAKE_PROFILE=my-profile nanuk-mcp
    ```
 
 3. **Configure your AI assistant** using the examples below.
@@ -110,7 +110,7 @@ SnowCLI Tools provides MCP (Model Context Protocol) integration for AI assistant
 
 ## Available MCP Tools
 
-SnowCLI Tools provides these MCP tools for AI assistants:
+Nanuk MCP provides these MCP tools for AI assistants:
 
 | Tool | Purpose | Example Use |
 |------|---------|-------------|
@@ -140,7 +140,7 @@ ls -la ~/.snowflake/config.toml
 ### AI Assistant Can't Connect
 1. **Verify MCP server is running**:
    ```bash
-   SNOWFLAKE_PROFILE=my-profile nanuk mcp
+   SNOWFLAKE_PROFILE=my-profile nanuk-mcp
    # Should show "FastMCP 2.0 Server Starting..."
    ```
 
@@ -151,7 +151,7 @@ ls -la ~/.snowflake/config.toml
 
 3. **Test with simple query**:
    ```bash
-   echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | SNOWFLAKE_PROFILE=my-profile nanuk mcp
+   echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | SNOWFLAKE_PROFILE=my-profile nanuk-mcp
    ```
 
 ### Common Errors

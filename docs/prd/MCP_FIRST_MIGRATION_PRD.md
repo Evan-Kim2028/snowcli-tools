@@ -88,7 +88,7 @@ Commonality:        Both paths duplicate validation, error handling, configurati
 **Usage Patterns:**
 ```bash
 # Primary usage pattern (95%+ of users):
-SNOWFLAKE_PROFILE=prod nanuk mcp  # Just starting MCP server
+SNOWFLAKE_PROFILE=prod nanuk-mcp  # Just starting MCP server
 
 # Rare direct CLI usage (5%):
 nanuk --profile prod catalog      # Direct CLI invocation
@@ -367,7 +367,7 @@ docs/
 **Current Workflow:**
 ```bash
 # Setup MCP in Claude Code
-SNOWFLAKE_PROFILE=prod nanuk mcp
+SNOWFLAKE_PROFILE=prod nanuk-mcp
 
 # Use via AI assistant
 "Build a catalog for the ANALYTICS database"
@@ -1327,7 +1327,7 @@ from nanuk_mcp.service_layer import CatalogService
 | `nanuk test` | `test_connection` | Enhanced health checks |
 | `nanuk verify` | `test_connection` | Merged into health check |
 | `nanuk config` | (Profile management) | Use `snow connection` CLI |
-| `nanuk mcp` | `python -m nanuk_mcp.mcp_server` | Direct server launch |
+| `nanuk-mcp` | `python -m nanuk_mcp.mcp_server` | Direct server launch |
 
 ### Appendix B: File Removal List
 

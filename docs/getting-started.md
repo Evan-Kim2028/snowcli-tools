@@ -1,6 +1,6 @@
-# Getting Started with SnowCLI Tools
+# Getting Started with Nanuk MCP
 
-> **Quick Start**: Set up your Snowflake profile → Install SnowCLI Tools → Start using powerful data operations and MCP integration
+> **Quick Start**: Set up your Snowflake profile → Install Nanuk MCP → Start using powerful data operations and MCP integration
 
 ## Prerequisites
 
@@ -10,9 +10,9 @@
    - Install: https://www.python.org/downloads/
 
 2. **Snowflake CLI** (Official package - separate from this tool)
-   - Install: `pip install nanuk`
+   - Install: `pip install snowflake-cli-labs`
    - Check: `snow --version`
-   - Docs: https://docs.snowflake.com/en/developer-guide/nanuk/
+   - Docs: https://docs.snowflake.com/en/developer-guide/snowflake-cli/
    - Purpose: Manages Snowflake authentication profiles
 
 3. **Snowflake account** with appropriate permissions
@@ -23,7 +23,7 @@
 **Recommended**:
 4. **Private key file** (for key-pair authentication) or use other auth methods
 
-## Step 1: Install SnowCLI Tools
+## Step 1: Install Nanuk MCP
 
 ### Installation Methods
 
@@ -69,7 +69,7 @@ nanuk --profile my-profile catalog -d MY_DB
 
 ## Step 2: Set Up Your Snowflake Profile
 
-**This is the most critical step** - SnowCLI Tools requires a properly configured Snowflake CLI profile for authentication and connection management.
+**This is the most critical step** - Nanuk MCP requires a properly configured Snowflake CLI profile for authentication and connection management.
 
 ### Option A: Key-Pair Authentication (Recommended)
 
@@ -191,7 +191,7 @@ uv run nanuk --profile my-profile lineage MY_TABLE
 
 ```bash
 # Start the MCP server for AI assistants
-SNOWFLAKE_PROFILE=my-profile uv run nanuk mcp
+SNOWFLAKE_PROFILE=my-profile nanuk-mcp
 ```
 
 **Success indicators**:
@@ -300,7 +300,7 @@ uv run nanuk --profile my-profile lineage MY_IMPORTANT_TABLE --depth 2
 
 ```bash
 # 1. Start MCP server
-SNOWFLAKE_PROFILE=my-profile uv run nanuk mcp &
+SNOWFLAKE_PROFILE=my-profile nanuk-mcp &
 
 # 2. Configure your AI assistant (VS Code, Claude Code, etc.) to connect
 # 3. Use AI assistant to query data, analyze schemas, generate insights
@@ -316,18 +316,18 @@ uv run snow connection add --connection-name "dev-profile" ...
 uv run nanuk --profile dev-profile query "..."
 
 # 3. Switch between environments easily
-SNOWFLAKE_PROFILE=prod-profile uv run nanuk mcp
+SNOWFLAKE_PROFILE=prod-profile nanuk-mcp
 ```
 
 ## Architecture Overview
 
-SnowCLI Tools uses a **layered architecture**:
+Nanuk MCP uses a **layered architecture**:
 
 ```
 ┌─────────────────────────────────────┐
 │        Your Applications            │
 ├─────────────────────────────────────┤
-│     SnowCLI Tools MCP Server        │  ← AI Assistant Interface
+│     Nanuk MCP MCP Server        │  ← AI Assistant Interface
 │  (Catalog, Lineage, Dependencies)   │
 ├─────────────────────────────────────┤
 │      Snowflake Labs MCP             │  ← Authentication & Core Tools
@@ -430,7 +430,7 @@ Common permissions needed:
 uv add "mcp>=1.0.0" "fastmcp>=2.8.1" "snowflake-labs-mcp>=1.3.3"
 
 # Test with debug output
-SNOWFLAKE_PROFILE=my-profile uv run nanuk mcp --log-level DEBUG
+SNOWFLAKE_PROFILE=my-profile nanuk-mcp --log-level DEBUG
 ```
 
 ## Next Steps

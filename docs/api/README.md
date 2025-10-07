@@ -1,8 +1,8 @@
-# SnowCLI Tools MCP API Documentation
+# Nanuk MCP MCP API Documentation
 
 ## Overview
 
-SnowCLI Tools provides 11 MCP tools for Snowflake data operations, built on top of the official `snowflake-labs-mcp` service.
+Nanuk MCP provides 11 MCP tools for Snowflake data operations, built on top of the official `snowflake-labs-mcp` service.
 
 ## Quick Links
 

@@ -1,6 +1,6 @@
 # 5-Minute Quickstart
 
-Get SnowCLI Tools running in under 5 minutes! This tutorial assumes you have a Snowflake account and basic command-line experience.
+Get Nanuk MCP running in under 5 minutes! This tutorial assumes you have a Snowflake account and basic command-line experience.
 
 ## Prerequisites Check (30 seconds)
 
@@ -12,10 +12,10 @@ python --version
 snow --version
 
 # If not installed, install it:
-pip install nanuk
+pip install snowflake-cli-labs
 ```
 
-## Step 1: Install SnowCLI Tools (1 minute)
+## Step 1: Install Nanuk MCP (1 minute)
 
 ```bash
 # Install from PyPI
@@ -84,7 +84,7 @@ nanuk --profile quickstart lineage INFORMATION_SCHEMA.TABLES
 
 ### For AI Assistant Integration
 - Set up [MCP integration](mcp-integration.md) for Claude Code
-- Configure your AI assistant to use SnowCLI Tools
+- Configure your AI assistant to use Nanuk MCP
 - Explore [MCP tools](api/README.md#tools) available
 
 ### For Automation
@@ -120,7 +120,7 @@ nanuk --profile quickstart lineage INFORMATION_SCHEMA.TABLES
 ## Success!
 
 You've successfully:
-- ✅ Installed SnowCLI Tools
+- ✅ Installed Nanuk MCP
 - ✅ Configured Snowflake connection
 - ✅ Executed your first query
 - ✅ Built a data catalog

@@ -105,7 +105,7 @@ nanuk config status
 ### Step 3: Test MCP Server Startup
 ```bash
 # Start MCP server (should show validation success)
-nanuk mcp
+nanuk-mcp
 
 # Expected output:
 # ✓ Snowflake profile validation successful: quickstart
@@ -206,7 +206,7 @@ Try this step-by-step validation demo:
 
 1. **Start MCP server:**
    ```bash
-   nanuk mcp
+   nanuk-mcp
    ```
 
 2. **In your AI assistant, ask:**
@@ -239,7 +239,7 @@ Try this step-by-step validation demo:
 1. **Break the configuration intentionally:**
    ```bash
    export SNOWFLAKE_PROFILE=nonexistent-profile
-   nanuk mcp
+   nanuk-mcp
    ```
 
 2. **Observe clear error message:**
@@ -256,7 +256,7 @@ Try this step-by-step validation demo:
 3. **Fix the configuration:**
    ```bash
    export SNOWFLAKE_PROFILE=quickstart
-   nanuk mcp
+   nanuk-mcp
    ```
 
 ## 📋 Validation Checklist
@@ -271,7 +271,7 @@ Use this checklist to ensure your profile validation setup is working correctly:
 
 ### Validation Features
 - [ ] **Environment variable set**: `echo $SNOWFLAKE_PROFILE` shows your profile
-- [ ] **MCP server starts cleanly**: No errors during `nanuk mcp` startup
+- [ ] **MCP server starts cleanly**: No errors during `nanuk-mcp` startup
 - [ ] **Health check works**: AI assistant can check server health
 - [ ] **Profile diagnostics work**: AI assistant can validate profile configuration
 

@@ -1,6 +1,6 @@
-# SnowCLI Tools Architecture (v1.9.0)
+# Nanuk MCP Architecture (v1.9.0)
 
-> **Overview**: SnowCLI Tools uses a layered service architecture that provides both direct CLI access and AI assistant integration through MCP (Model Context Protocol).
+> **Overview**: Nanuk MCP uses a layered service architecture that provides both direct CLI access and AI assistant integration through MCP (Model Context Protocol).
 
 ## Architectural Principles
 
@@ -38,7 +38,7 @@
 
 ### Service Layer (`src/nanuk_mcp/service_layer/`)
 
-The service layer provides the core business logic for SnowCLI Tools operations:
+The service layer provides the core business logic for Nanuk MCP operations:
 
 ```python
 # Service interfaces are clean and focused
@@ -69,7 +69,7 @@ The MCP server provides AI assistant integration through a layered approach:
 ```python
 # Layered MCP Architecture
 ┌─────────────────────────────────────┐
-│     SnowCLI Tools MCP Layer         │
+│     Nanuk MCP MCP Layer         │
 │  • catalog, lineage, dependencies   │
 │  • Enhanced query tools             │
 │  • Custom diagnostics               │
@@ -119,7 +119,7 @@ nanuk catalog      # Data discovery operations
 nanuk lineage      # Lineage analysis
 nanuk depgraph     # Dependency mapping
 nanuk query        # SQL execution
-nanuk mcp          # MCP server for AI assistants
+nanuk-mcp          # MCP server for AI assistants
 ```
 
 ## Data Flow

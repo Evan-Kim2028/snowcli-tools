@@ -1,6 +1,6 @@
 # Error Catalog
 
-This document provides a comprehensive catalog of errors that can occur when using SnowCLI Tools, along with solutions and troubleshooting steps.
+This document provides a comprehensive catalog of errors that can occur when using Nanuk MCP, along with solutions and troubleshooting steps.
 
 ## Common Error Types
 
@@ -111,7 +111,7 @@ python --version
 # Check Snowflake CLI
 snow --version
 
-# Check SnowCLI Tools
+# Check Nanuk MCP
 nanuk --version
 ```
 
