@@ -150,7 +150,17 @@ def validate_profile(profile_name: str | None) -> str:
     available_profiles = get_available_profiles()
 
     if not available_profiles:
-        error_msg = "No Snowflake profiles found. Please run 'snow connection add' to create a profile."
+        error_msg = (
+            f"No Snowflake profiles found in {config_path}.\n\n"
+            "Quick fix:\n"
+            "  snow connection add \\\n"
+            "    --connection-name \"quickstart\" \\\n"
+            "    --account \"<your-account>.<region>\" \\\n"
+            "    --user \"<your-username>\" \\\n"
+            "    --password \\\n"
+            "    --warehouse \"<your-warehouse>\"\n\n"
+            "Don't know your account identifier? See: docs/getting-started.md#finding-your-account-identifier"
+        )
         raise ProfileValidationError(
             error_msg,
             profile_name=profile_name,
@@ -167,8 +177,13 @@ def validate_profile(profile_name: str | None) -> str:
 
         available_list = sorted(available_profiles)
         error_msg = (
-            "No Snowflake profile specified and no valid default found. "
-            "Please set SNOWFLAKE_PROFILE environment variable or pass --profile."
+            "No Snowflake profile specified and no valid default found.\n\n"
+            f"Available profiles: {', '.join(available_list)}\n\n"
+            "Quick fix (choose one):\n"
+            f"  1. Set environment variable: export SNOWFLAKE_PROFILE=\"{available_list[0]}\"\n"
+            f"  2. Pass profile flag: nanuk-mcp --profile \"{available_list[0]}\"\n"
+            f"  3. Set default: snow connection set-default \"{available_list[0]}\"\n\n"
+            f"Config location: {config_path}"
         )
         raise ProfileValidationError(
             error_msg,
@@ -181,8 +196,13 @@ def validate_profile(profile_name: str | None) -> str:
     if profile_name not in available_profiles:
         available_list = sorted(available_profiles)
         error_msg = (
-            f"Snowflake profile '{profile_name}' not found. "
-            "Please check your profile name or run 'snow connection list' to see available profiles."
+            f"Snowflake profile '{profile_name}' not found.\n\n"
+            f"Available profiles ({len(available_list)}): {', '.join(available_list)}\n\n"
+            "Quick fix:\n"
+            f"  1. Use existing profile: nanuk-mcp --profile \"{available_list[0] if available_list else 'PROFILE_NAME'}\"\n"
+            "  2. Create new profile: snow connection add --connection-name \"" + profile_name + "\" ...\n"
+            "  3. List all profiles: snow connection list\n\n"
+            f"Config location: {config_path}"
         )
         raise ProfileValidationError(
             error_msg,

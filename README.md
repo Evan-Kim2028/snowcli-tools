@@ -57,7 +57,48 @@ uv sync
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for complete development setup.
 
-## Quick Start
+## ⚡ 5-Minute Quickstart
+
+Get started in 5 minutes:
+
+```bash
+# 1. Install (1 minute)
+pip install nanuk-mcp snowflake-cli-labs
+
+# 2. Create Snowflake profile (2 minutes)
+snow connection add \
+  --connection-name "quickstart" \
+  --account "<your-account>.<region>" \
+  --user "<your-username>" \
+  --password \
+  --warehouse "<your-warehouse>"
+# Enter password when prompted
+
+# 3. Configure your MCP client (1 minute)
+# Add to your MCP client config (e.g., Claude Code, Continue, Zed):
+{
+  "mcpServers": {
+    "snowflake": {
+      "command": "nanuk-mcp",
+      "args": ["--profile", "quickstart"]
+    }
+  }
+}
+
+# 4. Test it! (1 minute)
+# In your AI assistant, ask:
+# "Show me my Snowflake databases"
+```
+
+**Success!** 🎉 Your AI can now query Snowflake.
+
+**New to Snowflake?** See [Parameter Guide](docs/getting-started.md#snowflake-parameters) for help finding your account identifier and understanding which parameters are required.
+
+---
+
+## Complete Setup Guide
+
+For production use with key-pair authentication:
 
 ```bash
 # 1. Set up your Snowflake profile
@@ -65,13 +106,15 @@ snow connection add --connection-name "my-profile" \
   --account "your-account.region" --user "your-username" \
   --private-key-file "/path/to/key.p8" --database "DB" --warehouse "WH"
 
-# 2. Start MCP server for AI assistant integration
+# 2. Start MCP server
 SNOWFLAKE_PROFILE=my-profile nanuk-mcp
 
 # Expected output:
 # ✓ MCP server started successfully
 # ✓ Listening on stdio for MCP requests
 ```
+
+See [Getting Started Guide](docs/getting-started.md) for detailed setup instructions.
 
 ## What is Nanuk?
 

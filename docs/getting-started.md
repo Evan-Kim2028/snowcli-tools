@@ -71,7 +71,89 @@ nanuk --profile my-profile catalog -d MY_DB
 
 **This is the most critical step** - Nanuk MCP requires a properly configured Snowflake CLI profile for authentication and connection management.
 
-### Option A: Key-Pair Authentication (Recommended)
+### Snowflake Parameters
+
+Understanding which parameters are required vs optional:
+
+| Parameter | Required | When Needed | Purpose | Example |
+|-----------|----------|-------------|---------|---------|
+| `--connection-name` | ✅ Always | Profile creation | Name for this connection profile | `"my-snowflake"` |
+| `--account` | ✅ Always | Authentication | Your Snowflake account identifier | `"mycompany-prod.us-east-1"` |
+| `--user` | ✅ Always | Authentication | Your Snowflake username | `"alex.chen"` |
+| **Authentication** (pick ONE) | | | | |
+| `--password` | 🟡 Pick one | Password auth | Interactive password prompt | (prompts securely) |
+| `--private-key-file` | 🟡 Pick one | Key-pair auth | Path to private key file | `"~/.snowflake/key.pem"` |
+| `--authenticator` | 🟡 Pick one | SSO/OAuth | Authentication method | `"externalbrowser"` |
+| **Context** (optional defaults) | | | | |
+| `--warehouse` | 🟢 Optional* | Running queries | Default warehouse for queries | `"COMPUTE_WH"` |
+| `--database` | 🟢 Optional | Database queries | Default database context | `"ANALYTICS_DB"` |
+| `--schema` | 🟢 Optional | Schema queries | Default schema context | `"PUBLIC"` |
+| `--role` | 🟢 Optional | Access control | Default role to assume | `"ANALYST"` |
+
+**Legend**:
+- ✅ **Required**: Must provide
+- 🟡 **Authentication** (pick ONE): Must choose one method
+- 🟢 **Optional**: Can omit; set as default or specify per-query
+
+**Important**: `--warehouse` is optional for connection but **required for running queries**. Either:
+1. Set in profile (recommended): Always available
+2. Specify per-query: More flexible but must specify each time
+
+### Finding Your Account Identifier
+
+**Your Snowflake URL**:
+```
+https://abc12345.us-east-1.snowflakecomputing.com
+          ↓
+```
+
+**Your account identifier**:
+```
+abc12345.us-east-1
+```
+(Remove `.snowflakecomputing.com` suffix)
+
+**Common formats**:
+- Legacy: `abc12345.us-east-1`
+- Org-based: `myorg-myaccount.us-east-1`
+- With cloud: `myaccount.us-east-1.aws`
+
+**Don't know your account?** Ask your Snowflake admin or check the bottom-left corner of the Snowflake web UI.
+
+### Quick Setup: Minimal Profile (Fastest)
+
+For testing or getting started quickly:
+
+```bash
+snow connection add \
+  --connection-name "test" \
+  --account "<your-account>.<region>" \
+  --user "<your-username>" \
+  --password \
+  --warehouse "<your-warehouse>"
+```
+
+**Example**:
+```bash
+snow connection add \
+  --connection-name "test" \
+  --account "mycompany-prod.us-east-1" \
+  --user "alex.chen" \
+  --password \
+  --warehouse "COMPUTE_WH"
+# Password will be prompted securely
+```
+
+**What you get**:
+- ✅ Working connection in 2 minutes
+- ✅ Can run queries immediately
+- ⚠️ Password auth (less secure - upgrade to key-pair for production)
+
+**Upgrade later**: Follow Option A below to add key-pair authentication.
+
+---
+
+### Option A: Key-Pair Authentication (Recommended for Production)
 
 #### Step 1: Generate RSA Key Pair
 
