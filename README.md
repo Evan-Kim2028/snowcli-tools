@@ -2,9 +2,9 @@
 
 > 🐻‍❄️ **AI-first Snowflake operations via Model Context Protocol**
 
-Nanuk (Inuit for "polar bear") brings powerful Snowflake data operations to your AI assistants through the Model Context Protocol (MCP).
+Nanuk (Inuit for "polar bear") enhances the official [Snowflake Labs MCP](https://github.com/Snowflake-Labs/mcp) with more features for agentic native workflows.
 
-## ✨ v2.0.0 Features
+## ✨ Features
 
 - 🛡️ **SQL Safety:** Blocks destructive operations (DELETE, DROP, TRUNCATE) with safe alternatives
 - 🧠 **Intelligent Errors:** Compact mode (default) saves 70% tokens; verbose mode for debugging
@@ -20,19 +20,6 @@ Nanuk (Inuit for "polar bear") brings powerful Snowflake data operations to your
 
 ---
 
-## 🔄 Migrating from snowcli-tools?
-
-This package was formerly known as `snowcli-tools`. See the [Migration Guide](docs/migration-from-snowcli-tools.md) for step-by-step instructions.
-
-**Quick migration:**
-```bash
-pip uninstall snowcli-tools
-uv pip install nanuk-mcp
-# Update imports: from snowcli_tools → from nanuk_mcp
-```
-
----
-
 ## Installation
 
 ### For End Users (Recommended)
@@ -42,24 +29,7 @@ uv pip install nanuk-mcp
 uv pip install nanuk-mcp
 ```
 
-**When to use**: Production use, stable releases, most users
-
-### For Developers
-
-**Install from source for latest features**:
-```bash
-git clone https://github.com/Evan-Kim2028/nanuk-mcp.git
-cd nanuk-mcp
-uv sync
-```
-
-**When to use**: Testing new features, contributing, custom modifications
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for complete development setup.
-
-## ⚡ 5-Minute Quickstart
-
-Get started in 5 minutes:
+## ⚡ Quickstart
 
 ```bash
 # 1. Install (1 minute)
@@ -96,9 +66,9 @@ snow connection add \
 
 ---
 
-## Complete Setup Guide
+## Complete Setup Guide key-pair authentication
 
-For production use with key-pair authentication:
+For production with key-pair authentication:
 
 ```bash
 # 1. Set up your Snowflake profile
@@ -116,44 +86,6 @@ SNOWFLAKE_PROFILE=my-profile nanuk-mcp
 
 See [Getting Started Guide](docs/getting-started.md) for detailed setup instructions.
 
-## What is Nanuk?
-
-Nanuk is a Model Context Protocol (MCP) server that provides AI assistants with powerful Snowflake operations:
-
-- 🔍 **Query execution and data exploration**
-- 📊 **Table profiling and statistics**
-- 🔗 **Data lineage tracking**
-- 📚 **Catalog building and metadata**
-- ⚡ **Performance optimized for AI workflows**
-
-## Core Features
-
-### 📊 **Data Discovery & Analysis**
-- **Automated Catalog**: Complete metadata extraction from databases, schemas, tables
-- **Advanced Lineage**: Column-level lineage tracking with impact analysis
-- **Dependency Mapping**: Visual object relationships and circular dependency detection
-- **Table Profiling**: Statistical analysis and data quality insights
-
-### 🔍 **Query Operations**
-- **SQL Execution**: Run queries directly from AI assistants
-- **Safety Validation**: Blocks destructive operations by default
-- **Timeout Control**: Agent-controlled query timeouts (1-3600s)
-- **Result Formatting**: Optimized output for AI consumption
-
-### 🤖 **AI Assistant Integration**
-- **MCP Protocol**: Standard Model Context Protocol support
-- **Claude Code**: Native integration with Claude Code
-- **Error Handling**: Compact (70% token savings) or verbose modes
-- **Async Operations**: Non-blocking query execution
-
-### 🛡️ **Safety & Reliability**
-- **Destructive Operation Protection**: Prevents accidental data deletion
-- **Circuit Breaker**: Automatic failover for resilience
-- **Connection Pooling**: Efficient resource management
-- **Error Recovery**: Graceful error handling with suggestions
-
-## Command Quick Reference
-
 ### MCP Server (MCP-Only Interface)
 
 | Task | Command | Notes |
@@ -164,41 +96,27 @@ Nanuk is a Model Context Protocol (MCP) server that provides AI assistants with 
 
 > 🐻‍❄️ **MCP-Only Architecture**
 > Nanuk is MCP-only. All functionality is available through MCP tools.
-> CLI interface was removed in v2.0.0. See [CLI Migration Guide](docs/cli-to-mcp-migration.md) if upgrading.
 
 **Profile Selection Options**:
 - **Command flag**: `nanuk-mcp --profile PROFILE_NAME` (explicit)
 - **Environment variable**: `export SNOWFLAKE_PROFILE=PROFILE_NAME` (session)
 - **Default profile**: Set with `snow connection set-default PROFILE_NAME` (implicit)
 
-## MCP Integration
 
-### Claude Code Integration
+## Available MCP Tools
 
-Add to your Claude Code configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "nanuk": {
-      "command": "nanuk-mcp",
-      "args": ["--profile", "my-profile"]
-    }
-  }
-}
-```
-
-### Available MCP Tools
-
-- `execute_query` - Execute SQL queries
+### Nanuk MCP Tools
+- `execute_query` - Execute SQL queries with safety checks
 - `preview_table` - Preview table contents
-- `profile_table` - Get table statistics
 - `build_catalog` - Build metadata catalog
 - `get_catalog_summary` - Get catalog overview
 - `query_lineage` - Query data lineage
 - `build_dependency_graph` - Build dependency graph
 - `test_connection` - Test Snowflake connection
 - `health_check` - Get system health status
+
+### Upstream Snowflake Labs MCP Tools
+Nanuk MCP also provides access to all tools from the [official Snowflake Labs MCP](https://github.com/Snowflake-Labs/mcp), including Cortex AI and object management tools.
 
 See [MCP Documentation](docs/mcp/mcp_server_user_guide.md) for details.
 
@@ -240,18 +158,6 @@ catalog = catalog_service.build_catalog(database="MY_DB")
 }
 ```
 
-### Table Profiling
-
-```python
-# Get table statistics
-{
-  "tool": "profile_table",
-  "arguments": {
-    "table_name": "MY_DATABASE.MY_SCHEMA.USERS"
-  }
-}
-```
-
 ### Data Lineage
 
 ```python
@@ -265,70 +171,3 @@ catalog = catalog_service.build_catalog(database="MY_DB")
   }
 }
 ```
-
-## Why "Nanuk"?
-
-- 🐻‍❄️ **Nanuk** (polar bear in Inuit) connects to Snowflake's arctic theme
-- 🎯 **MCP-first**: Name reflects our focus on Model Context Protocol
-- ✨ **Unique & memorable**: Stands out in the MCP ecosystem
-- 🚀 **Future-proof**: Positions as the premier Snowflake MCP provider
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue**: "No module named 'nanuk_mcp'"
-**Solution**: Ensure you've installed the package: `uv pip install nanuk-mcp`
-
-**Issue**: "Command 'nanuk-mcp' not found"
-**Solution**: Reinstall package or check PATH: `uv pip install --force-reinstall nanuk-mcp`
-
-**Issue**: MCP server won't start
-**Solution**: Check Snowflake profile is configured and verify MCP server setup in Claude Code settings
-
-See [Troubleshooting Guide](docs/troubleshooting.md) for more solutions.
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Development Setup
-
-```bash
-# Clone repository
-git clone https://github.com/Evan-Kim2028/nanuk-mcp.git
-cd nanuk-mcp
-
-# Install dependencies
-uv sync
-
-# Install pre-commit hooks
-pre-commit install
-
-# Run tests
-pytest tests/
-
-# Run linting
-ruff check .
-```
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Support
-
-- 🐛 **Bug reports**: [Open an issue](https://github.com/Evan-Kim2028/nanuk-mcp/issues)
-- 💬 **Questions**: [Discussions](https://github.com/Evan-Kim2028/nanuk-mcp/discussions)
-- 📧 **Email**: ekcopersonal@gmail.com
-
-## Acknowledgments
-
-Built with:
-- [Snowflake Connector for Python](https://github.com/snowflakedb/snowflake-connector-python)
-- [Model Context Protocol](https://modelcontextprotocol.io)
-- [FastMCP](https://github.com/jlowin/fastmcp)
-
----
-
-**🐻‍❄️ Nanuk MCP - Bringing Snowflake to your AI assistants**
