@@ -38,8 +38,8 @@ Safe alternatives:
 
 **Solutions:**
 1. Use suggested safe alternative (soft delete, view creation)
-2. Enable in config: Set `delete: true` in mcp_service_config.json
-3. Verify necessity of dangerous operation
+2. Verify necessity of dangerous operation
+3. Note: v2.0+ uses SQL safety checks by default - destructive operations are blocked
 
 **Related Tools:** execute_query
 
