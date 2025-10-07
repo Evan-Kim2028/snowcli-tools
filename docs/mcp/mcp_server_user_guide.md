@@ -2,7 +2,7 @@
 
 ## What is the MCP Server?
 
-The MCP (Model Context Protocol) server is an optional feature of nanuk-mcp that enables AI assistants to interact with your Snowflake database. It acts as a bridge between natural language requests and structured database operations.
+The MCP (Model Context Protocol) server is the primary interface for Nanuk MCP. It enables AI assistants to interact with your Snowflake database, acting as a bridge between natural language requests and structured database operations.
 
 ### Key Benefits
 
@@ -27,13 +27,16 @@ For example, asking "What tables are in my database?" triggers the AI to use the
 
 ### Prerequisites
 
-1. **Install with MCP Support**: The MCP server requires the optional `mcp` extra:
+1. **Install Nanuk MCP**: All MCP functionality is included by default:
    ```bash
-   # Install with MCP support
-   uv add nanuk-mcp[mcp]
+   # Standard installation (includes MCP server)
+   pip install nanuk-mcp
    ```
 
-   If you get an ImportError when running `nanuk-mcp`, install the extra as shown above.
+   Or with uv:
+   ```bash
+   uv pip install nanuk-mcp
+   ```
 
 2. **Configure Snowflake Connection**: Set up a Snowflake CLI connection profile
    ```bash

@@ -284,11 +284,11 @@ When updating the MCP server:
 - [ ] Check for security implications of changes
 - [ ] Update examples and configuration samples
 
-### Optional Feature Maintenance
+### Additional Checks
 
-Since MCP is now an optional feature, also check:
+When making changes, also verify:
 
-- [ ] Does the change affect base functionality? (Should be rare)
+- [ ] Does the change affect core service layer? (Review impact)
 - [ ] Update installation documentation if needed
 - [ ] Test production install (`pip install nanuk-mcp`)
 - [ ] Verify graceful error handling for missing dependencies
