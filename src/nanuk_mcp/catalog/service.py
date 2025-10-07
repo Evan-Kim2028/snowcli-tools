@@ -545,7 +545,6 @@ def export_sql_from_catalog(
     Returns:
         Dictionary with 'written' and 'missing' counts
     """
-    # cli = SnowCLI()  # TODO: implement full SQL export
     in_root = Path(input_dir)
     sql_root = Path(output_dir) if output_dir else in_root / "sql"
     sql_root.mkdir(parents=True, exist_ok=True)

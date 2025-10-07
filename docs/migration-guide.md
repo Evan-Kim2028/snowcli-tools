@@ -101,12 +101,9 @@ Add to your AI assistant configuration:
 ```json
 {
   "mcpServers": {
-    "nanuk-mcp": {
-      "command": "nanuk",
-      "args": ["mcp"],
-      "env": {
-        "SNOWFLAKE_PROFILE": "my-profile"
-      }
+    "snowflake": {
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"]
     }
   }
 }
