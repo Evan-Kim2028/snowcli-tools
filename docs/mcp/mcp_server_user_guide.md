@@ -55,17 +55,17 @@ For example, asking "What tables are in my database?" triggers the AI to use the
 
 ### Starting the MCP Server
 
-#### Option 1: CLI Command (Recommended)
+**For AI Assistant Integration** (Recommended):
+
+The MCP server starts automatically when your AI assistant connects. Simply configure your AI assistant's MCP settings (see Configuration section below) and the server will start on-demand.
+
+**For Manual Testing** (Advanced):
+
 ```bash
 nanuk-mcp
 ```
 
-#### Option 2: Direct Python Example
-```bash
-uv run python examples/run_mcp_server.py
-```
-
-The server will display usage information and available tools. Press `Ctrl+C` to stop the server.
+This starts the server in stdio mode, which is useful for debugging but not needed for normal AI assistant usage. Press `Ctrl+C` to stop the server.
 
 ## Available Tools
 

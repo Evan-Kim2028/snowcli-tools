@@ -45,6 +45,32 @@ uv sync
 
 **Critical**: Nanuk MCP uses Snowflake CLI profiles for authentication.
 
+### Snowflake Parameters
+
+Before creating your profile, gather these Snowflake parameters:
+
+| Parameter | Required | Description | How to Find | Example |
+|-----------|----------|-------------|-------------|---------|
+| **Account Identifier** | Yes | Your Snowflake account location | Snowflake URL (remove `.snowflakecomputing.com`) | `abc12345.us-east-1` |
+| **Username** | Yes | Your Snowflake username | From your Snowflake admin or login | `alex.chen` |
+| **Password or Key** | Yes | Authentication credential | Password you set, or RSA key file path | `~/.snowflake/key.pem` |
+| **Warehouse** | Recommended | Compute cluster for queries | Snowflake UI → Admin → Warehouses | `COMPUTE_WH` |
+| **Database** | Optional | Default database | Snowflake UI → Data → Databases | `MY_DB` |
+| **Schema** | Optional | Default schema | Inside database view | `PUBLIC` |
+
+**Finding Your Account Identifier**:
+- Your Snowflake URL: `https://abc12345.us-east-1.snowflakecomputing.com`
+- Your account identifier: `abc12345.us-east-1` (the part before `.snowflakecomputing.com`)
+- Format: `<orgname>-<account>.<region>` or `<account>.<region>` (for older accounts)
+
+**Finding Your Warehouse**:
+- Trial accounts: Usually `COMPUTE_WH` (default warehouse)
+- Enterprise: Check Snowflake UI → Admin → Warehouses
+- Ask your Snowflake admin if unsure
+- Common names: `COMPUTE_WH`, `WH_DEV`, `ANALYTICS_WH`
+
+**Don't have this info?** Contact your Snowflake administrator or check your trial account welcome email.
+
 ### Create a Snowflake Profile
 
 ```bash
@@ -80,30 +106,42 @@ Add nanuk-mcp to your AI assistant's MCP configuration.
 
 Edit your Claude Code MCP settings (`~/.config/claude-code/mcp.json`):
 
+**For PyPI installation** (recommended):
 ```json
 {
   "mcpServers": {
-    "nanuk-mcp": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/path/to/nanuk-mcp",
-        "run",
-        "nanuk-mcp"
-      ],
-      "env": {
-        "SNOWFLAKE_PROFILE": "my-profile"
-      }
+    "snowflake": {
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"]
     }
   }
 }
 ```
 
-**For PyPI installation**, use:
+**For development installation**:
 ```json
 {
   "mcpServers": {
-    "nanuk-mcp": {
+    "snowflake": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/path/to/nanuk-mcp",
+        "run",
+        "nanuk-mcp",
+        "--profile",
+        "my-profile"
+      ]
+    }
+  }
+}
+```
+
+**Alternative: Environment variable** (for advanced users):
+```json
+{
+  "mcpServers": {
+    "snowflake": {
       "command": "nanuk-mcp",
       "env": {
         "SNOWFLAKE_PROFILE": "my-profile"
@@ -115,9 +153,24 @@ Edit your Claude Code MCP settings (`~/.config/claude-code/mcp.json`):
 
 ### Other MCP Clients
 
-For other MCP-compatible clients, use similar configuration pointing to:
-- **Command**: `nanuk-mcp` (PyPI) or `uv run nanuk-mcp` (dev)
-- **Environment**: Set `SNOWFLAKE_PROFILE` to your profile name
+For other MCP-compatible clients (Cline, Continue, Zed, etc.), use similar configuration:
+
+**PyPI installation**:
+```json
+{
+  "mcpServers": {
+    "snowflake": {
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"]
+    }
+  }
+}
+```
+
+**Profile selection options**:
+- `--profile` flag (recommended): `"args": ["--profile", "my-profile"]`
+- Environment variable: `"env": {"SNOWFLAKE_PROFILE": "my-profile"}`
+- Default profile: Omit args/env if you set a default with `snow connection set-default`
 
 ## Step 4: Start Using MCP Tools
 
