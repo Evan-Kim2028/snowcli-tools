@@ -70,7 +70,7 @@ uv run snow connection add \
 uv run snow connection list
 
 # Test your profile works
-uv run snowflake-cli verify -p my-profile
+uv run snowflake-cli -p my-profile verify
 ```
 
 **Expected output**: ✅ "Verified Snow CLI and profile 'my-profile'"
@@ -81,16 +81,16 @@ uv run snowflake-cli verify -p my-profile
 
 ```bash
 # Execute SQL queries
-uv run snowflake-cli query "SELECT CURRENT_VERSION()" -p my-profile
+uv run snowflake-cli -p my-profile query "SELECT CURRENT_VERSION()"
 
 # Build data catalog
-uv run snowflake-cli catalog -p my-profile
+uv run snowflake-cli -p my-profile catalog
 
 # Generate dependency graphs
-uv run snowflake-cli depgraph -p my-profile
+uv run snowflake-cli -p my-profile depgraph
 
 # Analyze lineage
-uv run snowflake-cli lineage MY_TABLE -p my-profile
+uv run snowflake-cli -p my-profile lineage MY_TABLE
 ```
 
 ### MCP Server (AI Assistant Integration)
@@ -140,13 +140,13 @@ lineage:
 
 ```bash
 # 1. Build comprehensive catalog
-uv run snowflake-cli catalog -p my-profile
+uv run snowflake-cli -p my-profile catalog
 
 # 2. Explore dependencies
-uv run snowflake-cli depgraph -p my-profile --format dot
+uv run snowflake-cli -p my-profile depgraph --format dot
 
 # 3. Analyze specific table lineage
-uv run snowflake-cli lineage MY_IMPORTANT_TABLE -p my-profile --depth 2
+uv run snowflake-cli -p my-profile lineage MY_IMPORTANT_TABLE --depth 2
 ```
 
 ### 2. AI Assistant Integration Workflow
@@ -166,7 +166,7 @@ SNOWFLAKE_PROFILE=my-profile uv run snowflake-cli mcp &
 uv run snow connection add --connection-name "dev-profile" ...
 
 # 2. Run operations with explicit profile
-uv run snowflake-cli query "..." -p dev-profile
+uv run snowflake-cli -p dev-profile query "..."
 
 # 3. Switch between environments easily
 SNOWFLAKE_PROFILE=prod-profile uv run snowflake-cli mcp

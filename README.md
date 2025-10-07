@@ -29,11 +29,11 @@ snow connection add --connection-name "my-profile" \
   --private-key-file "/path/to/key.p8" --database "DB" --warehouse "WH"
 
 # 3. Verify connection
-snowflake-cli verify -p my-profile
+snowflake-cli -p my-profile verify
 
 # 4. Start exploring your data
-snowflake-cli catalog -p my-profile
-snowflake-cli lineage MY_TABLE -p my-profile
+snowflake-cli -p my-profile catalog
+snowflake-cli -p my-profile lineage MY_TABLE
 
 # 5. Enable AI assistant integration
 SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
@@ -88,13 +88,13 @@ SnowCLI Tools uses a **layered architecture** that combines official Snowflake t
 ### Data Discovery Workflow
 ```bash
 # Build comprehensive catalog
-snowflake-cli catalog -p prod
+snowflake-cli -p prod catalog
 
 # Map dependencies
-snowflake-cli depgraph -p prod --format dot
+snowflake-cli -p prod depgraph --format dot
 
 # Analyze critical table lineage
-snowflake-cli lineage CUSTOMER_ORDERS -p prod --depth 3
+snowflake-cli -p prod lineage CUSTOMER_ORDERS --depth 3
 ```
 
 ### AI Assistant Integration
@@ -111,9 +111,9 @@ SNOWFLAKE_PROFILE=prod snowflake-cli mcp
 ### Multi-Environment Development
 ```bash
 # Switch between environments easily
-snowflake-cli query "SELECT COUNT(*) FROM users" -p dev
-snowflake-cli query "SELECT COUNT(*) FROM users" -p staging
-snowflake-cli query "SELECT COUNT(*) FROM users" -p prod
+snowflake-cli -p dev query "SELECT COUNT(*) FROM users"
+snowflake-cli -p staging query "SELECT COUNT(*) FROM users"
+snowflake-cli -p prod query "SELECT COUNT(*) FROM users"
 ```
 
 ## Getting Started
@@ -154,7 +154,7 @@ snow connection add --connection-name "my-profile" \
   --authenticator "externalbrowser"
 
 # Verify setup
-snowflake-cli verify -p my-profile
+snowflake-cli -p my-profile verify
 ```
 
 ## Documentation

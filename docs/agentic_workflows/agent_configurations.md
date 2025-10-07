@@ -304,7 +304,7 @@ While agents have standard workflows, they adapt to:
 
 **Solutions**:
 1. Verify Snowflake profile has correct permissions
-2. Check catalog was built recently: `snowflake-cli catalog -p profile`
+2. Check catalog was built recently: `snowflake-cli -p profile catalog`
 3. Ensure database/schema contain expected Sui data
 4. Manually verify tables exist: `execute_query "SHOW TABLES"`
 

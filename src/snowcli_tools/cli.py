@@ -53,7 +53,7 @@ console = Console()
     type=click.Path(exists=True),
     help="Path to configuration file",
 )
-@click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
+@click.option("--profile", "-p", "profile", help="Snowflake CLI profile name (place before subcommand)")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.version_option(version="1.6.0")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool) -> None:

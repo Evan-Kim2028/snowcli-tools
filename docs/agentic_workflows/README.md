@@ -248,8 +248,8 @@ Stop when <100ms avg query time achieved"
 
 **Solution**:
 ```
-1. Verify profile: snowflake-cli verify -p profile-name
-2. Check catalog: snowflake-cli catalog -p profile-name
+1. Verify profile: snowflake-cli -p profile-name verify
+2. Check catalog: snowflake-cli -p profile-name catalog
 3. List tables manually: execute_query "SHOW TABLES"
 4. Verify permissions on INFORMATION_SCHEMA
 ```
