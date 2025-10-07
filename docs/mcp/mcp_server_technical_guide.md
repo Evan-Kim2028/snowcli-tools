@@ -94,7 +94,7 @@ graph LR
    ```python
    def _analyze_performance(self, query: str, database: Optional[str] = None) -> str:
        """Analyze query performance."""
-       # Implementation that calls the CLI functionality
+       # Implementation that calls the service layer
        return analyze_query_performance(query, database)
    ```
 
@@ -275,7 +275,7 @@ export NANUK_MCP_DEBUG=1
 
 When updating the MCP server:
 
-- [ ] Update tool schemas for any modified CLI functionality
+- [ ] Update tool schemas for any modified service methods
 - [ ] Add tests for new or modified tools
 - [ ] Update documentation (both user and technical)
 - [ ] Verify all existing tests still pass
@@ -290,8 +290,8 @@ Since MCP is now an optional feature, also check:
 
 - [ ] Does the change affect base functionality? (Should be rare)
 - [ ] Update installation documentation if needed
-- [ ] Test both base install (`pip install nanuk-mcp`) and full install (`pip install nanuk-mcp[mcp]`)
-- [ ] Verify graceful ImportError handling in CLI
-- [ ] Update CI to test both installation modes
+- [ ] Test production install (`pip install nanuk-mcp`)
+- [ ] Verify graceful error handling for missing dependencies
+- [ ] Update CI to test installation modes
 
-This ensures the MCP server stays synchronized with the main CLI functionality and provides a consistent experience across all interfaces.
+This ensures the MCP server stays synchronized with the service layer and provides a consistent experience.

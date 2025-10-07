@@ -262,11 +262,11 @@ BATCH_SIZE = 1000           # Objects per batch
 ### Installation Modes
 
 ```
-Base Installation (Core CLI only)
+Standard Installation (includes MCP)
     pip install nanuk-mcp
 
-Full Installation (With MCP)
-    pip install nanuk-mcp[mcp]
+Development Installation
+    pip install nanuk-mcp[dev]
 
 Development Installation
     uv sync --dev
@@ -276,8 +276,8 @@ Development Installation
 ### Runtime Dependencies
 
 ```
-nanuk-mcp[mcp]
-    ├── nanuk (>= 2.0.0)    # Official CLI
+nanuk-mcp
+    ├── fastmcp (>= 2.8.1)  # MCP framework
     ├── mcp (>= 1.0.0)               # Protocol implementation
     ├── sqlglot (>= 27.16.3)         # SQL parsing
     ├── pyvis (>= 0.3.2)             # Graph visualization
