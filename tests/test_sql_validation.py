@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from snowcli_tools.config import SQLPermissions
-from snowcli_tools.sql_validation import (
+from nanuk_mcp.config import SQLPermissions
+from nanuk_mcp.sql_validation import (
     extract_table_name,
     generate_sql_alternatives,
     get_sql_statement_type,

@@ -1,14 +1,14 @@
 [project]
-name = "snowcli-tools"
-version = "1.9.0"
-description = "Snowflake CLI Tools: generate a Data Catalog and Dependency Graph on top of the official Snowflake CLI; includes parallel query helpers, advanced lineage features, SQL safety validation, and agent-first error handling"
+name = "nanuk-mcp"
+version = "2.0.0"
+description = "Nanuk MCP - Snowflake MCP Server for agentic native workflows"
 readme = "README.md"
 authors = [
     { name = "Evan Kim", email = "ekcopersonal@gmail.com" }
 ]
 requires-python = ">=3.12"
+keywords = ["snowflake", "mcp", "ai", "data", "analytics", "model-context-protocol"]
 dependencies = [
-    "click>=8.0.0",
     "rich>=13.0.0",
     "pyyaml>=6.0.0",
     "snowflake-cli>=2.0.0",
@@ -22,20 +22,15 @@ dependencies = [
     "pydantic>=2.7.0",
 ]
 
-[project.optional-dependencies]
-mcp = [
-    "mcp>=1.0.0",
-    "fastmcp>=2.8.1",
-    "snowflake-labs-mcp>=1.3.3",
-]
+# MCP dependencies are included by default - no separate installation needed
 
 [project.scripts]
-snowflake-cli = "snowcli_tools.cli:main"
+nanuk-mcp = "nanuk_mcp.mcp_server:main"
 
 [project.urls]
-Homepage = "https://github.com/Evan-Kim2028/snowcli-tools"
-Repository = "https://github.com/Evan-Kim2028/snowcli-tools"
-Documentation = "https://github.com/Evan-Kim2028/snowcli-tools#readme"
+Homepage = "https://github.com/Evan-Kim2028/nanuk-mcp"
+Repository = "https://github.com/Evan-Kim2028/nanuk-mcp"
+Documentation = "https://github.com/Evan-Kim2028/nanuk-mcp#readme"
 
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]

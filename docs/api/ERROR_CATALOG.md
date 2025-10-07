@@ -1,6 +1,6 @@
 # Error Catalog
 
-Complete reference for snowcli-tools errors and solutions.
+Complete reference for nanuk-mcp errors and solutions.
 
 ## ValueError Errors
 
@@ -38,8 +38,8 @@ Safe alternatives:
 
 **Solutions:**
 1. Use suggested safe alternative (soft delete, view creation)
-2. Enable in config: Set `delete: true` in mcp_service_config.json
-3. Verify necessity of dangerous operation
+2. Verify necessity of dangerous operation
+3. Note: v2.0+ uses SQL safety checks by default - destructive operations are blocked
 
 **Related Tools:** execute_query
 
@@ -289,4 +289,4 @@ check_profile_config()  # Returns:
 ---
 
 **Last Updated:** December 2024
-**Version:** v1.8.0
+**Version:** v2.0.0

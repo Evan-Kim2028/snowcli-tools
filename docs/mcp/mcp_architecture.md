@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MCP (Model Context Protocol) server in snowcli-tools provides a structured interface between AI assistants and Snowflake databases. This document details the complete architecture, data flow, and implementation patterns.
+The MCP (Model Context Protocol) server in nanuk-mcp provides a structured interface between AI assistants and Snowflake databases. This document details the complete architecture, data flow, and implementation patterns.
 
 ## System Components
 
@@ -16,7 +16,7 @@ The MCP server implements the Model Context Protocol specification, which define
 ### 2. Server Implementation
 
 ```
-src/snowcli_tools/mcp_server.py
+src/nanuk_mcp/mcp_server.py
 ├── SnowflakeMCPServer (Main Class)
 │   ├── __init__()           # Initialize server, CLI wrapper, config
 │   ├── run()                # Async server lifecycle
@@ -34,7 +34,7 @@ src/snowcli_tools/mcp_server.py
 
 ### 3. Integration Points
 
-The MCP server integrates with multiple snowcli-tools components:
+The MCP server integrates with multiple nanuk-mcp components:
 
 ```
 MCP Server
@@ -89,7 +89,7 @@ Each tool follows this execution pattern:
    - Use profile defaults otherwise
 
 3. **Operation Execution**
-   - Call underlying snowcli-tools function
+   - Call underlying nanuk-mcp function
    - Handle errors gracefully
 
 4. **Response Formatting**
@@ -186,7 +186,7 @@ with ThreadPoolExecutor(max_workers=concurrency) as executor:
 ### Authentication Flow
 
 ```
-AI Assistant → MCP Server → snowcli-tools → Snowflake CLI → Snowflake
+AI Assistant → MCP Server → nanuk-mcp → Snowflake CLI → Snowflake
                                                     ↓
                                           Profile Authentication
                                           (Key-pair/SSO/OAuth)
@@ -262,11 +262,11 @@ BATCH_SIZE = 1000           # Objects per batch
 ### Installation Modes
 
 ```
-Base Installation (Core CLI only)
-    pip install snowcli-tools
+Standard Installation (includes MCP)
+    pip install nanuk-mcp
 
-Full Installation (With MCP)
-    pip install snowcli-tools[mcp]
+Development Installation
+    pip install nanuk-mcp[dev]
 
 Development Installation
     uv sync --dev
@@ -276,8 +276,8 @@ Development Installation
 ### Runtime Dependencies
 
 ```
-snowcli-tools[mcp]
-    ├── snowflake-cli (>= 2.0.0)    # Official CLI
+nanuk-mcp
+    ├── fastmcp (>= 2.8.1)  # MCP framework
     ├── mcp (>= 1.0.0)               # Protocol implementation
     ├── sqlglot (>= 27.16.3)         # SQL parsing
     ├── pyvis (>= 0.3.2)             # Graph visualization
@@ -324,7 +324,7 @@ def _analyze_performance(self, query: str) -> str:
 
 ```bash
 # Enable debug logging
-export SNOWCLI_TOOLS_DEBUG=1
+export NANUK_MCP_DEBUG=1
 
 # MCP protocol logging
 export MCP_DEBUG=1
@@ -364,4 +364,4 @@ Phase 3: Microservice Architecture
 - [MCP Specification](https://modelcontextprotocol.io/specification)
 - [Snowflake CLI Documentation](https://docs.snowflake.com/en/user-guide/snowcli)
 - [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
-- [snowcli-tools Repository](https://github.com/Evan-Kim2028/snowcli-tools)
+- [nanuk-mcp Repository](https://github.com/Evan-Kim2028/nanuk-mcp)

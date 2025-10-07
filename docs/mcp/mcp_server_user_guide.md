@@ -2,7 +2,7 @@
 
 ## What is the MCP Server?
 
-The MCP (Model Context Protocol) server is an optional feature of snowcli-tools that enables AI assistants to interact with your Snowflake database. It acts as a bridge between natural language requests and structured database operations.
+The MCP (Model Context Protocol) server is the primary interface for Nanuk MCP. It enables AI assistants to interact with your Snowflake database, acting as a bridge between natural language requests and structured database operations.
 
 ### Key Benefits
 
@@ -27,13 +27,16 @@ For example, asking "What tables are in my database?" triggers the AI to use the
 
 ### Prerequisites
 
-1. **Install with MCP Support**: The MCP server requires the optional `mcp` extra:
+1. **Install Nanuk MCP**: All MCP functionality is included by default:
    ```bash
-   # Install with MCP support
-   uv add snowcli-tools[mcp]
+   # Standard installation (includes MCP server)
+   pip install nanuk-mcp
    ```
 
-   If you get an ImportError when running `snowflake-cli mcp`, install the extra as shown above.
+   Or with uv:
+   ```bash
+   uv pip install nanuk-mcp
+   ```
 
 2. **Configure Snowflake Connection**: Set up a Snowflake CLI connection profile
    ```bash
@@ -55,17 +58,17 @@ For example, asking "What tables are in my database?" triggers the AI to use the
 
 ### Starting the MCP Server
 
-#### Option 1: CLI Command (Recommended)
+**For AI Assistant Integration** (Recommended):
+
+The MCP server starts automatically when your AI assistant connects. Simply configure your AI assistant's MCP settings (see Configuration section below) and the server will start on-demand.
+
+**For Manual Testing** (Advanced):
+
 ```bash
-uv run snowflake-cli mcp
+nanuk-mcp
 ```
 
-#### Option 2: Direct Python Example
-```bash
-uv run python examples/run_mcp_server.py
-```
-
-The server will display usage information and available tools. Press `Ctrl+C` to stop the server.
+This starts the server in stdio mode, which is useful for debugging but not needed for normal AI assistant usage. Press `Ctrl+C` to stop the server.
 
 ## Available Tools
 
@@ -112,10 +115,10 @@ Create or update your MCP configuration file (usually `~/.vscode/mcp.json`):
 ```json
 {
   "mcpServers": {
-    "snowflake-cli-tools": {
+    "nanuk-tools": {
       "command": "uv",
-      "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/your/snowflake_connector_py"
+      "args": ["run", "nanuk", "mcp"],
+      "cwd": "/path/to/your/nanuk-mcp"
     }
   }
 }
@@ -128,10 +131,10 @@ Add to your Claude Code MCP settings:
 ```json
 {
   "mcp": {
-    "snowflake-cli-tools": {
+    "nanuk-tools": {
       "command": "uv",
-      "args": ["run", "snowflake-cli", "mcp"],
-      "cwd": "/path/to/your/snowflake_connector_py"
+      "args": ["run", "nanuk", "mcp"],
+      "cwd": "/path/to/your/nanuk-mcp"
     }
   }
 }
@@ -221,7 +224,11 @@ AI: "The DEX_TRADES_STABLE table has 23 columns tracking trades across 6 protoco
 ### Connection Issues
 1. Verify your Snowflake CLI connection works:
    ```bash
-   uv run snowflake-cli test
+   # Test Snowflake connection directly
+   snow sql -q "SELECT CURRENT_USER()" --connection my-profile
+   
+   # Or test via Python API
+   python -c "from nanuk_mcp import QueryService; QueryService(profile='my-profile')"
    ```
 
 2. Check that your profile is configured correctly:
@@ -261,4 +268,4 @@ For issues with the MCP server:
 3. Review the MCP client logs for detailed error messages
 4. Check that you're using compatible versions of all components
 
-The MCP server is designed to be a thin wrapper around your existing snowcli-tools functionality, so most issues can be diagnosed by testing the underlying CLI commands first.
+The MCP server exposes Nanuk MCP functionality through structured tools, so most issues can be diagnosed by checking the service layer or testing with the Python API directly.

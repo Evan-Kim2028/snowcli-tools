@@ -4,13 +4,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from snowcli_tools.circuit_breaker import CircuitBreakerError
-from snowcli_tools.services import (
+from nanuk_mcp.circuit_breaker import CircuitBreakerError
+from nanuk_mcp.services import (
     HealthStatus,
     RobustSnowflakeService,
     execute_query_safe,
 )
-from snowcli_tools.snow_cli import QueryOutput, SnowCLIError
+from nanuk_mcp.snow_cli import QueryOutput, SnowCLIError
 
 
 def test_health_status_creation():
@@ -32,7 +32,7 @@ def test_health_status_creation():
     assert status_with_error.circuit_breaker_state == "open"
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_robust_snowflake_service_init(mock_cli_class):
     """Test RobustSnowflakeService initialization."""
     mock_cli = Mock()
@@ -44,7 +44,7 @@ def test_robust_snowflake_service_init(mock_cli_class):
     mock_cli_class.assert_called_once_with("test_profile")
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_execute_query_success(mock_cli_class):
     """Test successful query execution."""
     mock_cli = Mock()
@@ -63,7 +63,7 @@ def test_execute_query_success(mock_cli_class):
     )
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_execute_query_failure(mock_cli_class):
     """Test query execution failure."""
     mock_cli = Mock()
@@ -79,7 +79,7 @@ def test_execute_query_failure(mock_cli_class):
     assert service._last_error == "Query failed"
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_test_connection_success(mock_cli_class):
     """Test successful connection test."""
     mock_cli = Mock()
@@ -93,7 +93,7 @@ def test_test_connection_success(mock_cli_class):
     assert service._last_error is None
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_test_connection_failure(mock_cli_class):
     """Test connection test failure."""
     mock_cli = Mock()
@@ -108,7 +108,7 @@ def test_test_connection_failure(mock_cli_class):
     assert service._last_error == "Connection failed"
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_get_health_status_healthy(mock_cli_class):
     """Test health status when system is healthy."""
     mock_cli = Mock()
@@ -123,7 +123,7 @@ def test_get_health_status_healthy(mock_cli_class):
     assert status.last_error is None
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_get_health_status_unhealthy(mock_cli_class):
     """Test health status when system is unhealthy."""
     mock_cli = Mock()
@@ -144,7 +144,7 @@ def test_get_health_status_unhealthy(mock_cli_class):
     assert "Connection failed" in status.last_error
 
 
-@patch("snowcli_tools.services.SnowCLI")
+@patch("nanuk_mcp.services.SnowCLI")
 def test_get_health_status_circuit_breaker_open(mock_cli_class):
     """Test health status when circuit breaker is open."""
     mock_cli = Mock()

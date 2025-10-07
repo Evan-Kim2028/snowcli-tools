@@ -1,4 +1,4 @@
-"""Developer task runner for snowcli-tools."""
+"""Developer task runner for nanuk-mcp."""
 
 from __future__ import annotations
 

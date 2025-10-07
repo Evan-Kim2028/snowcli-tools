@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-10-07
+
+### BREAKING CHANGES
+
+**🐻‍❄️ Package Rebrand: snowcli-tools → nanuk-mcp**
+
+The package has been renamed to better reflect its MCP-first architecture and create a unique brand identity.
+
+#### Changed
+- **Package name**: `snowcli-tools` → `nanuk-mcp`
+- **Import namespace**: `from snowcli_tools` → `from nanuk_mcp`
+- **PyPI package**: `pip install snowcli-tools` → `pip install nanuk-mcp`
+- **MCP command**: `snowcli-mcp` → `nanuk-mcp`
+- **GitHub repository**: `Evan-Kim2028/snowcli-tools` → `Evan-Kim2028/nanuk-mcp`
+
+**CLI Interface Removed**
+
+The legacy CLI interface (`nanuk` command) has been removed. Nanuk is now MCP-only.
+
+#### Removed
+- `nanuk` CLI command and all subcommands
+- `src/nanuk_mcp/cli.py` and `src/nanuk_mcp/commands/` directory (~774 LOC)
+- CLI-specific dependency: `click>=8.0.0`
+- CLI-specific tests
+
+#### Migration
+- **Rebrand migration**: See [Migration Guide](docs/migration-guide.md) for package name changes and CLI to MCP migration
+- **CLI migration**: See [CLI Migration Guide](docs/cli-to-mcp-migration.md) for transitioning to MCP tools
+- All CLI functionality is available through MCP tools (see table in migration guide)
+
+#### Rationale
+- Package name is "nanuk-**mcp**" - should be MCP-only
+- Reduces codebase by 774 LOC (40% reduction in interface code)
+- Eliminates user confusion about which interface to use
+- Aligns with AI-first architecture
+
+#### Why "Nanuk"?
+- 🐻‍❄️ Nanuk (polar bear in Inuit) connects to Snowflake's arctic theme
+- 🎯 MCP-first: Name reflects focus on Model Context Protocol
+- ✨ Unique & memorable: Stands out in the MCP ecosystem
+- 🚀 Future-proof: Positions as premier Snowflake MCP provider
+
 ## [1.9.0] - 2025-01-04
 
 ### Phase 1: Code Simplification (Completed)

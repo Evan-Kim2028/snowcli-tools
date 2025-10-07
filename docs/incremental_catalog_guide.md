@@ -1,6 +1,6 @@
 # Incremental Catalog Building Guide
 
-**Version**: v1.9.0+
+**Version**: v2.0.0
 **Feature**: LAST_DDL-based delta detection for 10-20x faster catalog refreshes
 
 ## Overview
@@ -31,7 +31,7 @@ Based on real-world testing (583 tables):
 ### Python API
 
 ```python
-from snowcli_tools.catalog import build_incremental_catalog
+from nanuk_mcp.catalog import build_incremental_catalog
 
 # First build (creates metadata)
 result = build_incremental_catalog(
@@ -56,7 +56,7 @@ print(f"Changed objects: {result['changed_objects']}")
 ### Class-Based API
 
 ```python
-from snowcli_tools.catalog import IncrementalCatalogBuilder
+from nanuk_mcp.catalog import IncrementalCatalogBuilder
 
 # Create builder
 builder = IncrementalCatalogBuilder(cache_dir="./data_catalogue")
@@ -89,7 +89,7 @@ The incremental builder maintains a `_catalog_metadata.json` file with:
   "last_full_refresh": "2025-01-04T12:00:00+00:00",
   "databases": ["ANALYTICS"],
   "total_objects": 583,
-  "version": "1.9.0",
+  "version": "2.0.0",
   "schema_count": 12,
   "table_count": 583
 }
@@ -312,7 +312,7 @@ The incremental builder can be integrated with MCP tools:
 result = await build_catalog(
     output_dir="./data_catalogue",
     database="ANALYTICS",
-    incremental=True,  # NEW: v1.9.0+
+    incremental=True,  # Incremental catalog building
 )
 ```
 
@@ -321,7 +321,7 @@ result = await build_catalog(
 ```python
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from snowcli_tools.catalog import build_incremental_catalog
+from nanuk_mcp.catalog import build_incremental_catalog
 
 def refresh_catalog():
     result = build_incremental_catalog(
@@ -344,7 +344,7 @@ refresh_task = PythonOperator(
 ```bash
 # Create a simple CLI wrapper
 python -c "
-from snowcli_tools.catalog import build_incremental_catalog
+from nanuk_mcp.catalog import build_incremental_catalog
 result = build_incremental_catalog('./data_catalogue')
 print(f\"Status: {result['status']}\")
 print(f\"Changes: {result['changes']}\")
@@ -370,6 +370,5 @@ Planned for v1.10.0+:
 
 ## See Also
 
-- [v1.9.0 Migration Guide](./v1.9.0_migration.md)
-- [Catalog Service API](./api/catalog_service.md)
-- [MCP Tools Index](./api/TOOLS_INDEX.md)
+- [Migration Guide](./migration-guide.md)
+- [API Reference](./api/README.md)

@@ -3,7 +3,7 @@
 Setup script for the DeFi DEX trading sample dataset.
 
 This script installs the sample dataset structure and catalog metadata
-to demonstrate snowcli-tools capabilities with real-world data patterns.
+to demonstrate nanuk-mcp capabilities with real-world data patterns.
 """
 
 import json
@@ -15,8 +15,8 @@ from typing import Dict
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from snowcli_tools.config import get_config
-from snowcli_tools.snow_cli import SnowCLI, SnowCLIError
+from nanuk_mcp.config import get_config
+from nanuk_mcp.snow_cli import SnowCLI, SnowCLIError
 
 
 def setup_logging():
@@ -125,8 +125,8 @@ def generate_sample_catalog(snow_cli: SnowCLI, logger: logging.Logger) -> bool:
     try:
         logger.info("Generating sample catalog...")
 
-        # Use snowcli-tools to catalog the sample database
-        from snowcli_tools.catalog import build_catalog
+        # Use nanuk-mcp to catalog the sample database
+        from nanuk_mcp.catalog import build_catalog
 
         catalog_dir = Path(__file__).parent / "catalog"
         catalog_dir.mkdir(exist_ok=True)
@@ -157,7 +157,7 @@ def create_lineage_example(snow_cli: SnowCLI, logger: logging.Logger) -> bool:
     try:
         logger.info("Generating lineage examples...")
 
-        from snowcli_tools.lineage import LineageQueryService
+        from nanuk_mcp.lineage import LineageQueryService
 
         # Set up lineage service
         catalog_dir = str(Path(__file__).parent / "catalog")
@@ -215,27 +215,19 @@ def print_usage_instructions(logger: logging.Logger):
     logger.info("• FILTERED_DEX_TRADES_VIEW - Business logic view")
     logger.info("• BTC_DEX_TRADES_USD_DT - BTC-focused analytics")
     logger.info("")
-    logger.info("Try these snowcli-tools commands:")
+    logger.info("Try these nanuk-mcp MCP tools via your AI assistant:")
     logger.info("")
     logger.info("📊 Catalog Commands:")
-    logger.info("  uv run snowflake-cli catalog --database DEFI_SAMPLE_DB")
-    logger.info(
-        "  uv run snowflake-cli catalog --database DEFI_SAMPLE_DB --schema ANALYTICS"
-    )
+    logger.info('  "Build a catalog for DEFI_SAMPLE_DB"')
+    logger.info('  "Build a catalog for DEFI_SAMPLE_DB.ANALYTICS schema"')
     logger.info("")
     logger.info("🔗 Lineage Commands:")
-    logger.info("  uv run snowflake-cli lineage DEX_TRADES_STABLE")
-    logger.info(
-        "  uv run snowflake-cli lineage FILTERED_DEX_TRADES_VIEW --direction upstream"
-    )
+    logger.info('  "Query lineage for DEX_TRADES_STABLE"')
+    logger.info('  "Show upstream lineage for FILTERED_DEX_TRADES_VIEW"')
     logger.info("")
     logger.info("🕸️  Dependency Graph:")
-    logger.info(
-        "  uv run snowflake-cli depgraph --database DEFI_SAMPLE_DB --format json"
-    )
-    logger.info(
-        "  uv run snowflake-cli depgraph --database DEFI_SAMPLE_DB --format dot"
-    )
+    logger.info('  "Build dependency graph for DEFI_SAMPLE_DB"')
+    logger.info('  "Generate dependency graph as JSON"')
     logger.info("")
     logger.info("🤖 MCP Server Examples:")
     logger.info("  'Show me the schema of DEX_TRADES_STABLE'")

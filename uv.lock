@@ -965,6 +965,71 @@ wheels = [
 ]
 
 [[package]]
+name = "nanuk-mcp"
+version = "2.0.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastmcp" },
+    { name = "mcp" },
+    { name = "networkx" },
+    { name = "pydantic" },
+    { name = "pyvis" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "snowflake-cli" },
+    { name = "snowflake-labs-mcp" },
+    { name = "sqlglot" },
+    { name = "websockets" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "dirty-equals" },
+    { name = "inline-snapshot" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-examples" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+    { name = "types-networkx" },
+    { name = "types-pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastmcp", specifier = ">=2.8.1" },
+    { name = "mcp", specifier = ">=1.0.0" },
+    { name = "networkx", specifier = ">=3.0" },
+    { name = "pydantic", specifier = ">=2.7.0" },
+    { name = "pyvis", specifier = ">=0.3.2" },
+    { name = "pyyaml", specifier = ">=6.0.0" },
+    { name = "rich", specifier = ">=13.0.0" },
+    { name = "snowflake-cli", specifier = ">=2.0.0" },
+    { name = "snowflake-labs-mcp", specifier = ">=1.3.3" },
+    { name = "sqlglot", specifier = ">=27.16.3" },
+    { name = "websockets", specifier = ">=15.0.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "dirty-equals", specifier = ">=0.7.0" },
+    { name = "inline-snapshot", specifier = ">=0.10.1" },
+    { name = "mypy", specifier = ">=1.0.0" },
+    { name = "pre-commit", specifier = ">=3.0.0" },
+    { name = "pytest", specifier = ">=7.0.0" },
+    { name = "pytest-asyncio", specifier = ">=0.21.0" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-examples", specifier = ">=0.0.11" },
+    { name = "pytest-mock", specifier = ">=3.10.0" },
+    { name = "ruff", specifier = ">=0.6.0" },
+    { name = "types-networkx", specifier = ">=3.2.0.20240731" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20250822" },
+]
+
+[[package]]
 name = "networkx"
 version = "3.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1796,84 +1861,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/87/a6771e1546d97e7e041b6ae58d80074f81b7d5121207425c964ddf5cfdbd/sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc", size = 20372, upload-time = "2024-02-25T23:20:04.057Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2", size = 10235, upload-time = "2024-02-25T23:20:01.196Z" },
-]
-
-[[package]]
-name = "snowcli-tools"
-version = "1.7.0"
-source = { editable = "." }
-dependencies = [
-    { name = "click" },
-    { name = "fastmcp" },
-    { name = "mcp" },
-    { name = "networkx" },
-    { name = "pydantic" },
-    { name = "pyvis" },
-    { name = "pyyaml" },
-    { name = "rich" },
-    { name = "snowflake-cli" },
-    { name = "snowflake-labs-mcp" },
-    { name = "sqlglot" },
-    { name = "websockets" },
-]
-
-[package.optional-dependencies]
-mcp = [
-    { name = "fastmcp" },
-    { name = "mcp" },
-    { name = "snowflake-labs-mcp" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "dirty-equals" },
-    { name = "inline-snapshot" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-examples" },
-    { name = "pytest-mock" },
-    { name = "ruff" },
-    { name = "types-networkx" },
-    { name = "types-pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.0.0" },
-    { name = "fastmcp", specifier = ">=2.8.1" },
-    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.8.1" },
-    { name = "mcp", specifier = ">=1.0.0" },
-    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0.0" },
-    { name = "networkx", specifier = ">=3.0" },
-    { name = "pydantic", specifier = ">=2.7.0" },
-    { name = "pyvis", specifier = ">=0.3.2" },
-    { name = "pyyaml", specifier = ">=6.0.0" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "snowflake-cli", specifier = ">=2.0.0" },
-    { name = "snowflake-labs-mcp", specifier = ">=1.3.3" },
-    { name = "snowflake-labs-mcp", marker = "extra == 'mcp'", specifier = ">=1.3.3" },
-    { name = "sqlglot", specifier = ">=27.16.3" },
-    { name = "websockets", specifier = ">=15.0.1" },
-]
-provides-extras = ["mcp"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "dirty-equals", specifier = ">=0.7.0" },
-    { name = "inline-snapshot", specifier = ">=0.10.1" },
-    { name = "mypy", specifier = ">=1.0.0" },
-    { name = "pre-commit", specifier = ">=3.0.0" },
-    { name = "pytest", specifier = ">=7.0.0" },
-    { name = "pytest-asyncio", specifier = ">=0.21.0" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
-    { name = "pytest-examples", specifier = ">=0.0.11" },
-    { name = "pytest-mock", specifier = ">=3.10.0" },
-    { name = "ruff", specifier = ">=0.6.0" },
-    { name = "types-networkx", specifier = ">=3.2.0.20240731" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20250822" },
 ]
 
 [[package]]

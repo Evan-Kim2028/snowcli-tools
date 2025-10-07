@@ -1,6 +1,6 @@
-# SnowCLI Tools Architecture (v1.5.0)
+# Nanuk MCP Architecture (v2.0.0)
 
-> **Overview**: SnowCLI Tools uses a layered service architecture that provides both direct CLI access and AI assistant integration through MCP (Model Context Protocol).
+> **Overview**: Nanuk MCP uses a layered service architecture that provides AI assistant integration through MCP (Model Context Protocol) and a Python API for programmatic access.
 
 ## Architectural Principles
 
@@ -8,10 +8,10 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                  Client Applications                        │
-│              (AI Assistants, CLI Users)                     │
+│              (AI Assistants, Python API)                    │
 ├─────────────────────────────────────────────────────────────┤
 │                  Presentation Layer                         │
-│                 (CLI Commands, MCP Server)                  │
+│                    (MCP Server)                             │
 ├─────────────────────────────────────────────────────────────┤
 │                   Service Layer                             │
 │           (CatalogService, QueryService, etc.)             │
@@ -36,9 +36,9 @@
 
 ## Core Components
 
-### Service Layer (`src/snowcli_tools/service_layer/`)
+### Service Layer (`src/nanuk_mcp/service_layer/`)
 
-The service layer provides the core business logic for SnowCLI Tools operations:
+The service layer provides the core business logic for Nanuk MCP operations:
 
 ```python
 # Service interfaces are clean and focused
@@ -62,14 +62,14 @@ class DependencyService:
 - **Strategy Pattern**: Different execution strategies for sync/async operations
 - **Factory Pattern**: Session context creation from various inputs
 
-### MCP Integration (`src/snowcli_tools/mcp_server.py`)
+### MCP Integration (`src/nanuk_mcp/mcp_server.py`)
 
 The MCP server provides AI assistant integration through a layered approach:
 
 ```python
 # Layered MCP Architecture
 ┌─────────────────────────────────────┐
-│     SnowCLI Tools MCP Layer         │
+│     Nanuk MCP MCP Layer         │
 │  • catalog, lineage, dependencies   │
 │  • Enhanced query tools             │
 │  • Custom diagnostics               │
@@ -87,7 +87,7 @@ The MCP server provides AI assistant integration through a layered approach:
 - **Resource Management**: Efficient resource lifecycle management
 - **Profile Validation**: Enhanced Snowflake profile validation
 
-### Configuration Management (`src/snowcli_tools/config.py`)
+### Configuration Management (`src/nanuk_mcp/config.py`)
 
 Centralized configuration with override precedence:
 
@@ -106,36 +106,27 @@ Centralized configuration with override precedence:
 - **Validated**: All values are validated at load time
 - **Extensible**: Easy to add new configuration options
 
-### CLI Interface (`src/snowcli_tools/cli.py`)
+### MCP Server Interface (`src/nanuk_mcp/mcp_server.py`)
 
-Command-line interface with consistent patterns:
+MCP server provides AI assistant integration:
 
 ```bash
-# Global options available to all commands
-snowflake-cli -p <profile> -c <config> <command> [options]
+# Start MCP server (MCP-only interface in v2.0+)
+nanuk-mcp                    # Use default or env profile
+nanuk-mcp --profile <name>   # Specify profile explicitly
 
-# Command groups with focused responsibilities
-snowflake-cli catalog      # Data discovery operations
-snowflake-cli lineage      # Lineage analysis
-snowflake-cli depgraph     # Dependency mapping
-snowflake-cli query        # SQL execution
-snowflake-cli mcp          # MCP server for AI assistants
+# All operations via MCP tools:
+# - execute_query           # SQL execution
+# - build_catalog           # Data discovery operations
+# - query_lineage           # Lineage analysis
+# - build_dependency_graph  # Dependency mapping
+# - test_connection         # Connection testing
+# - health_check            # Server health status
 ```
 
 ## Data Flow
 
-### 1. CLI Command Execution
-```mermaid
-graph TD
-    A[CLI Command] --> B[Global Options Processing]
-    B --> C[Configuration Loading]
-    C --> D[Service Initialization]
-    D --> E[Operation Execution]
-    E --> F[Result Formatting]
-    F --> G[Output Display]
-```
-
-### 2. MCP Request Processing
+### 1. MCP Request Processing (Primary Interface in v2.0+)
 ```mermaid
 graph TD
     A[MCP Client Request] --> B[Authentication Check]
@@ -146,7 +137,7 @@ graph TD
     F --> G[MCP Response]
 ```
 
-### 3. Configuration Resolution
+### 2. Configuration Resolution
 ```mermaid
 graph TD
     A[Application Start] --> B[Load CLI Args]
@@ -248,20 +239,18 @@ async def analytics_insights_tool() -> Dict[str, Any]:
     )
 ```
 
-### 3. New CLI Commands
+### 3. Python API Extensions
 ```python
-# Add new CLI command group
-@cli.group()
-def analytics():
-    """Analytics and insights commands."""
-    pass
+# Add new service for Python API
+class AnalyticsService:
+    """Analytics and insights service."""
+    def __init__(self, *, config: Config | None = None):
+        self._config = config or get_config()
 
-@analytics.command()
-def insights():
-    """Generate data insights."""
-    service = AnalyticsService()
-    result = service.generate_insights()
-    console.print_json(result)
+    def generate_insights(self) -> dict:
+        """Generate data insights."""
+        # Implementation
+        return insights_data
 ```
 
 ## Testing Strategy
@@ -273,7 +262,7 @@ def insights():
 
 ### 2. Integration Tests
 - **MCP Server**: Test with real Snowflake connections
-- **CLI Commands**: End-to-end command testing
+- **MCP Tools**: End-to-end tool testing
 - **Profile Validation**: Test with various profile types
 
 ### 3. Contract Tests
@@ -281,24 +270,26 @@ def insights():
 - **MCP Protocol**: Ensure MCP compliance
 - **Configuration Schema**: Validate config structure
 
-## Migration Guide (1.4.x → 1.5.0)
+## Migration Guide (1.4.x → 1.9.0)
 
-### Breaking Changes
-- **Service Layer**: New service-based architecture
-- **Configuration**: Enhanced configuration management
-- **MCP Integration**: New layered MCP approach
+### Breaking Changes (v2.0)
+- **CLI Removed**: Legacy CLI commands removed in v2.0 - MCP-only architecture
+- **MCP-Only**: All functionality via MCP tools and Python API
+- **Profile Selection**: Via --profile flag when starting MCP server or SNOWFLAKE_PROFILE env var
 
-### Migration Steps
-1. **Update Dependencies**: Install new MCP packages
-2. **Update Profiles**: Ensure Snow CLI profiles are valid
-3. **Update Integration**: MCP clients may need reconfiguration
-4. **Test Thoroughly**: Run verification test suite
+### Migration Steps (v1.x to v2.0)
+1. **Remove CLI usage**: Replace with MCP tool calls or Python API
+2. **Update Integration**: Configure AI assistants with nanuk-mcp
+3. **Update Profiles**: Ensure Snowflake CLI profiles are valid
+4. **Test MCP tools**: Verify all operations work via MCP
+5. **See Migration Guide**: [CLI to MCP Migration](cli-to-mcp-migration.md)
 
 ### Compatibility
-- **CLI Commands**: Fully backward compatible
-- **Configuration**: Existing configs supported with deprecation warnings
+- **Python API**: Fully backward compatible
+- **Configuration**: Existing configs supported
 - **Profiles**: All existing Snow CLI profiles supported
+- **CLI**: Removed in v2.0 - see migration guide
 
 ---
 
-*Architecture Version: 1.5.0 | Last Updated: 2025-09-28*
+*Architecture Version: 1.9.0 | Last Updated: 2025-09-28*

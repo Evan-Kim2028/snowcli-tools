@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from snowcli_tools.circuit_breaker import (
+from nanuk_mcp.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitBreakerError,

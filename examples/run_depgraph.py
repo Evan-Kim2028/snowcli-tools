@@ -4,8 +4,8 @@ Usage:
   # 1) Set up the sample dataset first
   uv run python examples/sample_data/setup_sample_data.py
 
-  # 2) Build a catalog for the sample data
-  uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o ./sample_data_catalog
+  # 2) Build a catalog for the sample data using MCP tools
+  # Use your MCP client to ask: "Build a catalog for DEFI_SAMPLE_DB"
 
   # 3) Run this example to rebuild the lineage cache and emit JSON/HTML outputs
   uv run python examples/run_depgraph.py \
@@ -27,8 +27,8 @@ import json
 import sys
 from pathlib import Path
 
-from snowcli_tools.lineage import LineageQueryService
-from snowcli_tools.lineage.queries import LineageQueryResult
+from nanuk_mcp.lineage import LineageQueryService
+from nanuk_mcp.lineage.queries import LineageQueryResult
 
 
 def build_cache(service: LineageQueryService) -> None:
@@ -107,7 +107,7 @@ def main() -> None:
             f"[lineage-example] Catalog directory {args.catalog_dir} not found. Run the following commands first:",
         )
         print("  uv run python examples/sample_data/setup_sample_data.py")
-        print(f"  uv run snowflake-cli catalog -d DEFI_SAMPLE_DB -o {args.catalog_dir}")
+        print(f"  # Use MCP client to build catalog for DEFI_SAMPLE_DB to {args.catalog_dir}")
         sys.exit(1)
 
     service = LineageQueryService(args.catalog_dir, args.cache_dir)

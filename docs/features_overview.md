@@ -1,4 +1,4 @@
-# snowcli-tools Features Overview
+# nanuk-mcp Features Overview
 
 ## 🚀 Core Features
 
@@ -11,13 +11,14 @@
 - Query result parsing and structured output
 - Timeout and error handling with detailed diagnostics
 
-**CLI Usage**:
-```bash
-snowflake-cli query "SELECT * FROM CUSTOMERS LIMIT 10"
-snowflake-cli query --file query.sql --output-format json
-```
-
 **MCP Tools**: `execute_query`, `preview_table`
+
+**AI Assistant Usage**:
+```
+"Execute this query: SELECT * FROM CUSTOMERS LIMIT 10"
+"Run the SQL query in query.sql file"
+"Preview the CUSTOMERS table"
+```
 
 **Testing Coverage**: ✅ **WELL COVERED**
 - Unit tests for SnowCLI wrapper (`test_snow_cli.py`)
@@ -38,13 +39,14 @@ snowflake-cli query --file query.sql --output-format json
 - Incremental catalog updates with change tracking
 - Cross-database catalog generation
 
-**CLI Usage**:
-```bash
-snowflake-cli catalog --database ANALYTICS --output ./catalog
-snowflake-cli catalog --account-scope --include-ddl --max-concurrency 16
-```
-
 **MCP Tools**: `build_catalog`, `get_catalog_summary`
+
+**AI Assistant Usage**:
+```
+"Build a catalog for the ANALYTICS database"
+"Create a comprehensive catalog with DDL for all databases"
+"Show me the catalog summary"
+```
 
 **Testing Coverage**: ⚠️ **PARTIALLY COVERED**
 - ✅ Basic catalog building functionality
@@ -67,13 +69,14 @@ snowflake-cli catalog --account-scope --include-ddl --max-concurrency 16
 - Lineage caching for performance
 - Interactive HTML visualizations
 
-**CLI Usage**:
-```bash
-snowflake-cli lineage ANALYTICS.CUSTOMERS --direction both --depth 3
-snowflake-cli lineage --output lineage.html --format html
-```
-
 **MCP Tools**: `query_lineage`
+
+**AI Assistant Usage**:
+```
+"Show me lineage for ANALYTICS.CUSTOMERS going both upstream and downstream"
+"Trace data lineage with depth 3"
+"Generate an HTML visualization of lineage for MY_TABLE"
+```
 
 **Testing Coverage**: ✅ **WELL COVERED**
 - Comprehensive lineage tests (`test_lineage.py`, `test_advanced_lineage.py`)
@@ -94,13 +97,14 @@ snowflake-cli lineage --output lineage.html --format html
 - Circular dependency detection
 - Hierarchical visualization support
 
-**CLI Usage**:
-```bash
-snowflake-cli dependency-graph --database ANALYTICS --format dot
-snowflake-cli dependency-graph --output deps.json
-```
-
 **MCP Tools**: `build_dependency_graph`
+
+**AI Assistant Usage**:
+```
+"Build a dependency graph for the ANALYTICS database"
+"Create a dependency graph in DOT format"
+"Show me object dependencies as a graph"
+```
 
 **Testing Coverage**: ⚠️ **PARTIALLY COVERED**
 - ✅ Basic dependency graph construction
@@ -110,7 +114,7 @@ snowflake-cli dependency-graph --output deps.json
 
 ---
 
-### 5. Configuration Management & Profile Validation (Enhanced v1.4.4+)
+### 5. Configuration Management & Profile Validation (v2.0.0)
 **Description**: Robust configuration system with advanced profile validation and health monitoring.
 
 **Core Capabilities**:
@@ -120,7 +124,7 @@ snowflake-cli dependency-graph --output deps.json
 - Default value cascading
 - Configuration validation
 
-**Enhanced Profile Validation (v1.4.4+)**:
+**Profile Validation Features**:
 - **Startup validation**: Profile issues detected before server becomes available
 - **Clear error messages**: No more confusing timeout errors
 - **MCP-compliant error responses**: Structured error format with specific error codes
@@ -128,26 +132,26 @@ snowflake-cli dependency-graph --output deps.json
 - **Actionable guidance**: Specific next steps for fixing configuration issues
 - **Profile health caching**: Efficient validation with TTL-based caching
 
-**CLI Usage**:
+**MCP Server Usage**:
 ```bash
-# Traditional configuration
-snowflake-cli config show
-snowflake-cli config set snowflake.warehouse COMPUTE_WH
-
-# Enhanced profile validation (v1.4.4+)
-snowflake-cli mcp  # Shows validation success/failure immediately
+# Start MCP server with profile validation (v2.0+)
+nanuk-mcp  # Shows validation success/failure immediately
 export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
+
+# Profile selection via command line
+nanuk-mcp --profile my-profile
 ```
 
-**MCP Tools (v1.4.4+)**:
+**MCP Tools**:
 - `health_check`: Comprehensive server health status
 - `check_profile_config`: Profile validation and diagnostics
 - `get_resource_status`: Resource availability checking
 - `check_resource_dependencies`: Dependency validation
 
 **Error Handling Improvements**:
-- **Before v1.4.4**: Generic timeout errors after 30+ seconds
-- **After v1.4.4**: Immediate, specific error messages with context
+**Benefits**:
+- Immediate, specific error messages with context
+- No generic timeout errors
 
 **Example Enhanced Error Response**:
 ```json
@@ -169,13 +173,13 @@ export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 - Environment variable handling
 - YAML serialization/deserialization
 - Profile management
-- **New in v1.4.4+**: Health monitoring tests (`test_mcp_health.py`)
-- **New in v1.4.4+**: Profile validation tests
-- **New in v1.4.4+**: MCP error response testing
+- Health monitoring tests (`test_mcp_health.py`)
+- Profile validation tests
+- MCP error response testing
 
 ---
 
-### 6. MCP Server Integration (Enhanced v1.4.4+)
+### 6. MCP Server Integration (v2.0.0)
 **Description**: Model Context Protocol server for AI assistant integration with advanced health monitoring and reliability.
 
 **Core Capabilities**:
@@ -185,7 +189,7 @@ export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 - VS Code, Cursor, Claude Code compatibility
 - Secure authentication through existing Snowflake CLI profiles
 
-**Enhanced Reliability Features (v1.4.4+)**:
+**Reliability Features**:
 - **Proactive validation**: Profile validation during server startup lifecycle
 - **Circuit breaker pattern**: Fault-tolerant Snowflake operations
 - **Health monitoring**: Real-time component health tracking
@@ -195,8 +199,8 @@ export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 
 **CLI Usage**:
 ```bash
-# Enhanced startup with validation (v1.4.4+)
-snowflake-cli mcp  # Shows immediate validation feedback
+# Startup with validation
+nanuk-mcp  # Shows immediate validation feedback
 
 # Expected successful startup:
 # ✓ Snowflake profile validation successful: dev
@@ -207,9 +211,9 @@ snowflake-cli mcp  # Shows immediate validation feedback
 
 **MCP Tools**:
 - **Core tools**: All existing tools (execute_query, build_catalog, etc.)
-- **New diagnostic tools (v1.4.4+)**: health_check, check_profile_config, get_resource_status, check_resource_dependencies
+- **Diagnostic tools**: health_check, test_connection
 
-**Reliability Infrastructure (v1.4.4+)**:
+**Reliability Infrastructure**:
 - **MCPHealthMonitor**: Comprehensive health status tracking
 - **MCPResourceManager**: Resource dependency management
 - **Error categorization**: Connection, Permission, Timeout, Configuration errors
@@ -220,10 +224,10 @@ snowflake-cli mcp  # Shows immediate validation feedback
 - Tool registration and execution
 - Error handling and response formatting
 - Mock-based testing for external dependencies
-- **New in v1.4.4+**: Health monitoring system tests
-- **New in v1.4.4+**: Circuit breaker pattern tests
-- **New in v1.4.4+**: Resource management tests
-- **New in v1.4.4+**: Profile validation integration tests
+- Health monitoring system tests
+- Circuit breaker pattern tests
+- Resource management tests
+- Profile validation integration tests
 
 ---
 
@@ -491,7 +495,7 @@ def test_partial_failure_handling():
 
 ## 🎉 Conclusion
 
-snowcli-tools provides a comprehensive suite of features for Snowflake data management, with particularly strong coverage in:
+nanuk-mcp provides a comprehensive suite of features for Snowflake data management, with particularly strong coverage in:
 - Core CLI functionality
 - Circuit breaker and reliability patterns
 - Error handling and monitoring

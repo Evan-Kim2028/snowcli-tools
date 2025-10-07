@@ -12,8 +12,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-import snowcli_tools.profile_utils as profile_utils
-from snowcli_tools.profile_utils import (
+import nanuk_mcp.profile_utils as profile_utils
+from nanuk_mcp.profile_utils import (
     ProfileSummary,
     ProfileValidationError,
     get_available_profiles,
@@ -263,7 +263,7 @@ class TestPerformanceOptimizations:
 
     def test_config_loading_is_cached_by_mtime(self, tmp_path):
         """Test that config loading respects mtime for cache invalidation."""
-        from snowcli_tools.profile_utils import _load_snowflake_config
+        from nanuk_mcp.profile_utils import _load_snowflake_config
 
         # Create a test config file
         config_file = tmp_path / "config.toml"

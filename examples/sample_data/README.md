@@ -1,6 +1,6 @@
 # DeFi DEX Trading Sample Dataset
 
-This sample dataset is **extracted from a real production DeFi analytics pipeline** that processes cryptocurrency trading data from multiple decentralized exchanges (DEXs). It provides realistic, complex data relationships perfect for demonstrating snowcli-tools capabilities.
+This sample dataset is **extracted from a real production DeFi analytics pipeline** that processes cryptocurrency trading data from multiple decentralized exchanges (DEXs). It provides realistic, complex data relationships perfect for demonstrating nanuk-mcp capabilities.
 
 ## Real-World Context
 
@@ -97,7 +97,7 @@ External Data
 - ✅ **Cross-joins**: Price and liquidity data enrichment
 - ✅ **Dynamic Dependencies**: Tables that update each other
 
-## Usage with snowcli-tools
+## Usage with nanuk-mcp
 
 ### Installation
 First, set up the sample dataset:
@@ -110,34 +110,34 @@ uv run python examples/sample_data/setup_sample_data.py
 ### Catalog Generation
 ```bash
 # Build complete catalog (demonstrates complex schema)
-uv run snowflake-cli catalog --database DEFI_SAMPLE_DB
+Use MCP client to catalog --database DEFI_SAMPLE_DB
 
 # Focus on analytics layer (shows dynamic tables, views)
-uv run snowflake-cli catalog --database DEFI_SAMPLE_DB --schema ANALYTICS
+Use MCP client to catalog --database DEFI_SAMPLE_DB --schema ANALYTICS
 
 # Include DDL for complete documentation
-uv run snowflake-cli catalog --database DEFI_SAMPLE_DB --include-ddl
+Use MCP client to catalog --database DEFI_SAMPLE_DB --include-ddl
 ```
 
 ### Lineage Analysis
 ```bash
 # Analyze main fact table (complex upstream/downstream)
-uv run snowflake-cli lineage DEX_TRADES_STABLE --direction both --depth 3
+Use MCP client to lineage DEX_TRADES_STABLE --direction both --depth 3
 
 # Business logic view (shows sophisticated filtering)
-uv run snowflake-cli lineage FILTERED_DEX_TRADES_VIEW --direction upstream
+Use MCP client to lineage FILTERED_DEX_TRADES_VIEW --direction upstream
 
 # Dynamic table with multiple dependencies
-uv run snowflake-cli lineage BTC_DEX_TRADES_USD_DT --direction upstream --format json
+Use MCP client to lineage BTC_DEX_TRADES_USD_DT --direction upstream --format json
 ```
 
 ### Dependency Graphs
 ```bash
 # Full pipeline visualization
-uv run snowflake-cli depgraph --database DEFI_SAMPLE_DB --format dot
+Use MCP client to depgraph --database DEFI_SAMPLE_DB --format dot
 
 # JSON for custom analysis tools
-uv run snowflake-cli depgraph --database DEFI_SAMPLE_DB --format json
+Use MCP client to depgraph --database DEFI_SAMPLE_DB --format json
 ```
 
 ## Real-World MCP Examples
@@ -208,4 +208,4 @@ examples/sample_data/
     └── mcp_conversation_examples.md
 ```
 
-This dataset provides a rich, realistic foundation for demonstrating all snowcli-tools capabilities while remaining general enough for any user to understand and extend.
+This dataset provides a rich, realistic foundation for demonstrating all nanuk-mcp capabilities while remaining general enough for any user to understand and extend.

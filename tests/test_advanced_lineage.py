@@ -7,14 +7,14 @@ from unittest import TestCase, mock
 
 import pytest
 
-from snowcli_tools.lineage import (
+from nanuk_mcp.lineage import (
     ChangeType,
     ColumnLineageExtractor,
     ImpactAnalyzer,
     LineageHistoryManager,
 )
-from snowcli_tools.lineage.column_parser import QualifiedColumn
-from snowcli_tools.lineage.utils import (
+from nanuk_mcp.lineage.column_parser import QualifiedColumn
+from nanuk_mcp.lineage.utils import (
     cached_sql_parse,
     networkx_descendants_at_distance,
     safe_file_write,
@@ -85,7 +85,7 @@ class TestP0CriticalIssues(TestCase):
 
     def test_database_connection_safety(self):
         """Test safe database connection handling."""
-        from snowcli_tools.lineage.utils import safe_db_connection
+        from nanuk_mcp.lineage.utils import safe_db_connection
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
@@ -179,7 +179,7 @@ class TestP1HighPriorityIssues(TestCase):
                     )
 
             # Test cleanup function
-            from snowcli_tools.lineage.utils import clean_old_snapshots
+            from nanuk_mcp.lineage.utils import clean_old_snapshots
 
             # Create fake old graph files
             for i in range(150):
@@ -310,7 +310,7 @@ class TestImpactAnalysisRobustness(TestCase):
 
     def test_missing_node_handling(self):
         """Test handling of missing nodes in impact analysis."""
-        from snowcli_tools.lineage.graph import LineageGraph, LineageNode, NodeType
+        from nanuk_mcp.lineage.graph import LineageGraph, LineageNode, NodeType
 
         graph = LineageGraph()
 
@@ -366,7 +366,7 @@ class TestExternalSourceSecurity(TestCase):
 
     def test_credential_handling(self):
         """Test that credentials are not exposed in exports."""
-        from snowcli_tools.lineage.external import ExternalSource, ExternalSourceType
+        from nanuk_mcp.lineage.external import ExternalSource, ExternalSourceType
 
         source = ExternalSource(
             source_type=ExternalSourceType.S3,
@@ -396,7 +396,7 @@ class TestTimeTravel(TestCase):
             # Mock the catalog and graph building but don't mock _save_snapshot
             # so that snapshots are actually saved to the database
             with mock.patch(
-                "snowcli_tools.lineage.history.LineageBuilder"
+                "nanuk_mcp.lineage.history.LineageBuilder"
             ) as mock_builder:
                 # Mock the builder to return a minimal graph
                 mock_result = mock.Mock()
