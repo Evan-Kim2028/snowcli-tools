@@ -200,9 +200,9 @@ def register_nanuk_mcp(
     from 1,089 LOC to ~300 LOC while improving testability and maintainability.
     """
 
-    if getattr(server, "_snowcli_tools_registered", False):  # pragma: no cover - safety
+    if getattr(server, "_nanuk_mcp_registered", False):  # pragma: no cover - safety
         return
-    setattr(server, "_snowcli_tools_registered", True)
+    setattr(server, "_nanuk_mcp_registered", True)
 
     config = get_config()
     context = create_service_context(existing_config=config)
@@ -569,7 +569,7 @@ def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--instructions",
         required=False,
-        default="Snowcli-tools MCP server combining Snowflake official tools with catalog/lineage helpers.",
+        default="Nanuk MCP server combining Snowflake official tools with catalog/lineage helpers.",
         help="Instructions string surfaced to MCP clients",
     )
 
