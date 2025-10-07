@@ -1,4 +1,4 @@
-# Nanuk MCP Architecture (v1.9.0)
+# Nanuk MCP Architecture (v2.0.0)
 
 > **Overview**: Nanuk MCP uses a layered service architecture that provides both direct CLI access and AI assistant integration through MCP (Model Context Protocol).
 
@@ -106,36 +106,27 @@ Centralized configuration with override precedence:
 - **Validated**: All values are validated at load time
 - **Extensible**: Easy to add new configuration options
 
-### CLI Interface (`src/nanuk_mcp/cli.py`)
+### MCP Server Interface (`src/nanuk_mcp/mcp_server.py`)
 
-Command-line interface with consistent patterns:
+MCP server provides AI assistant integration:
 
 ```bash
-# Global options available to all commands
-nanuk -p <profile> -c <config> <command> [options]
+# Start MCP server (MCP-only interface in v2.0+)
+nanuk-mcp                    # Use default or env profile
+nanuk-mcp --profile <name>   # Specify profile explicitly
 
-# Command groups with focused responsibilities
-nanuk catalog      # Data discovery operations
-nanuk lineage      # Lineage analysis
-nanuk depgraph     # Dependency mapping
-nanuk query        # SQL execution
-nanuk-mcp          # MCP server for AI assistants
+# All operations via MCP tools:
+# - execute_query           # SQL execution
+# - build_catalog           # Data discovery operations
+# - query_lineage           # Lineage analysis
+# - build_dependency_graph  # Dependency mapping
+# - test_connection         # Connection testing
+# - health_check            # Server health status
 ```
 
 ## Data Flow
 
-### 1. CLI Command Execution
-```mermaid
-graph TD
-    A[CLI Command] --> B[Global Options Processing]
-    B --> C[Configuration Loading]
-    C --> D[Service Initialization]
-    D --> E[Operation Execution]
-    E --> F[Result Formatting]
-    F --> G[Output Display]
-```
-
-### 2. MCP Request Processing
+### 1. MCP Request Processing (Primary Interface in v2.0+)
 ```mermaid
 graph TD
     A[MCP Client Request] --> B[Authentication Check]
@@ -146,7 +137,7 @@ graph TD
     F --> G[MCP Response]
 ```
 
-### 3. Configuration Resolution
+### 2. Configuration Resolution
 ```mermaid
 graph TD
     A[Application Start] --> B[Load CLI Args]
@@ -248,20 +239,18 @@ async def analytics_insights_tool() -> Dict[str, Any]:
     )
 ```
 
-### 3. New CLI Commands
+### 3. Python API Extensions
 ```python
-# Add new CLI command group
-@cli.group()
-def analytics():
-    """Analytics and insights commands."""
-    pass
+# Add new service for Python API
+class AnalyticsService:
+    """Analytics and insights service."""
+    def __init__(self, *, config: Config | None = None):
+        self._config = config or get_config()
 
-@analytics.command()
-def insights():
-    """Generate data insights."""
-    service = AnalyticsService()
-    result = service.generate_insights()
-    console.print_json(result)
+    def generate_insights(self) -> dict:
+        """Generate data insights."""
+        # Implementation
+        return insights_data
 ```
 
 ## Testing Strategy
@@ -283,21 +272,23 @@ def insights():
 
 ## Migration Guide (1.4.x → 1.9.0)
 
-### Breaking Changes
-- **Service Layer**: New service-based architecture
-- **Configuration**: Enhanced configuration management
-- **MCP Integration**: New layered MCP approach
+### Breaking Changes (v2.0)
+- **CLI Removed**: All CLI commands removed - MCP-only architecture
+- **MCP-Only**: All functionality via MCP tools and Python API
+- **Profile Selection**: Now via --profile flag or SNOWFLAKE_PROFILE env var
 
-### Migration Steps
-1. **Update Dependencies**: Install new MCP packages
-2. **Update Profiles**: Ensure Snow CLI profiles are valid
-3. **Update Integration**: MCP clients may need reconfiguration
-4. **Test Thoroughly**: Run verification test suite
+### Migration Steps (v1.x to v2.0)
+1. **Remove CLI usage**: Replace with MCP tool calls or Python API
+2. **Update Integration**: Configure AI assistants with nanuk-mcp
+3. **Update Profiles**: Ensure Snowflake CLI profiles are valid
+4. **Test MCP tools**: Verify all operations work via MCP
+5. **See Migration Guide**: [CLI to MCP Migration](cli-to-mcp-migration.md)
 
 ### Compatibility
-- **CLI Commands**: Fully backward compatible
-- **Configuration**: Existing configs supported with deprecation warnings
+- **Python API**: Fully backward compatible
+- **Configuration**: Existing configs supported
 - **Profiles**: All existing Snow CLI profiles supported
+- **CLI**: Removed in v2.0 - see migration guide
 
 ---
 

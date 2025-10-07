@@ -20,14 +20,26 @@ Nanuk MCP provides MCP (Model Context Protocol) integration for AI assistants, e
 
 ### Claude Code
 
-**Configuration file**: `~/.claude-code/mcp.json`
+**Configuration file**: `~/.config/claude-code/mcp.json`
 
 ```json
 {
   "mcpServers": {
     "nanuk-mcp": {
-      "command": "nanuk",
-      "args": ["mcp"],
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"],
+      "env": {}
+    }
+  }
+}
+```
+
+**Alternative with environment variable**:
+```json
+{
+  "mcpServers": {
+    "nanuk-mcp": {
+      "command": "nanuk-mcp",
       "env": {
         "SNOWFLAKE_PROFILE": "my-profile"
       }
@@ -50,11 +62,8 @@ Nanuk MCP provides MCP (Model Context Protocol) integration for AI assistants, e
 {
   "mcpServers": {
     "nanuk-mcp": {
-      "command": "nanuk",
-      "args": ["mcp"],
-      "env": {
-        "SNOWFLAKE_PROFILE": "my-profile"
-      },
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"],
       "cwd": "/path/to/your/project"
     }
   }
@@ -75,11 +84,8 @@ Nanuk MCP provides MCP (Model Context Protocol) integration for AI assistants, e
 {
   "mcpServers": {
     "nanuk-mcp": {
-      "command": "nanuk",
-      "args": ["mcp"],
-      "env": {
-        "SNOWFLAKE_PROFILE": "my-profile"
-      }
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"]
     }
   }
 }
@@ -98,8 +104,19 @@ Nanuk MCP provides MCP (Model Context Protocol) integration for AI assistants, e
 {
   "mcpServers": {
     "nanuk-mcp": {
-      "command": "nanuk",
-      "args": ["mcp"],
+      "command": "nanuk-mcp",
+      "args": ["--profile", "your-profile-name"]
+    }
+  }
+}
+```
+
+**Or with environment variable**:
+```json
+{
+  "mcpServers": {
+    "nanuk-mcp": {
+      "command": "nanuk-mcp",
       "env": {
         "SNOWFLAKE_PROFILE": "your-profile-name"
       }
@@ -130,8 +147,8 @@ Nanuk MCP provides these MCP tools for AI assistants:
 # Check if profile exists
 snow connection list
 
-# Test profile manually
-nanuk --profile my-profile verify
+# Test profile manually with Snowflake CLI
+snow sql -q "SELECT CURRENT_USER()" --connection my-profile
 
 # Check permissions
 ls -la ~/.snowflake/config.toml
@@ -177,18 +194,12 @@ ls -la ~/.snowflake/config.toml
 {
   "mcpServers": {
     "nanuk-mcp-prod": {
-      "command": "nanuk",
-      "args": ["mcp"],
-      "env": {
-        "SNOWFLAKE_PROFILE": "prod-profile"
-      }
+      "command": "nanuk-mcp",
+      "args": ["--profile", "prod-profile"]
     },
     "nanuk-mcp-dev": {
-      "command": "nanuk",
-      "args": ["mcp"],
-      "env": {
-        "SNOWFLAKE_PROFILE": "dev-profile"
-      }
+      "command": "nanuk-mcp",
+      "args": ["--profile", "dev-profile"]
     }
   }
 }
@@ -199,10 +210,9 @@ ls -la ~/.snowflake/config.toml
 {
   "mcpServers": {
     "nanuk-mcp": {
-      "command": "nanuk",
-      "args": ["mcp"],
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"],
       "env": {
-        "SNOWFLAKE_PROFILE": "my-profile",
         "SNOWCLI_CATALOG_DIR": "/path/to/custom/catalog"
       }
     }
