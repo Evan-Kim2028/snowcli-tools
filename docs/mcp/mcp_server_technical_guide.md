@@ -2,69 +2,70 @@
 
 ## Architecture Overview
 
-The MCP server is implemented as an **optional feature** using Python packaging extras. It is a thin wrapper around the existing nanuk-mcp functionality that exposes CLI capabilities as structured tools that AI assistants can call through the MCP protocol.
+The MCP server is the primary interface for Nanuk MCP (v2.0+). It exposes Snowflake operations as structured tools that AI assistants can call through the MCP protocol.
 
-### Optional Dependencies
-- MCP functionality requires the `[mcp]` extra: `pip install nanuk-mcp[mcp]`
-- Core CLI works without MCP dependencies
-- Import errors are handled gracefully with helpful messages
+### Core Architecture
+- MCP server built on FastMCP framework
+- Service layer provides business logic
+- All dependencies included by default (no separate installation needed)
+- Import errors handled gracefully with helpful messages
 
 ### Key Components
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   MCP Client    │    │   MCP Server     │    │  nanuk-mcp  │
-│ (VS Code, etc.) │◄──►│ (mcp_server.py)  │◄──►│   (CLI layer)   │
+│   MCP Client    │    │   MCP Server     │    │  Service Layer  │
+│ (VS Code, etc.) │◄──►│ (mcp_server.py)  │◄──►│ (Business Logic)│
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │
                                 ▼
                        ┌──────────────────┐
-                       │ Snowflake CLI    │
-                       │   (snow sql)     │
+                       │ Snowflake Labs   │
+                       │  MCP + Snow CLI  │
                        └──────────────────┘
 ```
 
 ### Core Files
 
 - **`src/nanuk_mcp/mcp_server.py`** - Main MCP server implementation
-- **`src/nanuk_mcp/cli.py`** - CLI commands (includes `mcp` command)
-- **`examples/run_mcp_server.py`** - Example script for running the server
+- **`src/nanuk_mcp/mcp/tools/`** - MCP tool implementations
+- **`src/nanuk_mcp/service_layer/`** - Business logic services
 - **`tests/test_mcp_server.py`** - Comprehensive test suite
-- **`mcp_config.json`** - Example MCP client configuration
+- **`.mcp.json.example`** - Example MCP client configuration
 
-## Feature Synchronization
+## Adding New MCP Tools
 
-**Important**: New CLI features do NOT automatically become available in the MCP server. The MCP server maintains its own tool registry that must be manually updated.
+**Important**: New service layer features should be exposed as MCP tools. The MCP server tool registry must be updated when adding new functionality.
 
 ### When to Update the MCP Server
 
 Update the MCP server when:
-1. **New CLI commands are added** - Expose as new MCP tools
-2. **Existing CLI commands are modified** - Update corresponding MCP tool schemas
-3. **New CLI parameters are added** - Add to MCP tool input schemas
+1. **New service methods are added** - Expose as new MCP tools
+2. **Existing service methods are modified** - Update corresponding MCP tool schemas
+3. **New parameters are added** - Add to MCP tool input schemas
 4. **Authentication or configuration changes** - Update MCP server initialization
 
 ### Feature Iteration Process
 
 ```mermaid
 graph LR
-    A[Add CLI Feature] --> B[Update MCP Server Tools]
+    A[Add Service Method] --> B[Create MCP Tool]
     B --> C[Update Tests]
     C --> D[Update Documentation]
     D --> E[Release]
 ```
 
-### Example: Adding a New CLI Feature
+### Example: Adding a New MCP Tool
 
-1. **Add CLI Command** (e.g., `nanuk analyze`):
+1. **Add Service Method** (e.g., in `service_layer/query.py`):
    ```python
-   @cli.command()
-   def analyze():
+   def analyze_query_performance(self, query: str) -> dict:
        """Analyze query performance and suggest optimizations."""
        # Implementation
+       return {"analysis": "...", "suggestions": [...]}
    ```
 
-2. **Update MCP Server** - Add corresponding tool:
+2. **Create MCP Tool** - Add to `mcp/tools/` directory:
    ```python
    types.Tool(
        name="analyze_performance",

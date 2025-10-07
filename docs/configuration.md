@@ -3,7 +3,7 @@
  ## Overview
  
  Nanuk MCP can be configured through multiple methods, with the following precedence:
- 1. Command-line arguments (highest priority)
+ 1. MCP server arguments (highest priority)
  2. Environment variables
  3. Configuration files
  4. Default values (lowest priority)

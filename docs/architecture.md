@@ -1,6 +1,6 @@
 # Nanuk MCP Architecture (v2.0.0)
 
-> **Overview**: Nanuk MCP uses a layered service architecture that provides both direct CLI access and AI assistant integration through MCP (Model Context Protocol).
+> **Overview**: Nanuk MCP uses a layered service architecture that provides AI assistant integration through MCP (Model Context Protocol) and a Python API for programmatic access.
 
 ## Architectural Principles
 
@@ -8,10 +8,10 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                  Client Applications                        │
-│              (AI Assistants, CLI Users)                     │
+│              (AI Assistants, Python API)                    │
 ├─────────────────────────────────────────────────────────────┤
 │                  Presentation Layer                         │
-│                 (CLI Commands, MCP Server)                  │
+│                    (MCP Server)                             │
 ├─────────────────────────────────────────────────────────────┤
 │                   Service Layer                             │
 │           (CatalogService, QueryService, etc.)             │
@@ -262,7 +262,7 @@ class AnalyticsService:
 
 ### 2. Integration Tests
 - **MCP Server**: Test with real Snowflake connections
-- **CLI Commands**: End-to-end command testing
+- **MCP Tools**: End-to-end tool testing
 - **Profile Validation**: Test with various profile types
 
 ### 3. Contract Tests
@@ -273,9 +273,9 @@ class AnalyticsService:
 ## Migration Guide (1.4.x → 1.9.0)
 
 ### Breaking Changes (v2.0)
-- **CLI Removed**: All CLI commands removed - MCP-only architecture
+- **CLI Removed**: Legacy CLI commands removed in v2.0 - MCP-only architecture
 - **MCP-Only**: All functionality via MCP tools and Python API
-- **Profile Selection**: Now via --profile flag or SNOWFLAKE_PROFILE env var
+- **Profile Selection**: Via --profile flag when starting MCP server or SNOWFLAKE_PROFILE env var
 
 ### Migration Steps (v1.x to v2.0)
 1. **Remove CLI usage**: Replace with MCP tool calls or Python API

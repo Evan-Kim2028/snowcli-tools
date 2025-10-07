@@ -265,4 +265,4 @@ For issues with the MCP server:
 3. Review the MCP client logs for detailed error messages
 4. Check that you're using compatible versions of all components
 
-The MCP server is designed to be a thin wrapper around your existing nanuk-mcp functionality, so most issues can be diagnosed by testing the underlying CLI commands first.
+The MCP server exposes Nanuk MCP functionality through structured tools, so most issues can be diagnosed by checking the service layer or testing with the Python API directly.
