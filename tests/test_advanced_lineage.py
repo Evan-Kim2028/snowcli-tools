@@ -396,7 +396,7 @@ class TestTimeTravel(TestCase):
             # Mock the catalog and graph building but don't mock _save_snapshot
             # so that snapshots are actually saved to the database
             with mock.patch(
-                "snowcli_tools.lineage.history.LineageBuilder"
+                "nanuk_mcp.lineage.history.LineageBuilder"
             ) as mock_builder:
                 # Mock the builder to return a minimal graph
                 mock_result = mock.Mock()

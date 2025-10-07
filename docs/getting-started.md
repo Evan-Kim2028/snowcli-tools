@@ -1,6 +1,6 @@
 # Getting Started with Nanuk MCP
 
-> **Quick Start**: Set up your Snowflake profile → Install Nanuk MCP → Start using powerful data operations and MCP integration
+> **Quick Start**: Set up your Snowflake profile → Install Nanuk MCP → Start using with your AI assistant
 
 ## Prerequisites
 
@@ -9,19 +9,18 @@
    - Check: `python --version`
    - Install: https://www.python.org/downloads/
 
-2. **Snowflake CLI** (Official package - separate from this tool)
+2. **Snowflake CLI** (Official package - for profile management)
    - Install: `pip install snowflake-cli-labs`
    - Check: `snow --version`
    - Docs: https://docs.snowflake.com/en/developer-guide/snowflake-cli/
-   - Purpose: Manages Snowflake authentication profiles
+   - Purpose: Manages Snowflake authentication profiles only
 
 3. **Snowflake account** with appropriate permissions
    - Need: USAGE on warehouse/database/schema
    - Need: SELECT on INFORMATION_SCHEMA
    - Contact your Snowflake admin if unsure
 
-**Recommended**:
-4. **Private key file** (for key-pair authentication) or use other auth methods
+4. **AI Assistant** that supports MCP (e.g., Claude Code, Cline, etc.)
 
 ## Step 1: Install Nanuk MCP
 
@@ -32,7 +31,7 @@
 pip install nanuk-mcp
 ```
 
-**Option 2: Development Installation (For contributors and latest features)**
+**Option 2: Development Installation (For contributors)**
 ```bash
 # Clone and install the project
 git clone https://github.com/Evan-Kim2028/nanuk-mcp
@@ -42,492 +41,192 @@ cd nanuk-mcp
 uv sync
 ```
 
-### Command Prefixes: `uv run` vs Direct Commands
-
-**When to use `uv run`**:
-- ✅ Development installation (git clone + uv sync)
-- ✅ Testing new features
-- ✅ Contributing to the project
-
-**When to use direct commands**:
-- ✅ PyPI installation (`pip install nanuk-mcp`)
-- ✅ Production environments
-- ✅ CI/CD pipelines
-
-**Examples**:
-```bash
-# Development installation (use uv run)
-uv run nanuk --profile my-profile verify
-uv run nanuk --profile my-profile catalog -d MY_DB
-
-# PyPI installation (direct commands)
-nanuk --profile my-profile verify
-nanuk --profile my-profile catalog -d MY_DB
-```
-
-**Quick check**: If you installed with `pip install nanuk-mcp`, use direct commands. If you installed with `git clone` + `uv sync`, use `uv run` prefix.
-
 ## Step 2: Set Up Your Snowflake Profile
 
-**This is the most critical step** - Nanuk MCP requires a properly configured Snowflake CLI profile for authentication and connection management.
+**Critical**: Nanuk MCP uses Snowflake CLI profiles for authentication.
 
-### Snowflake Parameters
-
-Understanding which parameters are required vs optional:
-
-| Parameter | Required | When Needed | Purpose | Example |
-|-----------|----------|-------------|---------|---------|
-| `--connection-name` | ✅ Always | Profile creation | Name for this connection profile | `"my-snowflake"` |
-| `--account` | ✅ Always | Authentication | Your Snowflake account identifier | `"mycompany-prod.us-east-1"` |
-| `--user` | ✅ Always | Authentication | Your Snowflake username | `"alex.chen"` |
-| **Authentication** (pick ONE) | | | | |
-| `--password` | 🟡 Pick one | Password auth | Interactive password prompt | (prompts securely) |
-| `--private-key-file` | 🟡 Pick one | Key-pair auth | Path to private key file | `"~/.snowflake/key.pem"` |
-| `--authenticator` | 🟡 Pick one | SSO/OAuth | Authentication method | `"externalbrowser"` |
-| **Context** (optional defaults) | | | | |
-| `--warehouse` | 🟢 Optional* | Running queries | Default warehouse for queries | `"COMPUTE_WH"` |
-| `--database` | 🟢 Optional | Database queries | Default database context | `"ANALYTICS_DB"` |
-| `--schema` | 🟢 Optional | Schema queries | Default schema context | `"PUBLIC"` |
-| `--role` | 🟢 Optional | Access control | Default role to assume | `"ANALYST"` |
-
-**Legend**:
-- ✅ **Required**: Must provide
-- 🟡 **Authentication** (pick ONE): Must choose one method
-- 🟢 **Optional**: Can omit; set as default or specify per-query
-
-**Important**: `--warehouse` is optional for connection but **required for running queries**. Either:
-1. Set in profile (recommended): Always available
-2. Specify per-query: More flexible but must specify each time
-
-### Finding Your Account Identifier
-
-**Your Snowflake URL**:
-```
-https://abc12345.us-east-1.snowflakecomputing.com
-          ↓
-```
-
-**Your account identifier**:
-```
-abc12345.us-east-1
-```
-(Remove `.snowflakecomputing.com` suffix)
-
-**Common formats**:
-- Legacy: `abc12345.us-east-1`
-- Org-based: `myorg-myaccount.us-east-1`
-- With cloud: `myaccount.us-east-1.aws`
-
-**Don't know your account?** Ask your Snowflake admin or check the bottom-left corner of the Snowflake web UI.
-
-### Quick Setup: Minimal Profile (Fastest)
-
-For testing or getting started quickly:
+### Create a Snowflake Profile
 
 ```bash
+# Create a new profile (interactive)
+snow connection add
+
+# Example with key-pair authentication
 snow connection add \
-  --connection-name "test" \
-  --account "<your-account>.<region>" \
-  --user "<your-username>" \
-  --password \
-  --warehouse "<your-warehouse>"
-```
-
-**Example**:
-```bash
-snow connection add \
-  --connection-name "test" \
-  --account "mycompany-prod.us-east-1" \
-  --user "alex.chen" \
-  --password \
-  --warehouse "COMPUTE_WH"
-# Password will be prompted securely
-```
-
-**What you get**:
-- ✅ Working connection in 2 minutes
-- ✅ Can run queries immediately
-- ⚠️ Password auth (less secure - upgrade to key-pair for production)
-
-**Upgrade later**: Follow Option A below to add key-pair authentication.
-
----
-
-### Option A: Key-Pair Authentication (Recommended for Production)
-
-#### Step 1: Generate RSA Key Pair
-
-```bash
-# Create .snowflake directory
-mkdir -p ~/.snowflake
-
-# Generate private key (unencrypted for simplicity)
-openssl genrsa -out ~/.snowflake/snowflake_rsa_key.pem 2048
-
-# Generate public key
-openssl rsa -in ~/.snowflake/snowflake_rsa_key.pem \
-    -pubout -out ~/.snowflake/snowflake_rsa_key.pub
-
-# Set proper permissions (important!)
-chmod 400 ~/.snowflake/snowflake_rsa_key.pem
-chmod 400 ~/.snowflake/snowflake_rsa_key.pub
-```
-
-#### Step 2: Upload Public Key to Snowflake
-
-```sql
--- Copy your public key (remove header/footer)
--- From: ~/.snowflake/snowflake_rsa_key.pub
--- Remove "-----BEGIN PUBLIC KEY-----" and "-----END PUBLIC KEY-----"
--- Remove all newlines to create single-line string
-
--- In Snowflake, run:
-ALTER USER <your_username> SET RSA_PUBLIC_KEY='<your_public_key_string>';
-
--- Verify it was set
-DESC USER <your_username>;
--- Look for RSA_PUBLIC_KEY_FP (fingerprint)
-```
-
-**Helper Script**:
-```bash
-# Format public key for Snowflake
-cat ~/.snowflake/snowflake_rsa_key.pub | \
-    grep -v "BEGIN PUBLIC KEY" | \
-    grep -v "END PUBLIC KEY" | \
-    tr -d '\n'
-
-echo ""
-echo "Copy the above string and run in Snowflake:"
-echo "ALTER USER <username> SET RSA_PUBLIC_KEY='<paste here>';"
-```
-
-#### Step 3: Create Profile
-
-```bash
-# Create a new profile with private key authentication
-uv run snow connection add \
-  --connection-name "my-profile" \
-  --account "your-account.region" \
-  --user "your-username" \
-  --private-key-file "~/.snowflake/snowflake_rsa_key.pem" \
-  --database "YOUR_DATABASE" \
-  --schema "YOUR_SCHEMA" \
-  --warehouse "YOUR_WAREHOUSE" \
-  --role "YOUR_ROLE"
-```
-
-### Option B: Other Authentication Methods
-
-```bash
-# Browser-based OAuth
-uv run snow connection add \
-  --connection-name "my-profile" \
-  --account "your-account.region" \
-  --user "your-username" \
-  --authenticator "externalbrowser" \
-  --database "YOUR_DATABASE" \
-  --warehouse "YOUR_WAREHOUSE"
-
-# Username/password (not recommended for production)
-uv run snow connection add \
-  --connection-name "my-profile" \
-  --account "your-account.region" \
-  --user "your-username" \
-  --password \
-  --database "YOUR_DATABASE" \
-  --warehouse "YOUR_WAREHOUSE"
+  --connection-name my-profile \
+  --account mycompany-prod.us-east-1 \
+  --user alex.chen \
+  --warehouse COMPUTE_WH \
+  --database MY_DB \
+  --schema PUBLIC \
+  --private-key-file ~/.snowflake/key.pem
 ```
 
 ### Verify Your Profile
 
 ```bash
-# List all configured profiles
-uv run snow connection list
-
-# Test your profile works
-uv run nanuk --profile my-profile verify
-```
-
-**Expected output**: ✅ "Verified Snow CLI and profile 'my-profile'"
-
-## Step 3: Basic Usage
-
-### CLI Operations
-
-```bash
-# Execute SQL queries
-uv run nanuk --profile my-profile query "SELECT CURRENT_VERSION()"
-
-# Build data catalog
-uv run nanuk --profile my-profile catalog
-
-# Generate dependency graphs
-uv run nanuk --profile my-profile depgraph
-
-# Analyze lineage
-uv run nanuk --profile my-profile lineage MY_TABLE
-```
-
-### MCP Server (AI Assistant Integration)
-
-```bash
-# Start the MCP server for AI assistants
-SNOWFLAKE_PROFILE=my-profile nanuk-mcp
-```
-
-**Success indicators**:
-- ✅ FastMCP 2.0 banner appears
-- ✅ Profile validation succeeds
-- ✅ Health checks pass
-- ✅ Server shows "running" status
-- ✅ No error messages in output
-- ✅ Server stays running (doesn't exit immediately)
-
-**Expected output**:
-```
-FastMCP 2.0 Server Starting...
-✓ Profile 'my-profile' validated successfully
-✓ Health checks passed
-✓ MCP server running on stdio
-✓ Ready for AI assistant connections
-```
-
-**If you see errors**:
-- "Profile not found" → Check profile exists with `snow connection list`
-- "Permission denied" → Verify key file permissions (`chmod 400`)
-- "JWT token invalid" → Re-upload public key to Snowflake
-- "Account not found" → Check account identifier format
-
-## Step 4: Configuration (Optional)
-
-### Profile Configuration File
-
-Snowflake CLI stores your profiles in a configuration file:
-
-**Location**:
-- **macOS**: `~/Library/Application Support/snowflake/config.toml`
-- **Linux**: `~/.snowflake/config.toml`
-- **Windows**: `%USERPROFILE%\.snowflake\config.toml`
-
-**View your profiles**:
-```bash
-# List all configured profiles
+# List all profiles
 snow connection list
 
-# View the config file directly
-cat ~/.snowflake/config.toml  # Linux/Mac
-# or
-cat ~/Library/Application\ Support/snowflake/config.toml  # macOS
+# Test your connection
+snow sql -q "SELECT CURRENT_VERSION()" --connection my-profile
 ```
 
-**Example config file**:
-```toml
-default_connection_name = "my-profile"
+## Step 3: Configure MCP Server
 
-[connections.my-profile]
-account = "abc12345.us-west-2"
-user = "your.email@company.com"
-database = "MY_DATABASE"
-warehouse = "MY_WAREHOUSE"
-role = "MY_ROLE"
-authenticator = "SNOWFLAKE_JWT"
-private_key_file = "/path/to/rsa_key.p8"
+Add nanuk-mcp to your AI assistant's MCP configuration.
+
+### Claude Code Configuration
+
+Edit your Claude Code MCP settings (`~/.config/claude-code/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "nanuk-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/path/to/nanuk-mcp",
+        "run",
+        "nanuk-mcp"
+      ],
+      "env": {
+        "SNOWFLAKE_PROFILE": "my-profile"
+      }
+    }
+  }
+}
 ```
 
-**Manual editing**: You can edit this file directly if needed, but using `snow connection add` is recommended.
+**For PyPI installation**, use:
+```json
+{
+  "mcpServers": {
+    "nanuk-mcp": {
+      "command": "nanuk-mcp",
+      "env": {
+        "SNOWFLAKE_PROFILE": "my-profile"
+      }
+    }
+  }
+}
+```
+
+### Other MCP Clients
+
+For other MCP-compatible clients, use similar configuration pointing to:
+- **Command**: `nanuk-mcp` (PyPI) or `uv run nanuk-mcp` (dev)
+- **Environment**: Set `SNOWFLAKE_PROFILE` to your profile name
+
+## Step 4: Start Using MCP Tools
+
+Once configured, interact with Nanuk MCP through your AI assistant:
+
+### Example Prompts
+
+```
+"Test my Snowflake connection"
+→ Uses: test_connection tool
+
+"Build a catalog for MY_DATABASE"
+→ Uses: build_catalog tool
+
+"Show me lineage for USERS table"
+→ Uses: query_lineage tool
+
+"Execute this query: SELECT * FROM CUSTOMERS LIMIT 10"
+→ Uses: execute_query tool
+
+"Build a dependency graph for MY_DATABASE"
+→ Uses: build_dependency_graph tool
+```
+
+## Available MCP Tools
+
+| Tool Name | Description | Key Parameters |
+|-----------|-------------|----------------|
+| `test_connection` | Test Snowflake connection | profile (optional) |
+| `build_catalog` | Build database catalog | database, output_dir |
+| `query_lineage` | Analyze table lineage | object_name, direction, depth |
+| `build_dependency_graph` | Generate dependency graph | database, format |
+| `execute_query` | Execute SQL query | statement, output_format |
+| `preview_table` | Preview table data | table_name, limit |
+| `health_check` | Check MCP server health | - |
+| `get_catalog_summary` | Get catalog statistics | catalog_dir |
+
+## Advanced Configuration
 
 ### Environment Variables
 
 ```bash
-# Set default profile
+# Set default Snowflake profile
 export SNOWFLAKE_PROFILE=my-profile
 
-# Set default paths
+# Set default catalog directory
 export SNOWCLI_CATALOG_DIR=./my_catalog
+
+# Set default lineage directory
 export SNOWCLI_LINEAGE_DIR=./my_lineage
 ```
 
-### Configuration File
+### Multiple Profiles
 
-```yaml
-# ~/.nanuk-mcp/config.yml
-snowflake:
-  profile: "my-profile"
+Switch between environments by changing the `SNOWFLAKE_PROFILE`:
 
-catalog:
-  output_dir: "./data_catalogue"
-
-lineage:
-  cache_dir: "./lineage_cache"
-  max_depth: 3
+```json
+{
+  "mcpServers": {
+    "nanuk-dev": {
+      "command": "nanuk-mcp",
+      "env": {"SNOWFLAKE_PROFILE": "dev"}
+    },
+    "nanuk-prod": {
+      "command": "nanuk-mcp",
+      "env": {"SNOWFLAKE_PROFILE": "prod"}
+    }
+  }
+}
 ```
-
-## Common Workflows
-
-### 1. Data Discovery Workflow
-
-```bash
-# 1. Build comprehensive catalog
-uv run nanuk --profile my-profile catalog
-
-# 2. Explore dependencies
-uv run nanuk --profile my-profile depgraph --format dot
-
-# 3. Analyze specific table lineage
-uv run nanuk --profile my-profile lineage MY_IMPORTANT_TABLE --depth 2
-```
-
-### 2. AI Assistant Integration Workflow
-
-```bash
-# 1. Start MCP server
-SNOWFLAKE_PROFILE=my-profile nanuk-mcp &
-
-# 2. Configure your AI assistant (VS Code, Claude Code, etc.) to connect
-# 3. Use AI assistant to query data, analyze schemas, generate insights
-```
-
-### 3. Development Workflow
-
-```bash
-# 1. Set up profile for development environment
-uv run snow connection add --connection-name "dev-profile" ...
-
-# 2. Run operations with explicit profile
-uv run nanuk --profile dev-profile query "..."
-
-# 3. Switch between environments easily
-SNOWFLAKE_PROFILE=prod-profile nanuk-mcp
-```
-
-## Architecture Overview
-
-Nanuk MCP uses a **layered architecture**:
-
-```
-┌─────────────────────────────────────┐
-│        Your Applications            │
-├─────────────────────────────────────┤
-│     Nanuk MCP MCP Server        │  ← AI Assistant Interface
-│  (Catalog, Lineage, Dependencies)   │
-├─────────────────────────────────────┤
-│      Snowflake Labs MCP             │  ← Authentication & Core Tools
-│   (Auth, Connection, Security)      │
-├─────────────────────────────────────┤
-│       Snowflake CLI                 │  ← Profile Management
-├─────────────────────────────────────┤
-│         Snowflake                   │  ← Your Data Warehouse
-└─────────────────────────────────────┘
-```
-
-**Key Benefits**:
-- **Secure**: Leverages Snowflake's official authentication
-- **Powerful**: Combines official tools with advanced analytics
-- **Integrated**: Single MCP endpoint for AI assistants
-- **Flexible**: Support for multiple profiles and environments
 
 ## Troubleshooting
 
+### MCP Server Won't Start
+
+**Issue**: MCP server fails to start
+**Solution**:
+1. Verify Snowflake profile: `snow connection list`
+2. Test connection: `snow sql -q "SELECT 1" --connection my-profile`
+3. Check MCP configuration in your AI assistant settings
+4. Review logs in your AI assistant
+
 ### Authentication Errors
 
-#### "JWT token is invalid"
-**Cause**: Public key not properly uploaded to Snowflake or key mismatch
-
+**Issue**: "Authentication failed"
 **Solution**:
-1. Check public key format:
-   ```bash
-   # Verify key format
-   openssl rsa -in rsa_key.p8 -noout -text
-   ```
+1. Verify profile credentials are correct
+2. Check private key file permissions (should be 600)
+3. Ensure profile name matches `SNOWFLAKE_PROFILE` env var
 
-2. Re-upload public key to Snowflake:
-   ```bash
-   # Get public key content (remove headers/footers)
-   cat rsa_key.pub | grep -v "BEGIN PUBLIC KEY" | grep -v "END PUBLIC KEY" | tr -d '\n'
-   ```
+### Tool Not Found
 
-3. In Snowflake web UI:
-   - Go to your user profile → Edit
-   - Paste public key (no headers/footers, no line breaks)
-   - Save changes
-
-#### "Account not found"
-**Cause**: Incorrect account identifier format
-
+**Issue**: AI assistant can't find MCP tools
 **Solution**:
-- Check account format: `account_locator.region` (e.g., `abc12345.us-west-2`)
-- Try adding region if missing: `account.region`
-- Try adding cloud provider: `account.region.aws`
-- Verify account name in Snowflake web UI URL
-
-#### "User not found"
-**Cause**: Incorrect username or user doesn't exist
-
-**Solution**:
-- Check username spelling (case-insensitive)
-- Use email if that's your Snowflake login
-- Verify user exists in Snowflake
-
-#### "Permission denied" on key file
-**Cause**: Incorrect file permissions
-
-**Solution**:
-```bash
-# Set correct permissions
-chmod 400 rsa_key.p8
-chmod 400 rsa_key.pub
-
-# Verify permissions
-ls -la rsa_key.p8
-# Should show: -r--------
-```
-
-### Profile Issues
-
-```bash
-# Check if profile exists
-uv run snow connection list
-
-# Test Snow CLI directly
-uv run snow sql -q "SELECT 1" --connection my-profile
-
-# Recreate profile if needed
-uv run snow connection delete --connection-name my-profile
-uv run snow connection add --connection-name my-profile ...
-```
-
-### Permission Issues
-
-Common permissions needed:
-- `USAGE` on warehouse, database, schema
-- `SELECT` on `INFORMATION_SCHEMA` tables
-- `SHOW` privileges for object discovery
-- Role with appropriate access to your data
-
-### MCP Server Issues
-
-```bash
-# Check for missing dependencies
-uv add "mcp>=1.0.0" "fastmcp>=2.8.1" "snowflake-labs-mcp>=1.3.3"
-
-# Test with debug output
-SNOWFLAKE_PROFILE=my-profile nanuk-mcp --log-level DEBUG
-```
+1. Restart your AI assistant
+2. Verify MCP server is configured correctly
+3. Check command path in MCP configuration
 
 ## Next Steps
 
-- **Read the [Architecture Guide](./architecture.md)** to understand the service layer design
-- **Explore [MCP Integration](./mcp/mcp_server_user_guide.md)** for AI assistant setup
-- **Check [API Reference](./api/README.md)** for programmatic usage
-- **Review [Configuration](./configuration.md)** for advanced settings
+- 📖 [MCP Tools Reference](mcp/tools-reference.md) - Detailed tool documentation
+- 🔧 [Configuration Guide](configuration.md) - Advanced settings
+- 🐛 [Troubleshooting Guide](troubleshooting.md) - Common issues
+- 📊 [Usage Examples](examples/) - Real-world examples
 
-## Support
+## Migrating from CLI?
 
-- **Documentation**: Check `/docs` folder for detailed guides
-- **Issues**: Report problems via GitHub issues
-- **Examples**: See `/examples` directory for common use cases
+If you were using the old CLI interface from snowcli-tools, see the [Migration Guide](migration-guide.md) for step-by-step instructions.
 
 ---
 
-*Version 1.9.0 | Updated: 2025-10-07*
+*Questions? Check our [GitHub Discussions](https://github.com/Evan-Kim2028/nanuk-mcp/discussions)*

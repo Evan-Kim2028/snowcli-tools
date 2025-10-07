@@ -284,7 +284,7 @@ catalog = catalog_service.build_catalog(database="MY_DB")
 **Solution**: Reinstall package or check PATH: `pip install --force-reinstall nanuk-mcp`
 
 **Issue**: MCP server won't start
-**Solution**: Check Snowflake profile is configured: `nanuk --profile PROF verify`
+**Solution**: Check Snowflake profile is configured and verify MCP server setup in Claude Code settings
 
 See [Troubleshooting Guide](docs/troubleshooting.md) for more solutions.
 

@@ -1,11 +1,11 @@
 """Compatibility shim for the old package name `snowflake_connector`.
 
-Please import from `snowcli_tools` going forward.
+Please import from `nanuk_mcp` going forward.
 """
 
 from warnings import warn
 
-from snowcli_tools import (
+from nanuk_mcp import (
     Config,
     ParallelQueryConfig,
     ParallelQueryExecutor,
@@ -16,7 +16,7 @@ from snowcli_tools import (
 )
 
 warn(
-    "`snowflake_connector` is deprecated; use `snowcli_tools` instead.",
+    "`snowflake_connector` is deprecated; use `nanuk_mcp` instead.",
     DeprecationWarning,
     stacklevel=2,
 )

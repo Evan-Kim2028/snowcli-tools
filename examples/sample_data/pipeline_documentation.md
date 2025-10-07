@@ -178,36 +178,36 @@ The pipeline demonstrates several advanced lineage patterns:
 3. **Complex Views**: FILTERED_DEX_TRADES_VIEW has non-obvious dependencies
 4. **Cross-database References**: BTC analysis references external price data
 
-## Usage Patterns for snowcli-tools
+## Usage Patterns for nanuk-mcp
 
 ### Catalog Generation
 ```bash
 # Full database catalog
-uv run snowflake-cli catalog --database DEFI_SAMPLE_DB
+Use MCP client to catalog --database DEFI_SAMPLE_DB
 
 # Schema-specific catalog
-uv run snowflake-cli catalog --database DEFI_SAMPLE_DB --schema ANALYTICS
+Use MCP client to catalog --database DEFI_SAMPLE_DB --schema ANALYTICS
 ```
 
 ### Lineage Analysis
 ```bash
 # Main fact table lineage (shows complex dependencies)
-uv run snowflake-cli lineage DEX_TRADES_STABLE --direction both --depth 3
+Use MCP client to lineage DEX_TRADES_STABLE --direction both --depth 3
 
 # Filtered view lineage (demonstrates view dependencies)
-uv run snowflake-cli lineage FILTERED_DEX_TRADES_VIEW --direction upstream
+Use MCP client to lineage FILTERED_DEX_TRADES_VIEW --direction upstream
 
 # BTC analytics lineage (shows dynamic table refresh chain)
-uv run snowflake-cli lineage BTC_DEX_TRADES_USD_DT --direction upstream
+Use MCP client to lineage BTC_DEX_TRADES_USD_DT --direction upstream
 ```
 
 ### Dependency Graphs
 ```bash
 # Visualize full pipeline dependencies
-uv run snowflake-cli depgraph --database DEFI_SAMPLE_DB --format dot
+Use MCP client to depgraph --database DEFI_SAMPLE_DB --format dot
 
 # Generate JSON for custom visualization
-uv run snowflake-cli depgraph --database DEFI_SAMPLE_DB --format json
+Use MCP client to depgraph --database DEFI_SAMPLE_DB --format json
 ```
 
 ## MCP Integration Examples
@@ -255,4 +255,4 @@ The pipeline handles differences across DEX protocols:
 - Consistent trade direction logic (A_TO_B)
 - Protocol-specific pool naming conventions
 
-This real-world pipeline demonstrates the complexity and business value that snowcli-tools can help analyze and understand through automated cataloging, lineage analysis, and dependency mapping.
+This real-world pipeline demonstrates the complexity and business value that nanuk-mcp can help analyze and understand through automated cataloging, lineage analysis, and dependency mapping.

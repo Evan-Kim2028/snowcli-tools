@@ -223,7 +223,7 @@ def register_snowcli_tools(
     build_catalog_inst = BuildCatalogTool(config, catalog_service)
     build_dependency_graph_inst = BuildDependencyGraphTool(dependency_service)
     test_connection_inst = ConnectionTestTool(config, snowflake_service)
-    health_check_inst = HealthCheckTool(_health_monitor)
+    health_check_inst = HealthCheckTool(config, snowflake_service, _health_monitor)
     get_catalog_summary_inst = GetCatalogSummaryTool(catalog_service)
 
     @server.tool(

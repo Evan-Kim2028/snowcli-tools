@@ -19,6 +19,11 @@ from .models import Edge, EdgeType, Graph, Node, NodeType
 from .queries import LineageQueryService
 from .traversal import traverse_dependencies
 
+# Advanced lineage features (new in v2.0)
+from .column_parser import ColumnLineageExtractor
+from .history import LineageHistoryManager
+from .impact import ChangeType, ImpactAnalyzer
+
 # Backward compatibility alias
 LineageGraph = Graph
 LineageNode = Node
@@ -45,6 +50,11 @@ __all__ = [
     "CatalogLoader",
     "CatalogObject",
     "LineageQueryService",
+    # Advanced lineage features
+    "ColumnLineageExtractor",
+    "LineageHistoryManager",
+    "ImpactAnalyzer",
+    "ChangeType",
     # Exceptions
     "LineageException",
     "LineageParseError",

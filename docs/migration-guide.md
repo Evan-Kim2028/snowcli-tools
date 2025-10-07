@@ -13,9 +13,7 @@ This guide helps you migrate from the deprecated CLI interface to the modern MCP
 
 ### CLI Deprecation Timeline
 - **v1.9.0**: Deprecation warnings added
-- **v1.10.0**: CLI moved to legacy package
-- **v2.0.0**: CLI removed from default installation (Q2 2026)
-- **v3.0.0**: CLI completely removed (Q4 2026)
+- **v2.0.0**: CLI completely removed - MCP-only architecture (Current)
 
 ## Migration Checklist
 
@@ -203,16 +201,18 @@ kill $MCP_PID
 ## Legacy CLI Support
 
 ### If You Still Need CLI
+The CLI has been completely removed in v2.0.0. For legacy CLI support, use the previous package:
+
 ```bash
-# Install legacy CLI package (when available)
-pip install "nanuk-mcp[legacy-cli]==1.9.x"
+# Install legacy snowcli-tools package (v1.x)
+pip install "snowcli-tools>=1.9.0,<2.0.0"
 ```
 
-### Legacy CLI Limitations
+### Legacy snowcli-tools Limitations
 - Security fixes only
 - No new features
-- Limited support
-- Will be removed in v3.0.0
+- Limited support through December 2025
+- Replaced by nanuk-mcp v2.0.0+
 
 ## Success Metrics
 

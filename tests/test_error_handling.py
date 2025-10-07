@@ -253,7 +253,7 @@ def test_error_aggregator_summary():
     assert summary["warnings"]["warn2"] == "warning2"
 
 
-@patch("snowcli_tools.error_handling.logger")
+@patch("nanuk_mcp.error_handling.logger")
 def test_error_handling_logging(mock_logger):
     """Test that error handling properly logs errors."""
 
