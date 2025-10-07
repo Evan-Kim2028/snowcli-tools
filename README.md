@@ -65,14 +65,7 @@ snow connection add --connection-name "my-profile" \
   --account "your-account.region" --user "your-username" \
   --private-key-file "/path/to/key.p8" --database "DB" --warehouse "WH"
 
-# 2. Verify connection
-nanuk --profile my-profile verify
-
-# Expected output:
-# ✓ Verified Snow CLI and profile 'my-profile'.
-# ✓ Connection successful
-
-# 3. Start MCP server for AI assistant integration
+# 2. Start MCP server for AI assistant integration
 SNOWFLAKE_PROFILE=my-profile nanuk-mcp
 
 # Expected output:
@@ -118,7 +111,7 @@ Nanuk is a Model Context Protocol (MCP) server that provides AI assistants with 
 
 ## Command Quick Reference
 
-### MCP Server (Primary Interface)
+### MCP Server (MCP-Only Interface)
 
 | Task | Command | Notes |
 |------|---------|-------|
@@ -126,22 +119,12 @@ Nanuk is a Model Context Protocol (MCP) server that provides AI assistants with 
 | Start with profile | `nanuk-mcp --profile PROF` | Specify profile explicitly |
 | Configure | `nanuk-mcp --configure` | Interactive setup |
 
-### CLI Interface (Legacy - Deprecated)
-
-> ⚠️ **CLI Deprecation Notice**
-> The CLI interface is deprecated and will be removed in v3.0.0.
-> Please migrate to the MCP interface. See [Migration Guide](docs/migration-guide.md).
-
-| Task | Command | Notes |
-|------|---------|-------|
-| Check version | `nanuk --version` | Should show 2.0.0 |
-| Verify setup | `nanuk --profile PROF verify` | Tests connectivity |
-| Build catalog | `nanuk --profile PROF catalog -d DB` | Scans database metadata |
-| Query lineage | `nanuk --profile PROF lineage TABLE_NAME` | After catalog built |
-| Execute SQL | `nanuk --profile PROF query "SELECT ..."` | Run SQL queries |
+> 🐻‍❄️ **MCP-Only Architecture**
+> Nanuk is MCP-only. All functionality is available through MCP tools.
+> CLI interface was removed in v2.0.0. See [CLI Migration Guide](docs/cli-to-mcp-migration.md) if upgrading.
 
 **Profile Selection Options**:
-- **Global flag**: `nanuk --profile PROFILE_NAME COMMAND` (explicit)
+- **Command flag**: `nanuk-mcp --profile PROFILE_NAME` (explicit)
 - **Environment variable**: `export SNOWFLAKE_PROFILE=PROFILE_NAME` (session)
 - **Default profile**: Set with `snow connection set-default PROFILE_NAME` (implicit)
 

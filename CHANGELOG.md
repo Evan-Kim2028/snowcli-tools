@@ -18,13 +18,28 @@ The package has been renamed to better reflect its MCP-first architecture and cr
 - **Import namespace**: `from snowcli_tools` → `from nanuk_mcp`
 - **PyPI package**: `pip install snowcli-tools` → `pip install nanuk-mcp`
 - **MCP command**: `snowcli-mcp` → `nanuk-mcp`
-- **CLI command**: `snowflake-cli` → `nanuk` (legacy)
 - **GitHub repository**: `Evan-Kim2028/snowcli-tools` → `Evan-Kim2028/nanuk-mcp`
 
+**CLI Interface Removed**
+
+The legacy CLI interface (`nanuk` command) has been removed. Nanuk is now MCP-only.
+
+#### Removed
+- `nanuk` CLI command and all subcommands
+- `src/nanuk_mcp/cli.py` and `src/nanuk_mcp/commands/` directory (~774 LOC)
+- CLI-specific dependency: `click>=8.0.0`
+- CLI-specific tests
+
 #### Migration
-- See [Migration Guide](docs/migration-from-snowcli-tools.md) for step-by-step instructions
-- Tombstone package available for 6 months: `pip install snowcli-tools` will redirect to `nanuk-mcp`
-- All functionality remains identical - only names changed
+- **Rebrand migration**: See [Migration Guide](docs/migration-from-snowcli-tools.md) for package name changes
+- **CLI migration**: See [CLI Migration Guide](docs/cli-to-mcp-migration.md) for transitioning to MCP tools
+- All CLI functionality is available through MCP tools (see table in migration guide)
+
+#### Rationale
+- Package name is "nanuk-**mcp**" - should be MCP-only
+- Reduces codebase by 774 LOC (40% reduction in interface code)
+- Eliminates user confusion about which interface to use
+- Aligns with AI-first architecture
 
 #### Why "Nanuk"?
 - 🐻‍❄️ Nanuk (polar bear in Inuit) connects to Snowflake's arctic theme

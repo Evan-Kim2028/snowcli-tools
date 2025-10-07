@@ -9,7 +9,6 @@ authors = [
 requires-python = ">=3.12"
 keywords = ["snowflake", "mcp", "ai", "data", "analytics", "model-context-protocol"]
 dependencies = [
-    "click>=8.0.0",
     "rich>=13.0.0",
     "pyyaml>=6.0.0",
     "snowflake-cli>=2.0.0",
@@ -27,7 +26,6 @@ dependencies = [
 
 [project.scripts]
 nanuk-mcp = "nanuk_mcp.mcp_server:main"
-nanuk = "nanuk_mcp.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/Evan-Kim2028/nanuk-mcp"
