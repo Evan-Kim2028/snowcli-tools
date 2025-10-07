@@ -169,7 +169,7 @@ The agent follows a systematic 4-step optimization process:
                │
                ▼
 ┌─────────────────────────────────────────┐
-│   Snowcli-Tools MCP (Atomic Tools)      │
+│   nanuk-mcp MCP (Atomic Tools)      │
 │   - execute_query                        │
 │   - preview_table                        │
 │   - query_lineage                        │

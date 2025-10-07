@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "nanuk-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/path/to/nanuk-mcp",
+        "run",
+        "nanuk-mcp"
+      ],
+      "env": {
+        "SNOWFLAKE_PROFILE": "your-profile-name"
+      }
+    }
+  }
+}

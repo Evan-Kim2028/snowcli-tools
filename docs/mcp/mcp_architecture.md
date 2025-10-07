@@ -324,7 +324,7 @@ def _analyze_performance(self, query: str) -> str:
 
 ```bash
 # Enable debug logging
-export SNOWCLI_TOOLS_DEBUG=1
+export NANUK_MCP_DEBUG=1
 
 # MCP protocol logging
 export MCP_DEBUG=1

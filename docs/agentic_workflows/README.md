@@ -1,4 +1,4 @@
-# Agentic Workflows for Snowcli-Tools
+# Agentic Workflows for nanuk-mcp
 
 > **Transform Snowflake + Sui blockchain analysis with intelligent AI agents**
 
@@ -92,7 +92,7 @@ Multiple agents work together:
                       │
                       ▼
 ┌──────────────────────────────────────────────────┐
-│         Snowcli-Tools MCP (Atomic Tools)          │
+│         nanuk-mcp MCP (Atomic Tools)          │
 │  • execute_query     • build_catalog              │
 │  • preview_table     • query_lineage              │
 │  • check_dependencies                             │
@@ -158,7 +158,7 @@ Multiple agents work together:
 ### Configuration
 
 Agents work automatically with Claude Code when:
-1. ✅ Snowcli-tools MCP server is configured in `.claude.json`
+1. ✅ nanuk-mcp MCP server is configured in `.claude.json`
 2. ✅ Snowflake profile is valid and accessible
 3. ✅ Prompts match agent capability patterns
 
@@ -377,7 +377,7 @@ Want to improve the agents or add new capabilities?
 - 📕 [Architecture Overview](../architecture.md)
 
 ### Tools
-- [Snowcli-Tools MCP](https://github.com/your-repo/nanuk-mcp)
+- [nanuk-mcp MCP](https://github.com/your-repo/nanuk-mcp)
 - [Snowflake CLI](https://docs.snowflake.com/en/developer-guide/nanuk)
 - [Claude Code](https://claude.ai/code)
 

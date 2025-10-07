@@ -148,10 +148,10 @@ def test_register_nanuk_mcp_registers_once():
     service = StubService()
 
     with patch("nanuk_mcp.mcp_server.SnowCLI"):
-        mcp_server.register_snowcli_tools(server, service)
+        mcp_server.register_nanuk_mcp(server, service)
         assert server.names  # ensure tools registered
 
     # Second call should not duplicate registrations
     with patch("nanuk_mcp.mcp_server.SnowCLI"):
-        mcp_server.register_snowcli_tools(server, service)
+        mcp_server.register_nanuk_mcp(server, service)
     assert server.names == list(dict.fromkeys(server.names))

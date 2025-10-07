@@ -224,7 +224,7 @@ The MCP server respects all nanuk-mcp environment variables:
 The MCP server uses the same logging configuration as nanuk-mcp. Enable debug logging:
 
 ```bash
-export SNOWCLI_TOOLS_DEBUG=1
+export NANUK_MCP_DEBUG=1
 ```
 
 ### Error Reporting

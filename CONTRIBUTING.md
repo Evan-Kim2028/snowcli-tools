@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thank you for your interest in contributing to SnowCLI Tools! This guide will help you get started with development and submitting contributions.
+Thank you for your interest in contributing to Nanuk MCP! This guide will help you get started with development and submitting contributions.
 
 ## Getting Started
 
@@ -31,8 +31,8 @@ Thank you for your interest in contributing to SnowCLI Tools! This guide will he
 
 4. **Verify installation**:
    ```bash
-   uv run snowflake-cli --version
-   # Should show: 1.9.0
+   uv run nanuk-mcp --help
+   # Should show: nanuk-mcp MCP Server
    ```
 
 ## Making Changes
