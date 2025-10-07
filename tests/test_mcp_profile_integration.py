@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-import snowcli_tools.profile_utils as profile_utils
+import nanuk_mcp.profile_utils as profile_utils
 
 
 class TestMCPServerProfileIntegration:
@@ -22,7 +22,7 @@ class TestMCPServerProfileIntegration:
         """Test successful server startup with valid profile."""
         with mock_config_with_profiles(["dev", "prod"], default="dev"):
             with patch.dict(os.environ, {"SNOWFLAKE_PROFILE": "dev"}):
-                from snowcli_tools.mcp_server import main
+                from nanuk_mcp.mcp_server import main
 
                 # Mock the FastMCP server to avoid actual startup
                 with patch("snowcli_tools.mcp_server.FastMCP") as mock_fastmcp:
@@ -54,7 +54,7 @@ class TestMCPServerProfileIntegration:
         """Test server startup fails gracefully with invalid profile."""
         with mock_config_with_profiles(["dev", "prod"], default="dev"):
             with patch.dict(os.environ, {"SNOWFLAKE_PROFILE": "nonexistent"}):
-                from snowcli_tools.mcp_server import main
+                from nanuk_mcp.mcp_server import main
 
                 with patch("snowcli_tools.mcp_server.parse_arguments") as mock_args:
                     with patch("snowcli_tools.mcp_server.configure_logging"):
@@ -77,7 +77,7 @@ class TestMCPServerProfileIntegration:
         """Test server startup fails when no profiles exist."""
         with mock_empty_config():
             with patch.dict(os.environ, {}, clear=True):
-                from snowcli_tools.mcp_server import main
+                from nanuk_mcp.mcp_server import main
 
                 with patch("snowcli_tools.mcp_server.parse_arguments") as mock_args:
                     with patch("snowcli_tools.mcp_server.configure_logging"):
@@ -98,7 +98,7 @@ class TestMCPServerProfileIntegration:
     def test_profile_override_from_command_line(self, mock_config_with_profiles):
         """Test that command line profile override works."""
         with mock_config_with_profiles(["dev", "prod"], default="dev"):
-            from snowcli_tools.mcp_server import main
+            from nanuk_mcp.mcp_server import main
 
             with patch("snowcli_tools.mcp_server.FastMCP") as mock_fastmcp:
                 with patch("snowcli_tools.mcp_server.parse_arguments") as mock_args:
@@ -133,10 +133,10 @@ class TestMCPToolProfileCheck:
         """Test profile check tool with valid configuration."""
         with mock_config_with_profiles(["dev", "prod"], default="dev"):
             with patch.dict(os.environ, {"SNOWFLAKE_PROFILE": "dev"}):
-                from snowcli_tools.mcp_server import _get_profile_recommendations
+                from nanuk_mcp.mcp_server import _get_profile_recommendations
 
                 # Test the recommendation function
-                from snowcli_tools.profile_utils import get_profile_summary
+                from nanuk_mcp.profile_utils import get_profile_summary
 
                 summary = get_profile_summary()
                 recommendations = _get_profile_recommendations(summary, "dev")
@@ -148,8 +148,8 @@ class TestMCPToolProfileCheck:
         """Test profile check tool identifies configuration issues."""
         with mock_config_with_profiles(["dev", "prod"], default=None):  # No default
             with patch.dict(os.environ, {}, clear=True):  # No env var
-                from snowcli_tools.mcp_server import _get_profile_recommendations
-                from snowcli_tools.profile_utils import get_profile_summary
+                from nanuk_mcp.mcp_server import _get_profile_recommendations
+                from nanuk_mcp.profile_utils import get_profile_summary
 
                 summary = get_profile_summary()
                 recommendations = _get_profile_recommendations(summary, None)
@@ -168,7 +168,7 @@ class TestErrorLogging:
         """Test that validation errors are logged with helpful information."""
         with mock_config_with_profiles(["dev", "prod"], default="dev"):
             with patch.dict(os.environ, {"SNOWFLAKE_PROFILE": "invalid"}):
-                from snowcli_tools.mcp_server import main
+                from nanuk_mcp.mcp_server import main
 
                 with patch("snowcli_tools.mcp_server.parse_arguments") as mock_args:
                     with patch("snowcli_tools.mcp_server.configure_logging"):
@@ -201,7 +201,7 @@ class TestErrorLogging:
     def test_no_profiles_error_logging(self, mock_logger, mock_empty_config):
         """Test logging when no profiles are configured."""
         with mock_empty_config():
-            from snowcli_tools.mcp_server import main
+            from nanuk_mcp.mcp_server import main
 
             with patch("snowcli_tools.mcp_server.parse_arguments") as mock_args:
                 with patch("snowcli_tools.mcp_server.configure_logging"):

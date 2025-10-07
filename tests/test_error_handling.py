@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from snowcli_tools.error_handling import (
+from nanuk_mcp.error_handling import (
     ErrorAggregator,
     ErrorContext,
     SnowflakeConnectionError,
@@ -14,7 +14,7 @@ from snowcli_tools.error_handling import (
     handle_snowflake_errors,
     safe_execute,
 )
-from snowcli_tools.snow_cli import SnowCLIError
+from nanuk_mcp.snow_cli import SnowCLIError
 
 
 def test_error_context_creation():

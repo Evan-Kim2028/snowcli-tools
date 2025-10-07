@@ -2,7 +2,7 @@
 
 > **Master the art of orchestrating AI agents for Sui blockchain data analysis**
 
-This guide provides detailed examples, templates, and best practices for crafting effective prompts that leverage the specialized agents built on snowcli-tools MCP.
+This guide provides detailed examples, templates, and best practices for crafting effective prompts that leverage the specialized agents built on nanuk-mcp MCP.
 
 ## Table of Contents
 
@@ -62,7 +62,7 @@ Analyze the data architecture for Sui package 0x2::sui::SUI
 
 #### Focused Component Analysis
 ```
-Using the snowcli-tools MCP, analyze how package 0x3::staking::StakingPool
+Using the nanuk-mcp MCP, analyze how package 0x3::staking::StakingPool
 interacts with validator data. Focus on the STAKING_EVENTS and
 VALIDATOR_CHANGES tables specifically.
 ```

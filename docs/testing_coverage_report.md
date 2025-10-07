@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This report provides a comprehensive analysis of testing coverage for snowcli-tools, highlighting current test coverage, identifying gaps, and providing recommendations for improvement.
+This report provides a comprehensive analysis of testing coverage for nanuk-mcp, highlighting current test coverage, identifying gaps, and providing recommendations for improvement.
 
 ## Current Test Statistics
 
@@ -489,7 +489,7 @@ pytest.mark.slow       # Slow tests (run separately)
 
 ## Conclusion
 
-snowcli-tools has excellent testing coverage for its core infrastructure (circuit breakers, error handling, service architecture) with 80+ passing tests. The foundation is solid, but there are important gaps in:
+nanuk-mcp has excellent testing coverage for its core infrastructure (circuit breakers, error handling, service architecture) with 80+ passing tests. The foundation is solid, but there are important gaps in:
 
 1. **Large-scale operations** (catalogs, lineage)
 2. **Integration testing** (MCP workflows, external systems)
@@ -501,7 +501,7 @@ The recommended phased approach addresses critical gaps first while building tow
 
 ### Run All Tests
 ```bash
-cd /Users/evandekim/Documents/snowcli_tools
+cd /Users/evandekim/Documents/nanuk_mcp
 python -m pytest tests/ -v
 ```
 
@@ -520,7 +520,7 @@ pytest tests/ -m performance
 ### Generate Coverage Report
 ```bash
 # If pytest-cov is available
-pytest tests/ --cov=src/snowcli_tools --cov-report=html
+pytest tests/ --cov=src/nanuk_mcp --cov-report=html
 
 # Manual coverage estimation
 find src/ -name "*.py" -exec wc -l {} + | tail -1  # Total lines

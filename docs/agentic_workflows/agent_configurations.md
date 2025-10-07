@@ -2,7 +2,7 @@
 
 > **Advanced multi-agent orchestration for Sui blockchain data analysis**
 
-This document describes specialized agents designed to work with snowcli-tools MCP server for comprehensive Sui blockchain data analysis workflows.
+This document describes specialized agents designed to work with nanuk-mcp MCP server for comprehensive Sui blockchain data analysis workflows.
 
 ## Overview
 
@@ -33,7 +33,7 @@ These agents are designed to orchestrate complex, multi-step workflows that comb
 - **Lineage Mapping**: Tracks dependencies and data flows between tables
 - **Report Synthesis**: Generates comprehensive architecture and flow reports
 
-**Tools Available**: All snowcli-tools MCP tools
+**Tools Available**: All nanuk-mcp MCP tools
 
 ---
 
@@ -55,7 +55,7 @@ These agents are designed to orchestrate complex, multi-step workflows that comb
 - **Performance Testing**: Validates improvements with controlled timeouts
 - **Blockchain-Specific**: Understands high cardinality blockchain data patterns
 
-**Tools Available**: All snowcli-tools MCP tools
+**Tools Available**: All nanuk-mcp MCP tools
 
 ---
 
@@ -243,14 +243,14 @@ These agents are designed to work seamlessly with Claude Code's Task agent funct
 
 ### MCP Server Requirements
 
-Ensure snowcli-tools MCP server is configured:
+Ensure nanuk-mcp MCP server is configured:
 
 ```json
 {
   "mcpServers": {
-    "snowcli-tools": {
+    "nanuk-mcp": {
       "command": "uv",
-      "args": ["run", "snowflake-cli", "mcp"],
+      "args": ["run", "nanuk", "mcp"],
       "env": {
         "SNOWFLAKE_PROFILE": "your-profile-name"
       }
@@ -304,7 +304,7 @@ While agents have standard workflows, they adapt to:
 
 **Solutions**:
 1. Verify Snowflake profile has correct permissions
-2. Check catalog was built recently: `snowflake-cli catalog -p profile`
+2. Check catalog was built recently: `nanuk --profile profile catalog`
 3. Ensure database/schema contain expected Sui data
 4. Manually verify tables exist: `execute_query "SHOW TABLES"`
 

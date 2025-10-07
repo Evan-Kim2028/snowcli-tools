@@ -9,9 +9,9 @@ from typing import Any, Dict, Iterable
 
 from click.testing import CliRunner
 
-from snowcli_tools.cli import cli as cli_entry
-from snowcli_tools.context import create_service_context
-from snowcli_tools.models import (
+from nanuk_mcp.cli import cli as cli_entry
+from nanuk_mcp.context import create_service_context
+from nanuk_mcp.models import (
     CatalogBuildResult,
     CatalogBuildTotals,
     CatalogMetadata,
@@ -21,8 +21,8 @@ from snowcli_tools.models import (
     DependencyNode,
     DependencyScope,
 )
-from snowcli_tools.service_layer import CatalogService, DependencyService, QueryService
-from snowcli_tools.session_utils import SessionContext
+from nanuk_mcp.service_layer import CatalogService, DependencyService, QueryService
+from nanuk_mcp.session_utils import SessionContext
 
 
 def test_catalog_command_uses_service_snapshot(monkeypatch, tmp_path):

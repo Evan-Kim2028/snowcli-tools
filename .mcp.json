@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "snowcli-tools-v1.10.0": {
+      "command": "/Users/evandekim/Documents/snowcli_tools/.venv/bin/python",
+      "args": [
+        "-m",
+        "snowcli_tools.mcp_server",
+        "--service-config-file",
+        "/Users/evandekim/Documents/snowcli_tools/mcp_service_config.json"
+      ],
+      "env": {
+        "SNOWFLAKE_PROFILE": "mystenlabs-keypair",
+        "PATH": "/Users/evandekim/Documents/snowcli_tools/.venv/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      }
+    }
+  }
+}

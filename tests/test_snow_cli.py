@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from snowcli_tools.snow_cli import QueryOutput, SnowCLI, SnowCLIError
+from nanuk_mcp.snow_cli import QueryOutput, SnowCLI, SnowCLIError
 
 
 @patch("snowcli_tools.snow_cli.shutil.which", return_value="/usr/bin/snow")

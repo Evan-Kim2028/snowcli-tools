@@ -1,4 +1,4 @@
-# SnowCLI Tools Architecture (v1.5.0)
+# SnowCLI Tools Architecture (v1.9.0)
 
 > **Overview**: SnowCLI Tools uses a layered service architecture that provides both direct CLI access and AI assistant integration through MCP (Model Context Protocol).
 
@@ -36,7 +36,7 @@
 
 ## Core Components
 
-### Service Layer (`src/snowcli_tools/service_layer/`)
+### Service Layer (`src/nanuk_mcp/service_layer/`)
 
 The service layer provides the core business logic for SnowCLI Tools operations:
 
@@ -62,7 +62,7 @@ class DependencyService:
 - **Strategy Pattern**: Different execution strategies for sync/async operations
 - **Factory Pattern**: Session context creation from various inputs
 
-### MCP Integration (`src/snowcli_tools/mcp_server.py`)
+### MCP Integration (`src/nanuk_mcp/mcp_server.py`)
 
 The MCP server provides AI assistant integration through a layered approach:
 
@@ -87,7 +87,7 @@ The MCP server provides AI assistant integration through a layered approach:
 - **Resource Management**: Efficient resource lifecycle management
 - **Profile Validation**: Enhanced Snowflake profile validation
 
-### Configuration Management (`src/snowcli_tools/config.py`)
+### Configuration Management (`src/nanuk_mcp/config.py`)
 
 Centralized configuration with override precedence:
 
@@ -106,20 +106,20 @@ Centralized configuration with override precedence:
 - **Validated**: All values are validated at load time
 - **Extensible**: Easy to add new configuration options
 
-### CLI Interface (`src/snowcli_tools/cli.py`)
+### CLI Interface (`src/nanuk_mcp/cli.py`)
 
 Command-line interface with consistent patterns:
 
 ```bash
 # Global options available to all commands
-snowflake-cli -p <profile> -c <config> <command> [options]
+nanuk -p <profile> -c <config> <command> [options]
 
 # Command groups with focused responsibilities
-snowflake-cli catalog      # Data discovery operations
-snowflake-cli lineage      # Lineage analysis
-snowflake-cli depgraph     # Dependency mapping
-snowflake-cli query        # SQL execution
-snowflake-cli mcp          # MCP server for AI assistants
+nanuk catalog      # Data discovery operations
+nanuk lineage      # Lineage analysis
+nanuk depgraph     # Dependency mapping
+nanuk query        # SQL execution
+nanuk mcp          # MCP server for AI assistants
 ```
 
 ## Data Flow
@@ -281,7 +281,7 @@ def insights():
 - **MCP Protocol**: Ensure MCP compliance
 - **Configuration Schema**: Validate config structure
 
-## Migration Guide (1.4.x → 1.5.0)
+## Migration Guide (1.4.x → 1.9.0)
 
 ### Breaking Changes
 - **Service Layer**: New service-based architecture
@@ -301,4 +301,4 @@ def insights():
 
 ---
 
-*Architecture Version: 1.5.0 | Last Updated: 2025-09-28*
+*Architecture Version: 1.9.0 | Last Updated: 2025-09-28*

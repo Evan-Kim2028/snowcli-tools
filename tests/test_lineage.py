@@ -6,13 +6,13 @@ from typing import Optional
 
 import pytest
 
-from snowcli_tools.cli import _traverse_lineage, find_matches_by_partial_name
-from snowcli_tools.lineage.audit import LineageAudit
-from snowcli_tools.lineage.builder import LineageBuilder
-from snowcli_tools.lineage.graph import EdgeType, LineageGraph, LineageNode, NodeType
-from snowcli_tools.lineage.loader import ObjectType
-from snowcli_tools.lineage.queries import LineageQueryResult, LineageQueryService
-from snowcli_tools.lineage.sql_parser import extract_select_clause
+from nanuk_mcp.cli import _traverse_lineage, find_matches_by_partial_name
+from nanuk_mcp.lineage.audit import LineageAudit
+from nanuk_mcp.lineage.builder import LineageBuilder
+from nanuk_mcp.lineage.graph import EdgeType, LineageGraph, LineageNode, NodeType
+from nanuk_mcp.lineage.loader import ObjectType
+from nanuk_mcp.lineage.queries import LineageQueryResult, LineageQueryService
+from nanuk_mcp.lineage.sql_parser import extract_select_clause
 
 
 @pytest.fixture()

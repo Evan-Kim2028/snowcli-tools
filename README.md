@@ -1,10 +1,10 @@
-# SnowCLI Tools
+# Nanuk MCP - Snowflake MCP Server
 
-> **Powerful Snowflake operations with AI assistant integration**
+> 🐻‍❄️ **AI-first Snowflake operations via Model Context Protocol**
 
-Transform your Snowflake data operations with automated cataloging, advanced lineage analysis, SQL safety validation, and seamless AI assistant connectivity through MCP (Model Context Protocol).
+Nanuk (Inuit for "polar bear") brings powerful Snowflake data operations to your AI assistants through the Model Context Protocol (MCP).
 
-## ✨ v1.7.0 New Features
+## ✨ v2.0.0 Features
 
 - 🛡️ **SQL Safety:** Blocks destructive operations (DELETE, DROP, TRUNCATE) with safe alternatives
 - 🧠 **Intelligent Errors:** Compact mode (default) saves 70% tokens; verbose mode for debugging
@@ -14,30 +14,81 @@ Transform your Snowflake data operations with automated cataloging, advanced lin
 
 [📖 See Release Notes](./RELEASE_NOTES.md) for details.
 
-[![PyPI version](https://badge.fury.io/py/snowcli-tools.svg)](https://pypi.org/project/snowcli-tools/)
+[![PyPI version](https://badge.fury.io/py/nanuk-mcp.svg)](https://pypi.org/project/nanuk-mcp/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## 🔄 Migrating from snowcli-tools?
+
+This package was formerly known as `snowcli-tools`. See the [Migration Guide](docs/migration-from-snowcli-tools.md) for step-by-step instructions.
+
+**Quick migration:**
+```bash
+pip uninstall snowcli-tools
+pip install nanuk-mcp
+# Update imports: from snowcli_tools → from nanuk_mcp
+```
+
+---
+
+## Installation
+
+### For End Users (Recommended)
+
+**Install from PyPI for stable releases**:
+```bash
+pip install nanuk-mcp
+```
+
+**When to use**: Production use, stable releases, most users
+
+### For Developers
+
+**Install from source for latest features**:
+```bash
+git clone https://github.com/Evan-Kim2028/nanuk-mcp.git
+cd nanuk-mcp
+uv sync
+```
+
+**When to use**: Testing new features, contributing, custom modifications
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for complete development setup.
 
 ## Quick Start
 
 ```bash
-# 1. Install SnowCLI Tools
-pip install snowcli-tools
-
-# 2. Set up your Snowflake profile
+# 1. Set up your Snowflake profile
 snow connection add --connection-name "my-profile" \
   --account "your-account.region" --user "your-username" \
   --private-key-file "/path/to/key.p8" --database "DB" --warehouse "WH"
 
-# 3. Verify connection
-snowflake-cli verify -p my-profile
+# 2. Verify connection
+nanuk --profile my-profile verify
 
-# 4. Start exploring your data
-snowflake-cli catalog -p my-profile
-snowflake-cli lineage MY_TABLE -p my-profile
+# Expected output:
+# ✓ Verified Snow CLI and profile 'my-profile'.
+# ✓ Connection successful
 
-# 5. Enable AI assistant integration
-SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
+# 3. Start MCP server for AI assistant integration
+SNOWFLAKE_PROFILE=my-profile nanuk-mcp
+
+# Expected output:
+# ✓ MCP server started successfully
+# ✓ Listening on stdio for MCP requests
 ```
+
+## What is Nanuk?
+
+Nanuk is a Model Context Protocol (MCP) server that provides AI assistants with powerful Snowflake operations:
+
+- 🔍 **Query execution and data exploration**
+- 📊 **Table profiling and statistics**
+- 🔗 **Data lineage tracking**
+- 📚 **Catalog building and metadata**
+- ⚡ **Performance optimized for AI workflows**
 
 ## Core Features
 
@@ -45,165 +96,213 @@ SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
 - **Automated Catalog**: Complete metadata extraction from databases, schemas, tables
 - **Advanced Lineage**: Column-level lineage tracking with impact analysis
 - **Dependency Mapping**: Visual object relationships and circular dependency detection
-- **External Integration**: S3/Azure/GCS source mapping
+- **Table Profiling**: Statistical analysis and data quality insights
+
+### 🔍 **Query Operations**
+- **SQL Execution**: Run queries directly from AI assistants
+- **Safety Validation**: Blocks destructive operations by default
+- **Timeout Control**: Agent-controlled query timeouts (1-3600s)
+- **Result Formatting**: Optimized output for AI consumption
 
 ### 🤖 **AI Assistant Integration**
-- **MCP Server**: Direct integration with Claude Code, VS Code, Cursor
-- **Natural Language**: "Show me schema of CUSTOMERS" → instant results
-- **Health Monitoring**: Real-time diagnostics and validation
-- **Enhanced Profiles**: Clear error messages instead of timeouts
+- **MCP Protocol**: Standard Model Context Protocol support
+- **Claude Code**: Native integration with Claude Code
+- **Error Handling**: Compact (70% token savings) or verbose modes
+- **Async Operations**: Non-blocking query execution
 
-### ⚡ **Enterprise Ready**
-- **Layered Security**: Built on Snowflake's official authentication
-- **High Performance**: Parallel operations and connection pooling
-- **Fault Tolerance**: Circuit breaker patterns for reliability
-- **Modern Architecture**: Python 3.12+ with async support
+### 🛡️ **Safety & Reliability**
+- **Destructive Operation Protection**: Prevents accidental data deletion
+- **Circuit Breaker**: Automatic failover for resilience
+- **Connection Pooling**: Efficient resource management
+- **Error Recovery**: Graceful error handling with suggestions
 
-## Architecture
+## Command Quick Reference
 
-SnowCLI Tools uses a **layered architecture** that combines official Snowflake tools with enhanced analytics:
+### MCP Server (Primary Interface)
 
-```
-┌─────────────────────────────────────┐
-│     AI Assistants & Applications    │  ← Your workflows
-├─────────────────────────────────────┤
-│      SnowCLI Tools MCP Server       │  ← Enhanced analytics
-│   (Catalog, Lineage, Dependencies)  │
-├─────────────────────────────────────┤
-│       Snowflake Labs MCP            │  ← Official foundation
-│    (Auth, Connection, Security)     │
-├─────────────────────────────────────┤
-│        Snowflake Platform           │  ← Your data warehouse
-└─────────────────────────────────────┘
-```
+| Task | Command | Notes |
+|------|---------|-------|
+| Start MCP server | `nanuk-mcp` | For AI assistant integration |
+| Start with profile | `nanuk-mcp --profile PROF` | Specify profile explicitly |
+| Configure | `nanuk-mcp --configure` | Interactive setup |
 
-**Key Benefits:**
-- **🔐 Secure**: Leverages Snowflake's official authentication
-- **🚀 Powerful**: Combines official tools with advanced analytics
-- **🔗 Integrated**: Single MCP endpoint for AI assistants
-- **📈 Scalable**: Service layer architecture for extensibility
+### CLI Interface (Legacy - Deprecated)
 
-## Common Use Cases
+> ⚠️ **CLI Deprecation Notice**
+> The CLI interface is deprecated and will be removed in v3.0.0.
+> Please migrate to the MCP interface. See [Migration Guide](docs/migration-guide.md).
 
-### Data Discovery Workflow
-```bash
-# Build comprehensive catalog
-snowflake-cli catalog -p prod
+| Task | Command | Notes |
+|------|---------|-------|
+| Check version | `nanuk --version` | Should show 2.0.0 |
+| Verify setup | `nanuk --profile PROF verify` | Tests connectivity |
+| Build catalog | `nanuk --profile PROF catalog -d DB` | Scans database metadata |
+| Query lineage | `nanuk --profile PROF lineage TABLE_NAME` | After catalog built |
+| Execute SQL | `nanuk --profile PROF query "SELECT ..."` | Run SQL queries |
 
-# Map dependencies
-snowflake-cli depgraph -p prod --format dot
+**Profile Selection Options**:
+- **Global flag**: `nanuk --profile PROFILE_NAME COMMAND` (explicit)
+- **Environment variable**: `export SNOWFLAKE_PROFILE=PROFILE_NAME` (session)
+- **Default profile**: Set with `snow connection set-default PROFILE_NAME` (implicit)
 
-# Analyze critical table lineage
-snowflake-cli lineage CUSTOMER_ORDERS -p prod --depth 3
-```
+## MCP Integration
 
-### AI Assistant Integration
-```bash
-# Start MCP server for AI assistants
-SNOWFLAKE_PROFILE=prod snowflake-cli mcp
+### Claude Code Integration
 
-# Now use Claude Code, VS Code, or Cursor to:
-# - "What tables depend on CUSTOMERS?"
-# - "Show me the schema for ORDERS table"
-# - "Generate a data quality report"
+Add to your Claude Code configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "nanuk": {
+      "command": "nanuk-mcp",
+      "args": ["--profile", "my-profile"]
+    }
+  }
+}
 ```
 
-### Multi-Environment Development
-```bash
-# Switch between environments easily
-snowflake-cli query "SELECT COUNT(*) FROM users" -p dev
-snowflake-cli query "SELECT COUNT(*) FROM users" -p staging
-snowflake-cli query "SELECT COUNT(*) FROM users" -p prod
-```
+### Available MCP Tools
 
-## Getting Started
+- `execute_query` - Execute SQL queries
+- `preview_table` - Preview table contents
+- `profile_table` - Get table statistics
+- `build_catalog` - Build metadata catalog
+- `get_catalog_summary` - Get catalog overview
+- `query_lineage` - Query data lineage
+- `build_dependency_graph` - Build dependency graph
+- `test_connection` - Test Snowflake connection
+- `health_check` - Get system health status
 
-### Prerequisites
-- **Python 3.12+** with pip or uv
-- **Snowflake account** with appropriate permissions
-- **Snowflake CLI** installed (`pip install snowflake-cli`)
+See [MCP Documentation](docs/mcp/mcp_server_user_guide.md) for details.
 
-### Installation Options
+## Python API
 
-**Option 1: PyPI (Recommended)**
-```bash
-pip install snowcli-tools
-```
+```python
+from nanuk_mcp import QueryService, CatalogService
 
-**Option 2: Development Install**
-```bash
-git clone <repository-url>
-cd snowcli-tools
-uv sync  # or pip install -e .
-```
+# Execute query
+query_service = QueryService(profile="my-profile")
+result = query_service.execute("SELECT * FROM users LIMIT 10")
 
-### Profile Setup
-```bash
-# Key-pair authentication (recommended)
-snow connection add --connection-name "my-profile" \
-  --account "your-account.region" \
-  --user "username" \
-  --private-key-file "/path/to/key.p8" \
-  --database "DATABASE" \
-  --warehouse "WAREHOUSE"
-
-# OAuth authentication
-snow connection add --connection-name "my-profile" \
-  --account "your-account.region" \
-  --user "username" \
-  --authenticator "externalbrowser"
-
-# Verify setup
-snowflake-cli verify -p my-profile
+# Build catalog
+catalog_service = CatalogService(profile="my-profile")
+catalog = catalog_service.build_catalog(database="MY_DB")
 ```
 
 ## Documentation
 
-- **[Getting Started Guide](docs/getting-started.md)** - Complete setup and usage guide
-- **[Architecture Overview](docs/architecture.md)** - Technical architecture and design patterns
-- **[MCP Integration](docs/mcp-integration.md)** - AI assistant setup and configuration
-- **[API Reference](docs/api-reference.md)** - Complete command and API documentation
-- **[Configuration Guide](docs/configuration.md)** - Advanced configuration options
-- **[Contributing](CONTRIBUTING.md)** - Development and contribution guidelines
+- [Getting Started Guide](docs/getting-started.md)
+- [MCP Server User Guide](docs/mcp/mcp_server_user_guide.md)
+- [Architecture Overview](docs/architecture.md)
+- [API Reference](docs/api/README.md)
+- [Migration from snowcli-tools](docs/migration-from-snowcli-tools.md)
+- [Contributing Guide](CONTRIBUTING.md)
 
-## Requirements
+## Examples
 
-- **Python**: 3.12 or higher
-- **Snowflake CLI**: Latest version recommended
-- **Dependencies**: Automatically installed with package
-- **Permissions**: `USAGE` on warehouse/database/schema, `SELECT` on `INFORMATION_SCHEMA`
+### Query Execution via MCP
 
-## MCP Integration
-
-For AI assistant integration, install MCP extras:
-
-```bash
-# Install MCP dependencies
-pip install "mcp>=1.0.0" "fastmcp>=2.8.1" "snowflake-labs-mcp>=1.3.3"
-
-# Start MCP server
-SNOWFLAKE_PROFILE=my-profile snowflake-cli mcp
-
-# Configure your AI assistant to connect via MCP
+```python
+# AI assistant sends query via MCP
+{
+  "tool": "execute_query",
+  "arguments": {
+    "statement": "SELECT COUNT(*) FROM users WHERE created_at > CURRENT_DATE - 30",
+    "timeout_seconds": 60
+  }
+}
 ```
 
-**Supported AI Assistants:**
-- Claude Code
-- VS Code with MCP extensions
-- Cursor IDE
-- Any MCP-compatible client
+### Table Profiling
 
-## Support
+```python
+# Get table statistics
+{
+  "tool": "profile_table",
+  "arguments": {
+    "table_name": "MY_DATABASE.MY_SCHEMA.USERS"
+  }
+}
+```
 
-- **Documentation**: Comprehensive guides in `/docs`
-- **Issues**: Report bugs via [GitHub Issues](link-to-issues)
-- **Examples**: Sample workflows in `/examples`
-- **Community**: [Discord/Slack community link]
+### Data Lineage
+
+```python
+# Query lineage for impact analysis
+{
+  "tool": "query_lineage",
+  "arguments": {
+    "object_name": "MY_TABLE",
+    "direction": "both",
+    "depth": 3
+  }
+}
+```
+
+## Why "Nanuk"?
+
+- 🐻‍❄️ **Nanuk** (polar bear in Inuit) connects to Snowflake's arctic theme
+- 🎯 **MCP-first**: Name reflects our focus on Model Context Protocol
+- ✨ **Unique & memorable**: Stands out in the MCP ecosystem
+- 🚀 **Future-proof**: Positions as the premier Snowflake MCP provider
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: "No module named 'nanuk_mcp'"
+**Solution**: Ensure you've installed the package: `pip install nanuk-mcp`
+
+**Issue**: "Command 'nanuk-mcp' not found"
+**Solution**: Reinstall package or check PATH: `pip install --force-reinstall nanuk-mcp`
+
+**Issue**: MCP server won't start
+**Solution**: Check Snowflake profile is configured: `nanuk --profile PROF verify`
+
+See [Troubleshooting Guide](docs/troubleshooting.md) for more solutions.
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup
+
+```bash
+# Clone repository
+git clone https://github.com/Evan-Kim2028/nanuk-mcp.git
+cd nanuk-mcp
+
+# Install dependencies
+uv sync
+
+# Install pre-commit hooks
+pre-commit install
+
+# Run tests
+pytest tests/
+
+# Run linting
+ruff check .
+```
 
 ## License
 
-[License Type] - see [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Support
+
+- 🐛 **Bug reports**: [Open an issue](https://github.com/Evan-Kim2028/nanuk-mcp/issues)
+- 💬 **Questions**: [Discussions](https://github.com/Evan-Kim2028/nanuk-mcp/discussions)
+- 📧 **Email**: ekcopersonal@gmail.com
+
+## Acknowledgments
+
+Built with:
+- [Snowflake Connector for Python](https://github.com/snowflakedb/snowflake-connector-python)
+- [Model Context Protocol](https://modelcontextprotocol.io)
+- [FastMCP](https://github.com/jlowin/fastmcp)
 
 ---
 
-**Version 1.5.0** | Built with ❤️ for the Snowflake community
+**🐻‍❄️ Nanuk MCP - Bringing Snowflake to your AI assistants**

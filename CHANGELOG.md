@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-10-07
+
+### BREAKING CHANGES
+
+**🐻‍❄️ Package Rebrand: snowcli-tools → nanuk-mcp**
+
+The package has been renamed to better reflect its MCP-first architecture and create a unique brand identity.
+
+#### Changed
+- **Package name**: `snowcli-tools` → `nanuk-mcp`
+- **Import namespace**: `from snowcli_tools` → `from nanuk_mcp`
+- **PyPI package**: `pip install snowcli-tools` → `pip install nanuk-mcp`
+- **MCP command**: `snowcli-mcp` → `nanuk-mcp`
+- **CLI command**: `snowflake-cli` → `nanuk` (legacy)
+- **GitHub repository**: `Evan-Kim2028/snowcli-tools` → `Evan-Kim2028/nanuk-mcp`
+
+#### Migration
+- See [Migration Guide](docs/migration-from-snowcli-tools.md) for step-by-step instructions
+- Tombstone package available for 6 months: `pip install snowcli-tools` will redirect to `nanuk-mcp`
+- All functionality remains identical - only names changed
+
+#### Why "Nanuk"?
+- 🐻‍❄️ Nanuk (polar bear in Inuit) connects to Snowflake's arctic theme
+- 🎯 MCP-first: Name reflects focus on Model Context Protocol
+- ✨ Unique & memorable: Stands out in the MCP ecosystem
+- 🚀 Future-proof: Positions as premier Snowflake MCP provider
+
 ## [1.9.0] - 2025-01-04
 
 ### Phase 1: Code Simplification (Completed)

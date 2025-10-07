@@ -48,12 +48,9 @@ from .lineage.identifiers import parse_table_name
 from .mcp.tools import (
     BuildCatalogTool,
     BuildDependencyGraphTool,
-    CheckProfileConfigTool,
-    CheckResourceDependenciesTool,
     ConnectionTestTool,
     ExecuteQueryTool,
     GetCatalogSummaryTool,
-    GetResourceStatusTool,
     HealthCheckTool,
     PreviewTableTool,
     QueryLineageTool,
@@ -227,9 +224,6 @@ def register_snowcli_tools(
     build_dependency_graph_inst = BuildDependencyGraphTool(dependency_service)
     test_connection_inst = ConnectionTestTool(config, snowflake_service)
     health_check_inst = HealthCheckTool(_health_monitor)
-    check_profile_config_inst = CheckProfileConfigTool(config)
-    get_resource_status_inst = GetResourceStatusTool(_resource_manager)
-    check_resource_dependencies_inst = CheckResourceDependenciesTool(_resource_manager)
     get_catalog_summary_inst = GetCatalogSummaryTool(catalog_service)
 
     @server.tool(
@@ -415,49 +409,6 @@ def register_snowcli_tools(
         """Get catalog summary - delegates to GetCatalogSummaryTool."""
         return await get_catalog_summary_inst.execute(catalog_dir=catalog_dir)
 
-    @server.tool(
-        name="check_profile_config", description="Check Snowflake profile configuration"
-    )
-    async def check_profile_config_tool() -> Dict[str, Any]:
-        """Check profile configuration - delegates to CheckProfileConfigTool."""
-        return await check_profile_config_inst.execute()
-
-    @server.tool(
-        name="get_resource_status",
-        description="Get availability status for MCP server resources",
-    )
-    async def get_resource_status_tool(
-        check_catalog: Annotated[
-            bool, Field(description="Include catalog availability check", default=True)
-        ] = True,
-        catalog_dir: Annotated[
-            str,
-            Field(description="Catalog directory to check", default="./data_catalogue"),
-        ] = "./data_catalogue",
-    ) -> Dict[str, Any]:
-        """Get resource status - delegates to GetResourceStatusTool."""
-        return await get_resource_status_inst.execute(
-            check_catalog=check_catalog,
-            catalog_dir=catalog_dir,
-        )
-
-    @server.tool(
-        name="check_resource_dependencies",
-        description="Check dependencies for a specific resource",
-    )
-    async def check_resource_dependencies_tool(
-        resource_name: Annotated[str, Field(description="Resource name to check")],
-        catalog_dir: Annotated[
-            str, Field(description="Catalog directory", default="./data_catalogue")
-        ] = "./data_catalogue",
-    ) -> Dict[str, Any]:
-        """Check resource dependencies - delegates to CheckResourceDependenciesTool."""
-        return await check_resource_dependencies_inst.execute(
-            resource_name=resource_name,
-            catalog_dir=catalog_dir,
-            snowflake_service=snowflake_service,
-            health_monitor=_health_monitor,
-        )
 
     if enable_cli_bridge and snow_cli is not None:
 

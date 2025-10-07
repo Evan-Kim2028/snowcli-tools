@@ -131,7 +131,6 @@ except RuntimeError as e:
 
 - [preview_table](preview_table.md) - Quick table preview without SQL
 - [test_connection](test_connection.md) - Verify connection before queries
-- [check_profile_config](check_profile_config.md) - Validate profile setup
 
 ## See Also
 

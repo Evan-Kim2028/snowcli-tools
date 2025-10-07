@@ -55,7 +55,7 @@ console = Console()
 )
 @click.option("--profile", "-p", "profile", help="Snowflake CLI profile name")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option(version="1.6.0")
+@click.version_option(version="1.9.0")
 def cli(config_path: Optional[str], profile: Optional[str], verbose: bool) -> None:
     """Snowflake CLI Tools consolidated entrypoint."""
 
@@ -79,7 +79,7 @@ def cli(config_path: Optional[str], profile: Optional[str], verbose: bool) -> No
         console.print(f"[green]✓[/green] Using profile: {config.snowflake.profile}")
 
     if verbose:
-        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.6.0")
+        console.print("[blue]ℹ[/blue] Using SNOWCLI-TOOLS v1.9.0")
 
 
 register_cli_groups(cli)

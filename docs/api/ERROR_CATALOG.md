@@ -1,6 +1,6 @@
 # Error Catalog
 
-Complete reference for snowcli-tools errors and solutions.
+Complete reference for nanuk-mcp errors and solutions.
 
 ## ValueError Errors
 
@@ -289,4 +289,4 @@ check_profile_config()  # Returns:
 ---
 
 **Last Updated:** December 2024
-**Version:** v1.8.0
+**Version:** v1.9.0

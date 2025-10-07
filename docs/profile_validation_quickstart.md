@@ -2,7 +2,7 @@
 
 ## Overview
 
-The v1.4.4+ release of snowcli-tools introduces robust profile validation that transforms the user experience from cryptic timeout errors to clear, actionable guidance. This quick-start guide helps you get up and running with the enhanced profile validation system.
+The v1.4.4+ release of nanuk-mcp introduces robust profile validation that transforms the user experience from cryptic timeout errors to clear, actionable guidance. This quick-start guide helps you get up and running with the enhanced profile validation system.
 
 ## 🚀 Before You Start
 
@@ -10,19 +10,19 @@ The v1.4.4+ release of snowcli-tools introduces robust profile validation that t
 1. **Snowflake CLI installed**: The `snow` command-line tool
 2. **Valid Snowflake account**: Access to a Snowflake instance
 3. **Authentication credentials**: Key-pair, OAuth, or password credentials
-4. **snowcli-tools v1.4.4+**: Latest version with profile validation
+4. **nanuk-mcp v1.4.4+**: Latest version with profile validation
 
 ### Quick Installation Check
 ```bash
 # Check if snow CLI is installed
 snow --version
 
-# Check snowcli-tools version
-snowflake-cli --version
+# Check nanuk-mcp version
+nanuk --version
 # Should show v1.4.4 or higher
 
 # Install/upgrade if needed
-uv pip install --upgrade snowcli-tools[mcp]
+uv pip install --upgrade nanuk-mcp[mcp]
 ```
 
 ## 🎯 Quick Profile Setup
@@ -93,19 +93,19 @@ snow connection test --connection-name quickstart
 export SNOWFLAKE_PROFILE=quickstart
 ```
 
-### Step 2: Test with snowcli-tools
+### Step 2: Test with nanuk-mcp
 ```bash
 # Test basic functionality
-snowflake-cli query "SELECT CURRENT_VERSION()"
+nanuk query "SELECT CURRENT_VERSION()"
 
 # Check configuration status
-snowflake-cli config status
+nanuk config status
 ```
 
 ### Step 3: Test MCP Server Startup
 ```bash
 # Start MCP server (should show validation success)
-snowflake-cli mcp
+nanuk mcp
 
 # Expected output:
 # ✓ Snowflake profile validation successful: quickstart
@@ -206,7 +206,7 @@ Try this step-by-step validation demo:
 
 1. **Start MCP server:**
    ```bash
-   snowflake-cli mcp
+   nanuk mcp
    ```
 
 2. **In your AI assistant, ask:**
@@ -239,7 +239,7 @@ Try this step-by-step validation demo:
 1. **Break the configuration intentionally:**
    ```bash
    export SNOWFLAKE_PROFILE=nonexistent-profile
-   snowflake-cli mcp
+   nanuk mcp
    ```
 
 2. **Observe clear error message:**
@@ -256,7 +256,7 @@ Try this step-by-step validation demo:
 3. **Fix the configuration:**
    ```bash
    export SNOWFLAKE_PROFILE=quickstart
-   snowflake-cli mcp
+   nanuk mcp
    ```
 
 ## 📋 Validation Checklist
@@ -265,13 +265,13 @@ Use this checklist to ensure your profile validation setup is working correctly:
 
 ### Basic Setup
 - [ ] **Snowflake CLI installed**: `snow --version` works
-- [ ] **snowcli-tools v1.4.4+**: `snowflake-cli --version` shows correct version
+- [ ] **nanuk-mcp v1.4.4+**: `nanuk --version` shows correct version
 - [ ] **Profile created**: `snow connection list` shows your profile
 - [ ] **Profile tested**: `snow connection test --connection-name <profile>` succeeds
 
 ### Validation Features
 - [ ] **Environment variable set**: `echo $SNOWFLAKE_PROFILE` shows your profile
-- [ ] **MCP server starts cleanly**: No errors during `snowflake-cli mcp` startup
+- [ ] **MCP server starts cleanly**: No errors during `nanuk mcp` startup
 - [ ] **Health check works**: AI assistant can check server health
 - [ ] **Profile diagnostics work**: AI assistant can validate profile configuration
 
@@ -326,7 +326,7 @@ snow connection list
 snow connection set-default my-main-profile
 
 # Use specific profile for one command
-snowflake-cli --profile special-profile query "SELECT 1"
+nanuk --profile special-profile query "SELECT 1"
 ```
 
 ## 🆘 Need Help?

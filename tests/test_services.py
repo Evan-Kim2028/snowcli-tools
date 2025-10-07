@@ -4,13 +4,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from snowcli_tools.circuit_breaker import CircuitBreakerError
-from snowcli_tools.services import (
+from nanuk_mcp.circuit_breaker import CircuitBreakerError
+from nanuk_mcp.services import (
     HealthStatus,
     RobustSnowflakeService,
     execute_query_safe,
 )
-from snowcli_tools.snow_cli import QueryOutput, SnowCLIError
+from nanuk_mcp.snow_cli import QueryOutput, SnowCLIError
 
 
 def test_health_status_creation():

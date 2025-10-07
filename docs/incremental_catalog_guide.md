@@ -31,7 +31,7 @@ Based on real-world testing (583 tables):
 ### Python API
 
 ```python
-from snowcli_tools.catalog import build_incremental_catalog
+from nanuk_mcp.catalog import build_incremental_catalog
 
 # First build (creates metadata)
 result = build_incremental_catalog(
@@ -56,7 +56,7 @@ print(f"Changed objects: {result['changed_objects']}")
 ### Class-Based API
 
 ```python
-from snowcli_tools.catalog import IncrementalCatalogBuilder
+from nanuk_mcp.catalog import IncrementalCatalogBuilder
 
 # Create builder
 builder = IncrementalCatalogBuilder(cache_dir="./data_catalogue")
@@ -321,7 +321,7 @@ result = await build_catalog(
 ```python
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from snowcli_tools.catalog import build_incremental_catalog
+from nanuk_mcp.catalog import build_incremental_catalog
 
 def refresh_catalog():
     result = build_incremental_catalog(
@@ -344,7 +344,7 @@ refresh_task = PythonOperator(
 ```bash
 # Create a simple CLI wrapper
 python -c "
-from snowcli_tools.catalog import build_incremental_catalog
+from nanuk_mcp.catalog import build_incremental_catalog
 result = build_incremental_catalog('./data_catalogue')
 print(f\"Status: {result['status']}\")
 print(f\"Changes: {result['changes']}\")

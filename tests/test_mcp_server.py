@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any, List
 from unittest.mock import MagicMock, patch
 
-from snowcli_tools import mcp_server
-from snowcli_tools.config import Config, SnowflakeConfig
+from nanuk_mcp import mcp_server
+from nanuk_mcp.config import Config, SnowflakeConfig
 
 
 class StubService:

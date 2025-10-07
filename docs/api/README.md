@@ -42,7 +42,7 @@ SnowCLI Tools provides 11 MCP tools for Snowflake data operations, built on top 
 
 - Snowflake account with valid credentials
 - Snowflake CLI configured with connection profile
-- snowcli-tools installed
+- nanuk-mcp installed
 
 ### Basic Usage
 
@@ -159,5 +159,5 @@ get_resource_status()
 
 ---
 
-**Version:** v1.8.0
+**Version:** v1.9.0
 **Last Updated:** December 2024

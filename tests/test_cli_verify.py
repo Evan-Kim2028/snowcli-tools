@@ -4,8 +4,8 @@ from typing import Any, Dict
 
 from click.testing import CliRunner
 
-from snowcli_tools.cli import cli as cli_entry
-from snowcli_tools.snow_cli import SnowCLI, SnowCLIError
+from nanuk_mcp.cli import cli as cli_entry
+from nanuk_mcp.snow_cli import SnowCLI, SnowCLIError
 
 
 def _conn(name: str) -> Dict[str, Any]:

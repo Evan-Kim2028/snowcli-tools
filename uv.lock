@@ -1800,7 +1800,7 @@ wheels = [
 
 [[package]]
 name = "snowcli-tools"
-version = "1.7.0"
+version = "1.9.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -1815,13 +1815,6 @@ dependencies = [
     { name = "snowflake-labs-mcp" },
     { name = "sqlglot" },
     { name = "websockets" },
-]
-
-[package.optional-dependencies]
-mcp = [
-    { name = "fastmcp" },
-    { name = "mcp" },
-    { name = "snowflake-labs-mcp" },
 ]
 
 [package.dev-dependencies]
@@ -1844,9 +1837,7 @@ dev = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.0" },
     { name = "fastmcp", specifier = ">=2.8.1" },
-    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.8.1" },
     { name = "mcp", specifier = ">=1.0.0" },
-    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0.0" },
     { name = "networkx", specifier = ">=3.0" },
     { name = "pydantic", specifier = ">=2.7.0" },
     { name = "pyvis", specifier = ">=0.3.2" },
@@ -1854,11 +1845,9 @@ requires-dist = [
     { name = "rich", specifier = ">=13.0.0" },
     { name = "snowflake-cli", specifier = ">=2.0.0" },
     { name = "snowflake-labs-mcp", specifier = ">=1.3.3" },
-    { name = "snowflake-labs-mcp", marker = "extra == 'mcp'", specifier = ">=1.3.3" },
     { name = "sqlglot", specifier = ">=27.16.3" },
     { name = "websockets", specifier = ">=15.0.1" },
 ]
-provides-extras = ["mcp"]
 
 [package.metadata.requires-dev]
 dev = [

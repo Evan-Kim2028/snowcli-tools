@@ -1,4 +1,4 @@
-# snowcli-tools Features Overview
+# nanuk-mcp Features Overview
 
 ## 🚀 Core Features
 
@@ -13,8 +13,8 @@
 
 **CLI Usage**:
 ```bash
-snowflake-cli query "SELECT * FROM CUSTOMERS LIMIT 10"
-snowflake-cli query --file query.sql --output-format json
+nanuk query "SELECT * FROM CUSTOMERS LIMIT 10"
+nanuk query --file query.sql --output-format json
 ```
 
 **MCP Tools**: `execute_query`, `preview_table`
@@ -40,8 +40,8 @@ snowflake-cli query --file query.sql --output-format json
 
 **CLI Usage**:
 ```bash
-snowflake-cli catalog --database ANALYTICS --output ./catalog
-snowflake-cli catalog --account-scope --include-ddl --max-concurrency 16
+nanuk catalog --database ANALYTICS --output ./catalog
+nanuk catalog --account-scope --include-ddl --max-concurrency 16
 ```
 
 **MCP Tools**: `build_catalog`, `get_catalog_summary`
@@ -69,8 +69,8 @@ snowflake-cli catalog --account-scope --include-ddl --max-concurrency 16
 
 **CLI Usage**:
 ```bash
-snowflake-cli lineage ANALYTICS.CUSTOMERS --direction both --depth 3
-snowflake-cli lineage --output lineage.html --format html
+nanuk lineage ANALYTICS.CUSTOMERS --direction both --depth 3
+nanuk lineage --output lineage.html --format html
 ```
 
 **MCP Tools**: `query_lineage`
@@ -96,8 +96,8 @@ snowflake-cli lineage --output lineage.html --format html
 
 **CLI Usage**:
 ```bash
-snowflake-cli dependency-graph --database ANALYTICS --format dot
-snowflake-cli dependency-graph --output deps.json
+nanuk dependency-graph --database ANALYTICS --format dot
+nanuk dependency-graph --output deps.json
 ```
 
 **MCP Tools**: `build_dependency_graph`
@@ -131,11 +131,11 @@ snowflake-cli dependency-graph --output deps.json
 **CLI Usage**:
 ```bash
 # Traditional configuration
-snowflake-cli config show
-snowflake-cli config set snowflake.warehouse COMPUTE_WH
+nanuk config show
+nanuk config set snowflake.warehouse COMPUTE_WH
 
 # Enhanced profile validation (v1.4.4+)
-snowflake-cli mcp  # Shows validation success/failure immediately
+nanuk mcp  # Shows validation success/failure immediately
 export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 ```
 
@@ -196,7 +196,7 @@ export SNOWFLAKE_PROFILE=my-profile  # Clear profile selection
 **CLI Usage**:
 ```bash
 # Enhanced startup with validation (v1.4.4+)
-snowflake-cli mcp  # Shows immediate validation feedback
+nanuk mcp  # Shows immediate validation feedback
 
 # Expected successful startup:
 # ✓ Snowflake profile validation successful: dev
@@ -491,7 +491,7 @@ def test_partial_failure_handling():
 
 ## 🎉 Conclusion
 
-snowcli-tools provides a comprehensive suite of features for Snowflake data management, with particularly strong coverage in:
+nanuk-mcp provides a comprehensive suite of features for Snowflake data management, with particularly strong coverage in:
 - Core CLI functionality
 - Circuit breaker and reliability patterns
 - Error handling and monitoring

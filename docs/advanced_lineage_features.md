@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Advanced Lineage features in snowcli-tools extend the existing lineage functionality with powerful capabilities for understanding, tracking, and analyzing data flow in your Snowflake environment. These features are fully backward compatible additions to the core lineage functionality.
+The Advanced Lineage features in nanuk-mcp extend the existing lineage functionality with powerful capabilities for understanding, tracking, and analyzing data flow in your Snowflake environment. These features are fully backward compatible additions to the core lineage functionality.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ Track data flow at the column granularity to understand exactly how individual f
 ### Usage
 
 ```python
-from snowcli_tools.lineage import ColumnLineageExtractor
+from nanuk_mcp.lineage import ColumnLineageExtractor
 
 # Initialize the extractor
 extractor = ColumnLineageExtractor(
@@ -73,11 +73,11 @@ for trans in lineage.transformations:
 
 ```bash
 # Extract column lineage
-snowflake-cli lineage column PIPELINE.RAW.USERS.EMAIL \
+nanuk lineage column PIPELINE.RAW.USERS.EMAIL \
     --show-transformations --depth 3
 
 # Show column dependencies
-snowflake-cli lineage columns --table ANALYTICS.FACT_SALES \
+nanuk lineage columns --table ANALYTICS.FACT_SALES \
     --output column_lineage.json
 ```
 
@@ -98,7 +98,7 @@ Capture and analyze data transformations to understand how data is processed thr
 ### Usage
 
 ```python
-from snowcli_tools.lineage import TransformationTracker
+from nanuk_mcp.lineage import TransformationTracker
 
 # Initialize tracker
 tracker = TransformationTracker(storage_path=Path("./transformations"))
@@ -163,7 +163,7 @@ Build unified lineage graphs across multiple Snowflake databases to understand d
 ### Usage
 
 ```python
-from snowcli_tools.lineage import CrossDatabaseLineageBuilder
+from nanuk_mcp.lineage import CrossDatabaseLineageBuilder
 
 # Initialize with multiple catalogs
 builder = CrossDatabaseLineageBuilder([
@@ -208,11 +208,11 @@ builder.export_unified_lineage(
 
 ```bash
 # Build cross-database lineage
-snowflake-cli lineage build --databases DB1,DB2,DB3 \
+nanuk lineage build --databases DB1,DB2,DB3 \
     --output ./unified_lineage
 
 # Analyze cross-database dependencies
-snowflake-cli lineage cross-db --analyze-boundaries \
+nanuk lineage cross-db --analyze-boundaries \
     --output ./db_analysis.json
 ```
 
@@ -233,7 +233,7 @@ Map and track external data sources including cloud storage (S3, Azure, GCS) and
 ### Usage
 
 ```python
-from snowcli_tools.lineage import ExternalSourceMapper
+from nanuk_mcp.lineage import ExternalSourceMapper
 
 # Initialize mapper
 mapper = ExternalSourceMapper(catalog_path=Path("./catalog"))
@@ -280,11 +280,11 @@ mapper.export_external_mappings(
 
 ```bash
 # Map external sources
-snowflake-cli lineage external --include-stages \
+nanuk lineage external --include-stages \
     --map-s3-buckets --output ./external_map.json
 
 # Find external dependencies
-snowflake-cli lineage external-deps TABLE_NAME \
+nanuk lineage external-deps TABLE_NAME \
     --show-stages --show-buckets
 ```
 
@@ -306,7 +306,7 @@ Analyze the potential impact of changes to database objects before making them.
 ### Usage
 
 ```python
-from snowcli_tools.lineage import ImpactAnalyzer, ChangeType
+from nanuk_mcp.lineage import ImpactAnalyzer, ChangeType
 
 # Initialize analyzer
 analyzer = ImpactAnalyzer(lineage_graph)
@@ -363,15 +363,15 @@ analyzer.export_impact_report(
 
 ```bash
 # Analyze impact
-snowflake-cli lineage impact PIPELINE.RAW.CRITICAL_TABLE \
+nanuk lineage impact PIPELINE.RAW.CRITICAL_TABLE \
     --change-type DROP --output ./impact_report.html
 
 # Find single points of failure
-snowflake-cli lineage spof --min-dependents 5 \
+nanuk lineage spof --min-dependents 5 \
     --output ./critical_objects.json
 
 # Calculate blast radius
-snowflake-cli lineage blast-radius TABLE_NAME \
+nanuk lineage blast-radius TABLE_NAME \
     --max-depth 5 --show-paths
 ```
 
@@ -392,7 +392,7 @@ Track lineage evolution over time with snapshot and comparison capabilities.
 ### Usage
 
 ```python
-from snowcli_tools.lineage import LineageHistoryManager
+from nanuk_mcp.lineage import LineageHistoryManager
 
 # Initialize manager
 manager = LineageHistoryManager(storage_path=Path("./history"))
@@ -454,19 +454,19 @@ manager.export_history(Path("./history.json"), format="json")
 
 ```bash
 # Capture snapshot
-snowflake-cli lineage snapshot --tag "v2.0-release" \
+nanuk lineage snapshot --tag "v2.0-release" \
     --description "Major release"
 
 # Compare versions
-snowflake-cli lineage diff --from "v1.0" --to "v2.0" \
+nanuk lineage diff --from "v1.0" --to "v2.0" \
     --output ./lineage_diff.json
 
 # Track object history
-snowflake-cli lineage history OBJECT_NAME \
+nanuk lineage history OBJECT_NAME \
     --days 30 --show-evolution
 
 # Export timeline
-snowflake-cli lineage timeline --days 90 \
+nanuk lineage timeline --days 90 \
     --output ./timeline.html
 ```
 
@@ -645,6 +645,6 @@ For detailed API documentation, see:
 ## Support
 
 For issues and questions:
-- GitHub Issues: [snowcli-tools/issues](https://github.com/your-repo/issues)
-- Documentation: [Advanced Lineage Docs](https://docs.snowcli-tools.io/lineage)
+- GitHub Issues: [nanuk-mcp/issues](https://github.com/your-repo/issues)
+- Documentation: [Advanced Lineage Docs](https://docs.nanuk-mcp.io/lineage)
 - Examples: See `/examples/advanced_lineage/` directory

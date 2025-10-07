@@ -2,10 +2,10 @@
 
 ## Architecture Overview
 
-The MCP server is implemented as an **optional feature** using Python packaging extras. It is a thin wrapper around the existing snowcli-tools functionality that exposes CLI capabilities as structured tools that AI assistants can call through the MCP protocol.
+The MCP server is implemented as an **optional feature** using Python packaging extras. It is a thin wrapper around the existing nanuk-mcp functionality that exposes CLI capabilities as structured tools that AI assistants can call through the MCP protocol.
 
 ### Optional Dependencies
-- MCP functionality requires the `[mcp]` extra: `pip install snowcli-tools[mcp]`
+- MCP functionality requires the `[mcp]` extra: `pip install nanuk-mcp[mcp]`
 - Core CLI works without MCP dependencies
 - Import errors are handled gracefully with helpful messages
 
@@ -13,7 +13,7 @@ The MCP server is implemented as an **optional feature** using Python packaging 
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   MCP Client    │    │   MCP Server     │    │  snowcli-tools  │
+│   MCP Client    │    │   MCP Server     │    │  nanuk-mcp  │
 │ (VS Code, etc.) │◄──►│ (mcp_server.py)  │◄──►│   (CLI layer)   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │
@@ -26,8 +26,8 @@ The MCP server is implemented as an **optional feature** using Python packaging 
 
 ### Core Files
 
-- **`src/snowcli_tools/mcp_server.py`** - Main MCP server implementation
-- **`src/snowcli_tools/cli.py`** - CLI commands (includes `mcp` command)
+- **`src/nanuk_mcp/mcp_server.py`** - Main MCP server implementation
+- **`src/nanuk_mcp/cli.py`** - CLI commands (includes `mcp` command)
 - **`examples/run_mcp_server.py`** - Example script for running the server
 - **`tests/test_mcp_server.py`** - Comprehensive test suite
 - **`mcp_config.json`** - Example MCP client configuration
@@ -56,7 +56,7 @@ graph LR
 
 ### Example: Adding a New CLI Feature
 
-1. **Add CLI Command** (e.g., `snowflake-cli analyze`):
+1. **Add CLI Command** (e.g., `nanuk analyze`):
    ```python
    @cli.command()
    def analyze():
@@ -155,11 +155,11 @@ except Exception as e:
 
 ### Authentication and Configuration
 
-The MCP server inherits authentication from the snowcli-tools configuration:
+The MCP server inherits authentication from the nanuk-mcp configuration:
 
 ```python
 def __init__(self):
-    self.server = Server("snowflake-cli-tools")
+    self.server = Server("nanuk-tools")
     self.snow_cli = SnowCLI()  # Uses configured profile
     self.config = get_config()  # Uses existing configuration
 ```
@@ -178,8 +178,8 @@ def __init__(self):
 
 #### Mock Strategy
 ```python
-@patch('snowcli_tools.mcp_server.SnowCLI')
-@patch('snowcli_tools.mcp_server.get_config')
+@patch('nanuk_mcp.mcp_server.SnowCLI')
+@patch('nanuk_mcp.mcp_server.get_config')
 def test_tool_functionality(self, mock_get_config, mock_snow_cli_class):
     # Setup mocks
     # Test tool behavior
@@ -188,7 +188,7 @@ def test_tool_functionality(self, mock_get_config, mock_snow_cli_class):
 ## Configuration Management
 
 ### Environment Variables
-The MCP server respects all snowcli-tools environment variables:
+The MCP server respects all nanuk-mcp environment variables:
 - `SNOWFLAKE_PROFILE`
 - `SNOWFLAKE_WAREHOUSE`
 - `SNOWFLAKE_DATABASE`
@@ -196,8 +196,8 @@ The MCP server respects all snowcli-tools environment variables:
 - `SNOWFLAKE_ROLE`
 
 ### Configuration Files
-- MCP client configuration is separate from snowcli-tools config
-- The server uses existing snowcli-tools configuration for Snowflake access
+- MCP client configuration is separate from nanuk-mcp config
+- The server uses existing nanuk-mcp configuration for Snowflake access
 - No additional configuration files are required
 
 ## Deployment and Distribution
@@ -209,7 +209,7 @@ The MCP server respects all snowcli-tools environment variables:
 
 ### Dependencies
 - MCP SDK: `mcp>=1.0.0`
-- All other dependencies are inherited from snowcli-tools
+- All other dependencies are inherited from nanuk-mcp
 - Add new dependencies to `pyproject.toml` in the main dependencies list
 
 ### Testing Requirements
@@ -221,7 +221,7 @@ The MCP server respects all snowcli-tools environment variables:
 ## Monitoring and Debugging
 
 ### Logging
-The MCP server uses the same logging configuration as snowcli-tools. Enable debug logging:
+The MCP server uses the same logging configuration as nanuk-mcp. Enable debug logging:
 
 ```bash
 export SNOWCLI_TOOLS_DEBUG=1
@@ -289,7 +289,7 @@ Since MCP is now an optional feature, also check:
 
 - [ ] Does the change affect base functionality? (Should be rare)
 - [ ] Update installation documentation if needed
-- [ ] Test both base install (`pip install snowcli-tools`) and full install (`pip install snowcli-tools[mcp]`)
+- [ ] Test both base install (`pip install nanuk-mcp`) and full install (`pip install nanuk-mcp[mcp]`)
 - [ ] Verify graceful ImportError handling in CLI
 - [ ] Update CI to test both installation modes
 

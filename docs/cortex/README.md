@@ -5,7 +5,7 @@
 
 ## Overview
 
-snowcli-tools provides full access to Snowflake Cortex AI services through its integration with the upstream `snowflake-labs-mcp` package (v1.3.3+). These services enable natural language querying, semantic search, and LLM-powered completions directly against your Snowflake data.
+nanuk-mcp provides full access to Snowflake Cortex AI services through its integration with the upstream `snowflake-labs-mcp` package (v1.3.3+). These services enable natural language querying, semantic search, and LLM-powered completions directly against your Snowflake data.
 
 ### Available Cortex Services
 
@@ -13,14 +13,14 @@ snowcli-tools provides full access to Snowflake Cortex AI services through its i
 2. **[Cortex Search](./search_guide.md)** - Semantic search over data
 3. **[Cortex Complete](./completion_guide.md)** - LLM-powered text generation
 
-All services are provided by the upstream `snowflake-labs-mcp` package and are available automatically when using snowcli-tools.
+All services are provided by the upstream `snowflake-labs-mcp` package and are available automatically when using nanuk-mcp.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Snowflake account with Cortex AI enabled
-- snowcli-tools v1.9.0+
+- nanuk-mcp v1.9.0+
 - Appropriate Snowflake privileges for Cortex services
 
 ### Installation
@@ -28,11 +28,11 @@ All services are provided by the upstream `snowflake-labs-mcp` package and are a
 Cortex services are included by default:
 
 ```bash
-# snowcli-tools automatically includes snowflake-labs-mcp
-pip install snowcli-tools
+# nanuk-mcp automatically includes snowflake-labs-mcp
+pip install nanuk-mcp
 
 # Or with uv
-uv pip install snowcli-tools
+uv pip install nanuk-mcp
 ```
 
 ### Basic Usage
@@ -86,19 +86,19 @@ print(response)
 
 ## Upstream Integration
 
-snowcli-tools leverages Cortex services from the official `snowflake-labs-mcp` package:
+nanuk-mcp leverages Cortex services from the official `snowflake-labs-mcp` package:
 
 - **Package**: `snowflake-labs-mcp>=1.3.3`
 - **Repository**: [Snowflake Labs MCP](https://github.com/Snowflake-Labs/snowflake-mcp)
 - **Documentation**: [Snowflake Cortex Docs](https://docs.snowflake.com/en/user-guide/snowflake-cortex)
 
-### What snowcli-tools Adds
+### What nanuk-mcp Adds
 
-While Cortex services come from upstream, snowcli-tools provides:
+While Cortex services come from upstream, nanuk-mcp provides:
 
 1. **Integrated Configuration** - Unified config with Snowflake connection
 2. **Health Monitoring** - Cortex availability checking in `health_check` tool
-3. **Comprehensive Documentation** - Guides and examples specific to snowcli-tools usage
+3. **Comprehensive Documentation** - Guides and examples specific to nanuk-mcp usage
 4. **Error Handling** - Consistent error responses across all MCP tools
 5. **Optional Enhancements** - Agent-optimized wrappers (future v1.9.0 feature)
 
@@ -153,7 +153,7 @@ role = "CORTEX_ROLE"  # Role with CORTEX usage privileges
 Use the `health_check` tool to verify Cortex availability:
 
 ```python
-from snowcli_tools.mcp.tools import HealthCheckTool
+from nanuk_mcp.mcp.tools import HealthCheckTool
 
 health_tool = HealthCheckTool(config, snowflake_service)
 
@@ -359,5 +359,5 @@ ORDER BY total_credits DESC
 
 For issues with:
 - **Cortex services**: See [Snowflake Cortex Docs](https://docs.snowflake.com/en/user-guide/snowflake-cortex)
-- **snowcli-tools integration**: Open an issue on GitHub
+- **nanuk-mcp integration**: Open an issue on GitHub
 - **Account configuration**: Contact Snowflake support

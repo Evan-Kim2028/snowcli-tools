@@ -4,13 +4,13 @@
 
 ## Overview
 
-This directory contains documentation for orchestrating specialized AI agents that work with the snowcli-tools MCP server to perform complex, multi-step Sui blockchain data analysis workflows.
+This directory contains documentation for orchestrating specialized AI agents that work with the nanuk-mcp MCP server to perform complex, multi-step Sui blockchain data analysis workflows.
 
 ## What Are Agentic Workflows?
 
 **Agentic workflows** combine:
 - **Agents**: AI systems that make decisions, reason between steps, and synthesize findings
-- **Tools**: Atomic operations from snowcli-tools MCP (queries, catalog, lineage)
+- **Tools**: Atomic operations from nanuk-mcp MCP (queries, catalog, lineage)
 - **Orchestration**: Multi-step workflows that adapt based on intermediate results
 
 Unlike simple tool calls, agentic workflows:
@@ -44,7 +44,7 @@ Master prompt crafting with:
 export SNOWFLAKE_PROFILE=your-profile-name
 
 # Start MCP server (if not already running via Claude Code config)
-snowflake-cli mcp
+nanuk mcp
 ```
 
 ### 2. Simple Agent Invocation
@@ -167,9 +167,9 @@ Agents work automatically with Claude Code when:
 ```json
 {
   "mcpServers": {
-    "snowcli-tools": {
+    "nanuk-mcp": {
       "command": "uv",
-      "args": ["run", "snowflake-cli", "mcp"],
+      "args": ["run", "nanuk", "mcp"],
       "env": {
         "SNOWFLAKE_PROFILE": "your-profile-name"
       }
@@ -248,8 +248,8 @@ Stop when <100ms avg query time achieved"
 
 **Solution**:
 ```
-1. Verify profile: snowflake-cli verify -p profile-name
-2. Check catalog: snowflake-cli catalog -p profile-name
+1. Verify profile: nanuk --profile profile-name verify
+2. Check catalog: nanuk --profile profile-name catalog
 3. List tables manually: execute_query "SHOW TABLES"
 4. Verify permissions on INFORMATION_SCHEMA
 ```
@@ -377,13 +377,13 @@ Want to improve the agents or add new capabilities?
 - 📕 [Architecture Overview](../architecture.md)
 
 ### Tools
-- [Snowcli-Tools MCP](https://github.com/your-repo/snowcli-tools)
-- [Snowflake CLI](https://docs.snowflake.com/en/developer-guide/snowflake-cli)
+- [Snowcli-Tools MCP](https://github.com/your-repo/nanuk-mcp)
+- [Snowflake CLI](https://docs.snowflake.com/en/developer-guide/nanuk)
 - [Claude Code](https://claude.ai/code)
 
 ### Community
-- Report Issues: [GitHub Issues](https://github.com/your-repo/snowcli-tools/issues)
-- Discussions: [GitHub Discussions](https://github.com/your-repo/snowcli-tools/discussions)
+- Report Issues: [GitHub Issues](https://github.com/your-repo/nanuk-mcp/issues)
+- Discussions: [GitHub Discussions](https://github.com/your-repo/nanuk-mcp/discussions)
 - Examples: [Examples Directory](../../examples/)
 
 ---
