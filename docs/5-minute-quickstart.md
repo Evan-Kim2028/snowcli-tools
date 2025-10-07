@@ -25,13 +25,15 @@ pip install snowflake-cli-labs
 ## Step 1: Install Nanuk MCP (1 minute)
 
 ```bash
-# Install both packages
-pip install nanuk-mcp snowflake-cli-labs
+# Install from PyPI
+uv pip install nanuk-mcp
 
 # Verify installation
 python -c "import nanuk_mcp; print(nanuk_mcp.__version__)"
 # Expected: 2.0.0
 ```
+
+> **Note**: nanuk-mcp automatically installs `snowflake-cli-labs` as a dependency
 
 ## Step 2: Create Snowflake Profile (2 minutes)
 
@@ -52,10 +54,15 @@ snow connection add \
 - Your Snowflake URL: `https://abc12345.us-east-1.snowflakecomputing.com`
 - Your account identifier: `abc12345.us-east-1` (remove `.snowflakecomputing.com`)
 
+**Finding your warehouse**:
+- Trial accounts: Usually `COMPUTE_WH` (default warehouse)
+- Enterprise: Check Snowflake UI → Admin → Warehouses, or ask your admin
+- Common names: `COMPUTE_WH`, `WH_DEV`, `ANALYTICS_WH`
+
 **Don't have these?** Ask your Snowflake admin for:
 - Account identifier
 - Username & password
-- Warehouse name (e.g., `COMPUTE_WH`)
+- Warehouse name
 
 ## Step 3: Configure Your AI Assistant (1 minute)
 

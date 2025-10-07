@@ -1,4 +1,4 @@
-"""Structured logging helpers for SnowCLI tools."""
+"""Structured logging helpers for Nanuk MCP."""
 
 from __future__ import annotations
 

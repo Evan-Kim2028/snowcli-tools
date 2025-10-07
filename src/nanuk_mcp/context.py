@@ -1,4 +1,4 @@
-"""Service context helpers for SnowCLI tools."""
+"""Service context helpers for Nanuk MCP."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Domain models for SnowCLI tools."""
+"""Domain models for Nanuk MCP."""
 
 from ..catalog.models import CatalogBuildResult, CatalogBuildTotals, CatalogMetadata
 from ..dependency.models import (

@@ -52,15 +52,15 @@ uv pip install nanuk-mcp
 
 ```bash
 # 1. Install (1 minute)
-uv pip install nanuk-mcp snowflake-cli-labs
+uv pip install nanuk-mcp  # snowflake-cli-labs installed automatically
 
 # 2. Create Snowflake profile (2 minutes)
 snow connection add \
   --connection-name "quickstart" \
-  --account "<your-account>.<region>" \
+  --account "<your-account>.<region>" \  # e.g., abc12345.us-east-1
   --user "<your-username>" \
   --password \
-  --warehouse "<your-warehouse>"
+  --warehouse "<your-warehouse>"  # e.g., COMPUTE_WH
 # Enter password when prompted
 
 # 3. Configure your MCP client (1 minute)
