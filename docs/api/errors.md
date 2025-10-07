@@ -96,9 +96,10 @@ This document provides a comprehensive catalog of errors that can occur when usi
 - Includes stack traces
 - Useful for debugging
 
-Enable verbose mode:
+Enable verbose mode via environment variable:
 ```bash
-nanuk --verbose --profile my-profile verify
+export SNOWCLI_MCP_LOG_LEVEL=DEBUG
+nanuk-mcp --profile my-profile
 ```
 
 ## Troubleshooting Steps
@@ -111,17 +112,21 @@ python --version
 # Check Snowflake CLI
 snow --version
 
-# Check Nanuk MCP
-nanuk --version
+# Check Nanuk MCP installation
+python -c "import nanuk_mcp; print(nanuk_mcp.__version__)"
 ```
 
 ### 2. Test Basic Connectivity
 ```bash
-# Test profile
-nanuk --profile my-profile verify
+# Test Snowflake CLI connection directly
+snow sql -q "SELECT CURRENT_USER()" --connection my-profile
 
-# Test simple query
-nanuk --profile my-profile query "SELECT 1"
+# Test via Python API
+python -c "from nanuk_mcp import QueryService; print(QueryService(profile='my-profile'))"
+
+# Or use MCP tools in your AI assistant:
+# "Test my Snowflake connection"
+# "Execute query: SELECT 1"
 ```
 
 ### 3. Check Configuration
@@ -135,11 +140,15 @@ snow connection show my-profile
 
 ### 4. Enable Debug Logging
 ```bash
-# Set debug environment variable
-export SNOWCLI_DEBUG=1
+# Set debug environment variable for MCP server
+export SNOWCLI_MCP_LOG_LEVEL=DEBUG
 
-# Run command with debug info
-nanuk --profile my-profile verify
+# Start MCP server with debug logging
+nanuk-mcp --profile my-profile
+
+# Or enable debug in Python API
+import logging
+logging.basicConfig(level=logging.DEBUG)
 ```
 
 ## Getting Help
@@ -175,8 +184,8 @@ When reporting errors, please include:
 ## Error Report
 
 **Error**: JWT token invalid
-**Command**: `nanuk --profile my-profile verify`
-**Environment**: Python 3.12, macOS, Snowflake CLI 2.0.0
+**Command**: MCP tool `test_connection` via AI assistant
+**Environment**: Python 3.12, macOS, Snowflake CLI 2.0.0, Nanuk MCP 2.0.0
 **Steps**:
 1. Generated key pair with openssl
 2. Uploaded public key to Snowflake

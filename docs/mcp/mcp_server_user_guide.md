@@ -221,7 +221,11 @@ AI: "The DEX_TRADES_STABLE table has 23 columns tracking trades across 6 protoco
 ### Connection Issues
 1. Verify your Snowflake CLI connection works:
    ```bash
-   uv run nanuk test
+   # Test Snowflake connection directly
+   snow sql -q "SELECT CURRENT_USER()" --connection my-profile
+   
+   # Or test via Python API
+   python -c "from nanuk_mcp import QueryService; QueryService(profile='my-profile')"
    ```
 
 2. Check that your profile is configured correctly:

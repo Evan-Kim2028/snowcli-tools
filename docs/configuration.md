@@ -73,16 +73,40 @@
    timeout: 30                    # Request timeout in seconds
  ```
  
- ### 3. Command-Line Arguments
+ ### 3. MCP Server Arguments
  
- Override any setting with command-line flags:
+ Override settings when starting the MCP server:
  
  ```bash
- # Override profile and output directory
- nanuk --profile prod-profile catalog --output-dir ./prod_catalog
+ # Start MCP server with specific profile
+ nanuk-mcp --profile prod-profile
  
- # Override warehouse and database
- nanuk --warehouse LARGE_WH --database PROD_DB query "SELECT 1"
+ # Set environment variables for MCP session
+ export SNOWFLAKE_WAREHOUSE=LARGE_WH
+ export SNOWFLAKE_DATABASE=PROD_DB
+ nanuk-mcp
+ ```
+ 
+ ### 4. Python API Configuration
+ 
+ Configure directly in Python code:
+ 
+ ```python
+ from nanuk_mcp import CatalogService, QueryService
+ from nanuk_mcp.config import Config, SnowflakeConfig
+ 
+ # Create custom configuration
+ config = Config(
+     snowflake=SnowflakeConfig(
+         profile="prod-profile",
+         warehouse="LARGE_WH",
+         database="PROD_DB"
+     )
+ )
+ 
+ # Use with services
+ catalog_service = CatalogService(config=config)
+ query_service = QueryService(config=config)
  ```
  
  ## Profile Management
@@ -101,8 +125,10 @@
    --user myuser \
    --private-key-file ~/.snowflake/rsa_key.p8
  
- # Test a profile
- nanuk --profile my-profile verify
+ # Test a profile via MCP
+ # In your AI assistant, ask: "Test my Snowflake connection"
+ # Or use the Python API:
+ # python -c "from nanuk_mcp import QueryService; QueryService(profile='my-profile')"
  ```
  
  ### Profile Locations

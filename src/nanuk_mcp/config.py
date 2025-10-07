@@ -1,4 +1,4 @@
-"""Unified configuration and session management for snowcli-tools."""
+"""Unified configuration and session management for nanuk-mcp."""
 
 from __future__ import annotations
 

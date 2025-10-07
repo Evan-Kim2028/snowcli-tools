@@ -1,4 +1,4 @@
-"""Service layer abstractions for snowcli-tools."""
+"""Service layer abstractions for nanuk-mcp."""
 
 from ..catalog import CatalogService
 from ..dependency import DependencyService

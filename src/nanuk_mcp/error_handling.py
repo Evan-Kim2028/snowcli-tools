@@ -1,4 +1,4 @@
-"""Comprehensive error handling strategy for snowcli-tools."""
+"""Comprehensive error handling strategy for nanuk-mcp."""
 
 from __future__ import annotations
 

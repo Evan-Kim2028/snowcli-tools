@@ -31,8 +31,12 @@ Thank you for your interest in contributing to Nanuk MCP! This guide will help y
 
 4. **Verify installation**:
    ```bash
+   # Check MCP server is available
    uv run nanuk-mcp --help
    # Should show: nanuk-mcp MCP Server
+   
+   # Verify Python package
+   python -c "import nanuk_mcp; print(nanuk_mcp.__version__)"
    ```
 
 ## Making Changes
@@ -93,8 +97,8 @@ uv run pytest tests/test_specific.py
 
 2. **Test your changes**:
    - Test with real Snowflake connections
-   - Verify both CLI and MCP interfaces work
-   - Test error scenarios
+   - Verify MCP interface and Python API work
+   - Test error scenarios and edge cases
 
 3. **Update documentation**:
    - Update relevant docs
@@ -136,10 +140,11 @@ Closes #123
 
 ### Architecture
 
-- Follow the service layer pattern
-- Keep CLI and MCP interfaces thin wrappers
+- Follow the service layer pattern (see `src/nanuk_mcp/service_layer/`)
+- Keep MCP interface as thin wrapper around services
 - Use dependency injection for testability
 - Maintain backward compatibility when possible
+- MCP-only architecture since v2.0.0
 
 ### Error Handling
 
@@ -161,8 +166,8 @@ Closes #123
 
 - Update version in `pyproject.toml`
 - Update version references in documentation
-- Update CLI version display
-- Create release notes
+- Update `__version__` in `src/nanuk_mcp/__init__.py`
+- Create release notes in CHANGELOG.md
 
 ### Release Checklist
 
@@ -189,4 +194,4 @@ By contributing, you agree that your contributions will be licensed under the sa
 
 ---
 
-Thank you for contributing to SnowCLI Tools! 🚀
+Thank you for contributing to Nanuk MCP! 🐻‍❄️
