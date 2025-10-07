@@ -27,7 +27,7 @@ This package was formerly known as `snowcli-tools`. See the [Migration Guide](do
 **Quick migration:**
 ```bash
 pip uninstall snowcli-tools
-pip install nanuk-mcp
+uv pip install nanuk-mcp
 # Update imports: from snowcli_tools → from nanuk_mcp
 ```
 
@@ -39,7 +39,7 @@ pip install nanuk-mcp
 
 **Install from PyPI for stable releases**:
 ```bash
-pip install nanuk-mcp
+uv pip install nanuk-mcp
 ```
 
 **When to use**: Production use, stable releases, most users
@@ -63,7 +63,7 @@ Get started in 5 minutes:
 
 ```bash
 # 1. Install (1 minute)
-pip install nanuk-mcp snowflake-cli-labs
+uv pip install nanuk-mcp snowflake-cli-labs
 
 # 2. Create Snowflake profile (2 minutes)
 snow connection add \
@@ -278,10 +278,10 @@ catalog = catalog_service.build_catalog(database="MY_DB")
 ### Common Issues
 
 **Issue**: "No module named 'nanuk_mcp'"
-**Solution**: Ensure you've installed the package: `pip install nanuk-mcp`
+**Solution**: Ensure you've installed the package: `uv pip install nanuk-mcp`
 
 **Issue**: "Command 'nanuk-mcp' not found"
-**Solution**: Reinstall package or check PATH: `pip install --force-reinstall nanuk-mcp`
+**Solution**: Reinstall package or check PATH: `uv pip install --force-reinstall nanuk-mcp`
 
 **Issue**: MCP server won't start
 **Solution**: Check Snowflake profile is configured and verify MCP server setup in Claude Code settings
